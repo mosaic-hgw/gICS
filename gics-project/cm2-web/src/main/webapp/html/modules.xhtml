@@ -1,0 +1,240 @@
+<!--
+  ###license-information-start###
+  gICS - a Generic Informed Consent Service
+  __
+  Copyright (C) 2014 - 2017 The MOSAIC Project - Institut fuer Community Medicine der
+  							Universitaetsmedizin Greifswald - mosaic-projekt@uni-greifswald.de
+  							concept and implementation
+  							l. geidel
+  							web client
+  							g. weiher
+  							a. blumentritt
+  							please cite our publications
+  							http://dx.doi.org/10.3414/ME14-01-0133
+  							http://dx.doi.org/10.1186/s12967-015-0545-6
+  __
+  This program is free software: you can redistribute it and/or modify
+  it under the terms of the GNU Affero General Public License as published by
+  the Free Software Foundation, either version 3 of the License, or
+  (at your option) any later version.
+  
+  This program is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  GNU General Public License for more details.
+  
+  You should have received a copy of the GNU Affero General Public License
+  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+  ###license-information-end###
+  -->
+<html xmlns="http://www.w3.org/1999/xhtml"
+	xmlns:h="http://java.sun.com/jsf/html"
+	xmlns:f="http://java.sun.com/jsf/core"
+	xmlns:ui="http://java.sun.com/jsf/facelets"
+	xmlns:jstl="http://java.sun.com/jsp/jstl/functions"
+	xmlns:p="http://primefaces.org/ui">
+
+<body>
+	<ui:composition template="/template/cm-template.xhtml">
+		<ui:define name="navigationBar">
+			<p:tabMenu activeIndex="2" styleClass="navigationBar">
+				<p:menuitem value="#{msg['navigation.domain']}" url="domain.xhtml" />
+				<p:menuitem value="#{msg['navigation.policy']}" url="policies.xhtml" />
+				<p:menuitem value="#{msg['navigation.module']}" url="modules.xhtml" />
+				<p:menuitem value="#{msg['navigation.template']}"
+					url="consent-template.xhtml" />
+				<p:menuitem value="#{msg['navigation.consent']}"
+					url="consents.xhtml" />
+				<p:menuitem value="#{msg['navigation.idSearch']}"
+					url="id_search.xhtml" />
+			</p:tabMenu>
+		</ui:define>
+		<ui:define name="navigationPanel">
+			<h:form id="domain_form">
+				<p:dataTable widgetVar="domain_navigation" var="domain"
+					value="#{ModuleController.domains}" rowKey="#{domain.name}"
+					selectionMode="single"
+					filteredValue="#{ModuleController.filteredDomains}"
+					styleClass="navigationTree">
+					<p:ajax listener="#{ModuleController.onDomainSelect}"
+						event="rowSelect" update=":table_form,:create_form:" />
+					<f:facet name="header">
+						<div align="center">#{msg['general.selectDomain']}</div>
+						<p:separator />
+						<div align="right">
+							<p:outputPanel>
+								<p:inputText id="globalFilter"
+									onkeyup="PF('domain_navigation').filter();" style="width:150px" />
+								<p:watermark for="globalFilter"
+									value="#{msg['general.filterDomains']}"></p:watermark>
+
+							</p:outputPanel>
+						</div>
+					</f:facet>
+					<p:column filterBy="#{domain.label}" filterMatchMode="contains"
+						filterStyle="display:none;">
+						<h:outputText id="domain_display" title="#{domain.label}" value="#{domain.label}" converter="TrimConverter"/><br/>
+						<h:outputText value="#{domain.name.equals(domain.label)?'':(domain.name)}" style=" opacity: 0.35;"/>
+						<p:tooltip for="domain_display"></p:tooltip>
+					</p:column>
+				</p:dataTable>
+			</h:form>
+		</ui:define>
+		<ui:define name="contentPanel">
+			<h:form id="table_form">
+				<h:outputText rendered="#{empty ModuleController.selectedDomain}"
+					value="#{msg['general.pleaseSelectDomain']}" />
+				<p:outputPanel
+					rendered="#{not empty ModuleController.selectedDomain}">
+					<h:outputText styleClass="headline"
+					value="#{msg['modules.tableHeader']}, #{msg['general.entriesFound']} #{ModuleController.modules.size()}" />
+					<p:dataTable var="module" value="#{ModuleController.modules}"
+						paginator="true" rows="10" paginatorAlwaysVisible="false"
+						paginatorPosition="bottom"
+						currentPageReportTemplate="Page {currentPage}({startRecord}-{endRecord} of {totalRecords})"
+						paginatorTemplate=" {JumpToPageDropdown}  {FirstPageLink} {PreviousPageLink} {CurrentPageReport} {NextPageLink} {LastPageLink} {RowsPerPageDropdown}"
+						rowsPerPageTemplate="10,20,30,40,50"
+						selectionMode="single"
+						selection="#{ModuleController.selectedModule}"
+						rowKey="#{module.key}">
+						<p:ajax event="rowSelect" update="@form"></p:ajax>
+						<p:column headerText="#{msg['modules.name']}">
+							<h:outputText value="#{module.key.name}" />
+						</p:column>
+						<p:column styleClass="nonExpandingColumn"  headerText="#{msg['modules.version']}">
+							<h:outputText value="#{module.key.version}" />
+						</p:column>
+						<p:column headerText="#{msg['modules.title']}">
+							<h:outputText value="#{module.title}" />
+						</p:column>
+					</p:dataTable>
+					<div align="right" style="margin-top: 5px">
+						<p:commandButton
+							disabled="#{empty ModuleController.selectedDomain}"
+							actionListener="#{ModuleController.onAddModule}"
+							update="@form,:create_form:" value="#{msg['modules.add']}"></p:commandButton>
+						<p:commandButton
+							disabled="#{not ModuleController.modules.contains(ModuleController.selectedModule)}"
+							update=":create_form:" actionListener="#{ModuleController.onEditModule}" value="#{msg['modules.update']}"></p:commandButton>
+						<p:commandButton
+							disabled="#{not ModuleController.modules.contains(ModuleController.selectedModule)}"
+							actionListener="#{ModuleController.onDeleteModule}"
+							update="@form" value="#{msg['modules.delete']}">
+							<p:confirm header="#{msg['modules.delete']}"
+								message="#{msg['modules.confirmDelete']}">
+							</p:confirm>
+						</p:commandButton>
+						<p:separator styleClass="verticalSeparator"></p:separator>
+						<p:commandButton update=":table_form:,:create_form:"
+							actionListener="#{ModuleController.refresh()}"
+							value="#{msg['general.refresh']}">
+						</p:commandButton>
+					</div>
+				</p:outputPanel>
+
+			</h:form>
+			<p:outputPanel></p:outputPanel>
+			<h:form id="create_form">
+				<p:outputPanel
+					rendered="#{not empty ModuleController.selectedModule}">
+					<h:outputText styleClass="headline"
+					value="#{ModuleController.editMode? msg['modules.editModule']:msg['modules.newModule']}" />
+					<p:panel styleClass="noBackgroundColor">
+						<h:outputText value="General" />
+						<p:panel>
+							<h:panelGrid columns="2">
+							<p:outputLabel for="name_input" value="#{msg['template.name']}"></p:outputLabel>
+							<p:outputLabel for="version_input"
+								value="#{msg['modules.version']}"></p:outputLabel>
+							<p:inputText id="name_input" required="true"
+								value="#{ModuleController.selectedModule.key.name}"></p:inputText>
+							<p:inputText id="version_input" required="true"
+								value="#{ModuleController.selectedModule.key.version}"></p:inputText>
+						</h:panelGrid>
+						<p:watermark for="version_input" value="#{ClassPathProvider.convertClassPath(ModuleController.selectedDomain.moduleVersionConverter)}"></p:watermark>
+						<p:spacer height="4px"></p:spacer>
+
+						<h:panelGrid columns="1">
+							<p:outputLabel for="title_input"
+								value="#{msg['modules.title']}"></p:outputLabel>
+							<p:outputPanel style="margin-right:8px">
+								<p:inputTextarea style="width:100%" id="title_input"
+									value="#{ModuleController.selectedModule.title}"
+									maxlength="255" counter="title_counter" counterTemplate="#{msg['general.charactersRemaining']}">
+								</p:inputTextarea>
+								 <h:outputText id="title_counter" />
+							</p:outputPanel>
+							<p:spacer height="4px"></p:spacer>
+							<p:outputLabel for="comment_input"
+								value="#{msg['modules.comment']}"></p:outputLabel>
+							<p:outputPanel style="margin-right:8px">
+								<p:inputTextarea style="width:100%" id="comment_input"
+									value="#{ModuleController.selectedModule.comment}"
+									maxlength="255" counter="comment_counter" counterTemplate="#{msg['general.charactersRemaining']}">
+								</p:inputTextarea>
+								 <h:outputText id="comment_counter" />
+							</p:outputPanel>
+							<p:spacer height="4px"></p:spacer>
+							<p:outputLabel for="extProp_input"
+								value="#{msg['modules.externProperties']}"></p:outputLabel>
+							<p:outputPanel style="margin-right:8px">
+								<p:inputTextarea style="width:100%" id="extProp_input"
+									value="#{ModuleController.selectedModule.externProperties}"
+									maxlength="255" counter="extProp_counter" counterTemplate="#{msg['general.charactersRemaining']}">
+								</p:inputTextarea>
+								 <h:outputText id="extProp_counter" />
+							</p:outputPanel>
+							<p:spacer height="4px"></p:spacer>
+						</h:panelGrid>
+						</p:panel>
+						
+						<p:spacer height="4px" width="100%;"></p:spacer>
+						<div align="center">
+							<p:pickList style="width:auto;"
+							value="#{ModuleController.policies}" var="policy"
+							validator="#{policiesValidator.validate}"
+							itemLabel="#{policy.key}" itemValue="#{policy}"
+							converter="policyConverter" showTargetControls="true"
+							label="hello" addLabel="Add Policy" addAllLabel="Add All"
+							removeLabel="Delete Policy" removeAllLabel="Delete All">
+							<p:ajax event="transfer" update="@this"></p:ajax>
+							<f:facet name="sourceCaption">#{msg['modules.domainPolicies']}</f:facet>
+							<f:facet name="targetCaption">#{msg['modules.modulePolicies']}</f:facet>
+							<p:column headerText="name">
+								#{policy.key.name}
+							</p:column>
+							<p:column headerText="version">
+								#{msg['modules.policyversion']}: #{policy.key.version}
+						</p:column>
+						</p:pickList>
+						</div>
+						<p:spacer height="4px" width="100%"></p:spacer>
+						<p:outputLabel for="text_input" value="#{msg['modules.text']}"></p:outputLabel>
+							<p:outputPanel style="margin-right:8px">
+								<p:inputTextarea style="width:100%" id="text_input"
+									value="#{ModuleController.selectedModule.text}">
+								</p:inputTextarea>
+								 <h:outputText id="text_counter" />
+						</p:outputPanel>
+						<p:spacer height="4px" width="100%"></p:spacer>
+
+						<div align="right">
+							<p:commandButton value="#{ModuleController.editMode? msg['modules.save']:msg['modules.add']}"
+								actionListener="#{ModuleController.onSaveModule()}"
+								update="@form,:table_form:"></p:commandButton>
+							<p:commandButton value="#{msg['general.cancel']}"
+								actionListener="#{ModuleController.refresh()}"
+								update="@form,:table_form:" immediate="true">
+								<p:confirm header="#{msg['general.cancel']}"
+									icon="ui-icon-alert" message="#{msg['template.confirmCancel']}"></p:confirm>
+							</p:commandButton>
+						</div>
+
+					</p:panel>
+				</p:outputPanel>
+
+			</h:form>
+		</ui:define>
+	</ui:composition>
+</body>
+</html>

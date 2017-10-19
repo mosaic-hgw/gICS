@@ -1,0 +1,5 @@
+system requirements:
+
+jboss wildfly
+
+mysql 5.6

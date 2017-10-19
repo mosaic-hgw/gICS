@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- ###license-information-start###
+  gICS - a Generic Informed Consent Service
+  __
+  Copyright (C) 2014 - 2017 The MOSAIC Project - Institut fuer Community Medicine der
+  							Universitaetsmedizin Greifswald - mosaic-projekt@uni-greifswald.de
+  							concept and implementation
+  							l. geidel
+  							web client
+  							g. weiher
+  							a. blumentritt
+  							please cite our publications
+  							http://dx.doi.org/10.3414/ME14-01-0133
+  							http://dx.doi.org/10.1186/s12967-015-0545-6
+  __
+  This program is free software: you can redistribute it and/or modify it under the terms of the GNU Affero General 
+  	Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version. This program is distributed 
+  	in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. 
+  	See the GNU General Public License for more details. You should have received a copy of the GNU Affero General Public License along with this program. 
+  	If not, see <http://www.gnu.org/licenses/>.
+  ###license-information-end### -->
+
+<persistence xmlns="http://java.sun.com/xml/ns/persistence" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://java.sun.com/xml/ns/persistence http://java.sun.com/xml/ns/persistence/persistence_2_0.xsd" version="2.0">
+	<persistence-unit name="gics" transaction-type="JTA">
+		<provider>org.eclipse.persistence.jpa.PersistenceProvider</provider>
+		<!-- <provider>org.hibernate.ejb.HibernatePersistence</provider> -->
+		<jta-data-source>java:jboss/datasources/gicsDS</jta-data-source>
+		<class>org.emau.icmvc.ganimed.ttp.cm2.model.Consent</class>
+		<!-- <class>org.emau.icmvc.ganimed.ttp.cm2.model.ConsentKey</class> -->
+		<class>org.emau.icmvc.ganimed.ttp.cm2.model.ConsentTemplate</class>
+		<!-- <class>org.emau.icmvc.ganimed.ttp.cm2.model.ConsentTemplateKey</class> -->
+		<class>org.emau.icmvc.ganimed.ttp.cm2.model.Domain</class>
+		<class>org.emau.icmvc.ganimed.ttp.cm2.model.FreeTextDef</class>
+		<!-- <class>org.emau.icmvc.ganimed.ttp.cm2.model.FreeTextDefKey</class> -->
+		<class>org.emau.icmvc.ganimed.ttp.cm2.model.FreeTextVal</class>
+		<!-- <class>org.emau.icmvc.ganimed.ttp.cm2.model.FreeTextValKey</class> -->
+		<class>org.emau.icmvc.ganimed.ttp.cm2.model.Policy</class>
+		<!-- <class>org.emau.icmvc.ganimed.ttp.cm2.model.PolicyKey</class> -->
+		<class>org.emau.icmvc.ganimed.ttp.cm2.model.Signature</class>
+		<!-- <class>org.emau.icmvc.ganimed.ttp.cm2.model.SignatureKey</class> -->
+		<class>org.emau.icmvc.ganimed.ttp.cm2.model.SignedPolicy</class>
+		<!-- <class>org.emau.icmvc.ganimed.ttp.cm2.model.SignedPolicyKey</class> -->
+		<class>org.emau.icmvc.ganimed.ttp.cm2.model.ModuleConsentTemplate</class>
+		<!-- <class>org.emau.icmvc.ganimed.ttp.cm2.model.ModuleConsentTemplateKey</class> -->
+		<class>org.emau.icmvc.ganimed.ttp.cm2.model.SignerId</class>
+		<!-- <class>org.emau.icmvc.ganimed.ttp.cm2.model.SignerIdKey</class> -->
+		<class>org.emau.icmvc.ganimed.ttp.cm2.model.SignerIdType</class>
+		<!-- <class>org.emau.icmvc.ganimed.ttp.cm2.model.SignerIdTypeKey</class> -->
+		<class>org.emau.icmvc.ganimed.ttp.cm2.model.Text</class>
+		<class>org.emau.icmvc.ganimed.ttp.cm2.model.VirtualPerson</class>
+		<!-- <class>org.emau.icmvc.ganimed.ttp.cm2.model.VirtualPersonSignerIdKey</class> -->
+		<class>org.emau.icmvc.ganimed.ttp.cm2.model.VirtualPersonSignerId</class>
+		<class>org.emau.icmvc.ganimed.ttp.cm2.model.Module</class>
+		<!-- <class>org.emau.icmvc.ganimed.ttp.cm2.model.ModuleKey</class> -->
+		<properties>
+			<property name="eclipselink.target-database" value="MySQL" />
+			<property name="eclipselink.ddl-generation" value="create-tables" />
+			<property name="eclipselink.ddl-generation.output-mode" value="database" />
+			<!-- <property name="eclipselink.logging.logger" value="JavaLogger"/> -->
+			<!-- <property name="eclipselink.logging.level" value="FINE"/> <property name="eclipselink.logging.level.sql" value="FINE"/> -->
+			<property name="eclipselink.logging.logger" value="org.emau.icmvc.ganimed.ttp.cm2.internal.JBossLogger" />
+			<property name="eclipselink.logging.parameters" value="true" />
+			<property name="eclipselink.target-server" value="JBoss" />
+			<property name="eclipselink.jdbc.batch-writing" value="JDBC" />
+			<property name="eclipselink.session-event-listener" value="org.emau.icmvc.ganimed.ttp.cm2.internal.LogSQLResultEventListener" />
+			<property name="hibernate.dialect" value="org.hibernate.dialect.MySQL5InnoDBDialect" />
+			<property name="hibernate.hbm2ddl.auto" value="validate" />
+			<property name="hibernate.transaction.jta.platform" value="org.hibernate.service.jta.platform.internal.JBossAppServerJtaPlatform" />
+			<property name="hibernate.id.new_generator_mappings" value="false" /> <!-- see https://hibernate.atlassian.net/browse/HHH-6881 -->
+		</properties>
+	</persistence-unit>
+</persistence>

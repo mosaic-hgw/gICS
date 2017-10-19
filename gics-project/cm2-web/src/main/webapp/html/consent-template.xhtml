@@ -1,0 +1,354 @@
+<!--
+  ###license-information-start###
+  gICS - a Generic Informed Consent Service
+  __
+  Copyright (C) 2014 - 2017 The MOSAIC Project - Institut fuer Community Medicine der
+  							Universitaetsmedizin Greifswald - mosaic-projekt@uni-greifswald.de
+  							concept and implementation
+  							l. geidel
+  							web client
+  							g. weiher
+  							a. blumentritt
+  							please cite our publications
+  							http://dx.doi.org/10.3414/ME14-01-0133
+  							http://dx.doi.org/10.1186/s12967-015-0545-6
+  __
+  This program is free software: you can redistribute it and/or modify
+  it under the terms of the GNU Affero General Public License as published by
+  the Free Software Foundation, either version 3 of the License, or
+  (at your option) any later version.
+  
+  This program is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  GNU General Public License for more details.
+  
+  You should have received a copy of the GNU Affero General Public License
+  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+  ###license-information-end###
+  -->
+<html xmlns="http://www.w3.org/1999/xhtml"
+	xmlns:h="http://java.sun.com/jsf/html"
+	xmlns:f="http://java.sun.com/jsf/core"
+	xmlns:ui="http://java.sun.com/jsf/facelets"
+	xmlns:jstl="http://java.sun.com/jsp/jstl/functions"
+	xmlns:p="http://primefaces.org/ui">
+
+<body>
+	<ui:composition template="/template/cm-template.xhtml">
+		<ui:define name="navigationBar">
+			<p:tabMenu activeIndex="3">
+				<p:menuitem value="#{msg['navigation.domain']}" url="domain.xhtml" />
+				<p:menuitem value="#{msg['navigation.policy']}" url="policies.xhtml" />
+				<p:menuitem value="#{msg['navigation.module']}" url="modules.xhtml" />
+				<p:menuitem value="#{msg['navigation.template']}" url="consent-template.xhtml" />
+				<p:menuitem value="#{msg['navigation.consent']}" url="consents.xhtml" />
+				<p:menuitem value="#{msg['navigation.idSearch']}"
+					url="id_search.xhtml" />
+			</p:tabMenu>
+		</ui:define>
+		
+		<ui:define name="navigationPanel">
+			<!-- Anzeige der Domains -->
+			<h:form id="domain_form">
+						<p:dataTable widgetVar="domain_navigation" var="domain"
+							value="#{TemplateController.domains}" rowKey="#{domain.name}"
+							selectionMode="single" filteredValue="#{TemplateController.filteredDomains}" styleClass="navigationTree">
+							<p:ajax listener="#{TemplateController.onDomainSelect}"
+								event="rowSelect"  update=":table_form,:create_form:"/>
+							<f:facet name="header">
+								<div align="center">#{msg['general.selectDomain']}</div>
+								<p:separator />
+								<div align="right">
+									<p:outputPanel>
+										<p:inputText id="globalFilter"
+											onkeyup="PF('domain_navigation').filter();"
+											style="width:150px" />					
+										<p:watermark for="globalFilter" value="#{msg['general.filterDomains']}"></p:watermark>
+										
+									</p:outputPanel>
+								</div>
+							</f:facet>
+							<p:column filterBy="#{domain.label}" filterMatchMode="contains"
+						filterStyle="display:none;">
+								<h:outputText id="domain_display" title="#{domain.label}" value="#{domain.label}" converter="TrimConverter"/><br/>
+						<h:outputText value="#{domain.name.equals(domain.label)?'':(domain.name)}" style=" opacity: 0.35;"/>
+						<p:tooltip for="domain_display"></p:tooltip>
+							</p:column>
+						</p:dataTable>
+					</h:form>
+		</ui:define>
+		<ui:define name="contentPanel">
+			<p:dialog widgetVar="modulePickerDialog" id="module_picker_dialog" resizable="false">
+				<h:form>
+					<p:pickList rendered="#{not empty TemplateController.selectedTemplate}" style="width:auto;"
+							value="#{TemplateController.modules}" var="module" 
+							itemLabel="#{module.module.key}" itemValue="#{module}"
+							converter="seriazableConverter" showTargetControls="true" 
+							label="hello" addLabel="Add Policy" addAllLabel="Add All"
+							removeLabel="Delete Policy" removeAllLabel="Delete All" 
+							validator="#{modulesValidator.validate}">
+							<p:ajax partialSubmit="true" event="transfer" update="@form"></p:ajax>
+							<f:facet name="sourceCaption">#{msg['template.domainModules']}</f:facet>
+							<f:facet name="targetCaption">#{msg['template.templateModules']}</f:facet>
+							<p:column headerText="name">
+							#{module.module.key.name}
+						</p:column>
+							<p:column headerText="version">
+								<h:outputFormat value="#{msg['template.moduleVersion']}" >
+									<f:param value="#{module.module.key.version}"/>
+								</h:outputFormat>
+							</p:column>
+						</p:pickList>
+					<div align="right">
+						<p:commandButton value="#{msg['template.submit']}"
+							partialSubmit="true"
+							actionListener="#{TemplateController.onModulesSubmit}"
+							onclick="PF('modulePickerDialog').hide();"
+							update=":create_form:modules_table"></p:commandButton>
+
+					</div>
+
+				</h:form>
+			</p:dialog>
+			<!-- Tabelle für die Consent-Templates -->
+			<h:form id="table_form">
+				<h:outputText rendered="#{empty TemplateController.selectedDomain}"
+					value="#{msg['general.pleaseSelectDomain']}" />
+				<p:outputPanel rendered="#{not empty TemplateController.selectedDomain}">
+					<h:outputText styleClass="headline"
+						value="#{msg['template.templateTableHeader']}, #{msg['general.entriesFound']} #{TemplateController.templates.size()}" />
+					<p:dataTable var="template" value="#{TemplateController.templates}"
+						paginator="true" rows="10" paginatorAlwaysVisible="false"
+						paginatorPosition="bottom"
+						currentPageReportTemplate="Page {currentPage}({startRecord}-{endRecord} of {totalRecords})"
+						paginatorTemplate=" {JumpToPageDropdown}  {FirstPageLink} {PreviousPageLink} {CurrentPageReport} {NextPageLink} {LastPageLink} {RowsPerPageDropdown}"
+						rowsPerPageTemplate="10,20,30,40,50"
+						selectionMode="single"
+						selection="#{TemplateController.selectedTemplate}"
+						rowKey="#{template.key}">
+						<p:ajax event="rowSelect" update="@form"></p:ajax>
+						<p:column headerText="#{msg['template.name']}">
+							<h:outputText value="#{template.key.name}" />
+						</p:column>
+						<p:column headerText="#{msg['template.version']}">
+							<h:outputText value="#{template.key.version}" />
+						</p:column>
+					</p:dataTable>
+
+					<!-- Button Leiste unter Consent template Tabelle -->
+					<div align="right" class="buttonBlock">
+						<p:commandButton
+							disabled="#{empty TemplateController.selectedDomain}"
+							actionListener="#{TemplateController.onAddConsentTemplate}"
+							update="@form,:create_form:,:module_picker_dialog:"
+							value="#{msg['template.add']}"></p:commandButton>
+						<p:commandButton id="edit_button"
+							disabled="#{not TemplateController.templates.contains(TemplateController.selectedTemplate)}"
+							update="@form,:create_form:,:module_picker_dialog:"
+							value="#{msg['template.edit']}"
+							actionListener="#{TemplateController.onEditTemplate}"></p:commandButton>
+						<p:commandButton
+							disabled="#{not TemplateController.templates.contains(TemplateController.selectedTemplate)}"
+							update="@form" value="#{msg['template.delete']}"
+							actionListener="#{TemplateController.onDeleteTemplate}">
+							<p:confirm header="#{msg['template.delete']}"
+								message="#{msg['template.confirmDelete']}"></p:confirm>
+						</p:commandButton>
+						<p:separator styleClass="verticalSeparator"></p:separator>
+						<p:commandButton update=":table_form:,:create_form:"
+							actionListener="#{TemplateController.refresh()}"
+							value="#{msg['general.refresh']}">
+						</p:commandButton>
+					</div>
+				</p:outputPanel>
+			</h:form>
+			<h:form id="create_form">
+				<p:focus context="create_form" />
+				<p:outputPanel rendered="#{not empty TemplateController.selectedTemplate}">
+					<p:spacer height="10px" width="100%"></p:spacer>
+					<h:outputText value="#{TemplateController.editMode? msg['template.edit']: msg['template.add']}" styleClass="headline"/>
+					<p:panel id="create_panel" styleClass="noBackgroundColor">
+						<h:panelGrid columns="2">
+							<p:outputLabel for="name_input" value="#{msg['template.name']}"
+								rendered="#{not TemplateController.editMode}"></p:outputLabel>
+							<h:outputText value="#{msg['template.name']}"
+								rendered="#{TemplateController.editMode}" />
+							<p:outputLabel for="version_input"
+								value="#{msg['template.version']}"></p:outputLabel>
+							<p:inputText id="name_input"
+								rendered="#{not TemplateController.editMode}" required="true"
+								value="#{TemplateController.selectedTemplate.key.name}"></p:inputText>
+							<h:outputText
+								value="#{TemplateController.selectedTemplate.key.name}"
+								rendered="#{TemplateController.editMode}" />
+							<p:inputText id="version_input" required="true"
+								validator="#{VersionValidator.validate}"
+								value="#{TemplateController.selectedTemplate.key.version}"></p:inputText>
+						</h:panelGrid>
+						<p:watermark for="version_input" value="#{ClassPathProvider.convertClassPath(TemplateController.selectedDomain.ctVersionConverter)}"></p:watermark>
+						<p:spacer height="4px" width="100%"></p:spacer>
+
+						<p:outputLabel for="title_input"
+							value="#{msg['template.title']}"></p:outputLabel>
+						<p:outputPanel style="margin-right:8px">
+						<p:inputTextarea style="width:100%" id="title_input"
+							value="#{TemplateController.selectedTemplate.title}"
+							maxlength="255" counter="title_counter" counterTemplate="#{msg['general.charactersRemaining']}">
+							</p:inputTextarea>
+							<h:outputText id="title_counter" />
+						</p:outputPanel>
+						<p:spacer height="4px"></p:spacer>
+						<p:outputLabel for="comment_input"
+							value="#{msg['template.comment']}"></p:outputLabel>
+						<p:outputPanel style="margin-right:8px">
+							<p:inputTextarea style="width:100%" id="comment_input"
+								value="#{TemplateController.selectedTemplate.comment}"
+								maxlength="255" counter="comment_counter" counterTemplate="#{msg['general.charactersRemaining']}">
+							</p:inputTextarea>
+							<h:outputText id="comment_counter" />
+						</p:outputPanel>
+						<p:spacer height="4px"></p:spacer>
+						<p:outputLabel for="prop_input"
+							value="#{msg['template.properties']}"></p:outputLabel>
+						<p:outputPanel style="margin-right:8px">
+							<p:inputTextarea style="width:100%" id="prop_input"
+								value="#{TemplateController.selectedTemplate.propertiesString}"
+								maxlength="255" counter="prop_counter" counterTemplate="#{msg['general.charactersRemaining']}">
+							</p:inputTextarea>
+							<h:outputText id="prop_counter" />
+						</p:outputPanel>
+						<p:spacer height="4px"></p:spacer>
+						<p:outputLabel for="extProp_input"
+							value="#{msg['template.externProperties']}"></p:outputLabel>
+						<p:outputPanel style="margin-right:8px">
+							<p:inputTextarea style="width:100%" id="extProp_input"
+								value="#{TemplateController.selectedTemplate.externProperties}"
+								maxlength="255" counter="extProp_counter" counterTemplate="#{msg['general.charactersRemaining']}">
+							</p:inputTextarea>
+							<h:outputText id="extProp_counter" />
+						</p:outputPanel>
+						<p:spacer height="4px"></p:spacer>
+
+						<p:outputLabel for="header_input"
+							value="#{msg['template.header']}"></p:outputLabel>
+						<p:inputTextarea style="width:100%" id="header_input"
+							value="#{TemplateController.selectedTemplate.header}"></p:inputTextarea>
+						<p:spacer height="4px" width="100%"></p:spacer>
+						<p:outputLabel for="modules_table" value="Modules"></p:outputLabel>
+						<p:dataTable id="modules_table"
+							value="#{TemplateController.selectedTemplate.assignedModules}"
+							var="assignedModule" >
+							<p:column headerText="Name">
+								#{assignedModule.module.key.name}
+							</p:column>
+							<p:column headerText="Mandatory">
+								<p:selectBooleanCheckbox value="#{assignedModule.mandatory}">
+									<p:ajax event="change" update=":create_form:modules_table"></p:ajax>
+								</p:selectBooleanCheckbox>
+							</p:column>
+							<p:column styleClass="dynamicStates" headerText="Default Status">
+								<p:selectOneMenu value="#{assignedModule.defaultConsentStatus}">
+									<f:selectItem noSelectionOption="true" itemLabel=""
+										itemValue="" />
+									<f:selectItems
+										value="#{TemplateController.getMandatoryConsentStates(assignedModule.mandatory)}"
+										var="status"
+										itemLabel="#{TemplateController.getConsentStatusLabel(status)}"
+										itemValue="#{status}"></f:selectItems>
+								</p:selectOneMenu>
+							</p:column>
+							<p:column styleClass="dynamicStates"
+								headerText="Checkboxes to display">
+								<p:selectManyCheckbox
+									value="#{assignedModule.displayCheckboxes}"
+									converter="consentStatusConverter" layout="grid" columns="2">
+									<f:selectItems
+										value="#{TemplateController.getMandatoryConsentStates(assignedModule.mandatory)}"
+										var="status"
+										itemLabel="#{TemplateController.getConsentStatusLabel(status)}"
+										itemValue="#{status}"></f:selectItems>
+								</p:selectManyCheckbox>
+							</p:column>
+						</p:dataTable>
+						<div align="right" class="buttonBlock">
+							<p:commandButton value="#{msg['template.selectModules']}" partialSubmit="true" process="modules_table"
+								oncomplete="PF('modulePickerDialog').show();"></p:commandButton><!-- partialSubmit="true" process="modules_table" -->
+						</div>
+						<p:spacer height="4px" width="100%"></p:spacer>
+						<p:outputLabel for="free_text_table" value="Free Text"></p:outputLabel>
+						<p:dataTable id="free_text_table"
+							value="#{TemplateController.selectedTemplate.freeTextDefs}"
+							var="freeText">
+							<p:column headerText="Name">
+								<p:inputText required="true" value="#{freeText.name}"></p:inputText>
+							</p:column>
+							<p:column headerText="Required">
+								<p:selectBooleanCheckbox value="#{freeText.required}"></p:selectBooleanCheckbox>
+							</p:column>
+							<p:column id="type_column" headerText="Type">
+								<p:selectOneMenu value="#{freeText.type}">
+									<p:ajax update="converterStringInput" process="@this"
+										event="change"></p:ajax>
+									<f:selectItem noSelectionOption="true" itemLabel="" />
+									<f:selectItems value="#{TemplateController.freeTextTypes}"
+										var="freeTextType" itemValue="#{freeTextType}"
+										itemLabel="#{TemplateController.getFreeTextTypeLabel(freeTextType)}" />
+								</p:selectOneMenu>
+								<p:outputPanel layout="inline" id="converterStringInput"
+									style="vertical-align: top;margin-left:4px;">
+									<p:outputLabel value="Date Pattern"
+										rendered="#{freeText.type=='Date'}"></p:outputLabel>
+									<p:inputText id="pattern_input"
+										value="#{freeText.converterString}" required="true"
+										rendered="#{freeText.type=='Date'}"></p:inputText>
+								</p:outputPanel>
+
+							</p:column>
+							<p:column>
+								<p:commandButton
+									actionListener="#{TemplateController.removeFreeText(freeText)}"
+									icon="ui-icon ui-icon-close" process="free_text_table" partialSubmit="true"
+									update="free_text_table"></p:commandButton>
+							</p:column>
+						</p:dataTable>
+						<div align="right" class="buttonBlock">
+							<p:commandButton value="#{msg['template.addFreeText']}"
+								actionListener="#{TemplateController.onNewFreeText}"
+								update="free_text_table" immediate="true"></p:commandButton>
+						</div>
+						<p:spacer height="4px" width="100%"></p:spacer>
+						<p:outputLabel for="footer_input"
+							value="#{msg['template.footer']}"></p:outputLabel>
+						<p:inputTextarea style="width:100%" id="footer_input"
+							value="#{TemplateController.selectedTemplate.footer}"></p:inputTextarea>
+						<p:spacer height="4px"></p:spacer>
+
+
+						<h:panelGrid columns="2">
+							<p:commandButton
+								value="#{msg['template.download']} (not available yet)"
+								disabled="true"></p:commandButton>
+							<p:outputPanel>
+								<div align="right">
+									<p:commandButton value="#{TemplateController.editMode? msg['template.save']:msg['template.add']}"
+										actionListener="#{TemplateController.onSaveConsentTemplate()}"
+										update="@form,:table_form:"></p:commandButton>
+									<p:commandButton value="#{msg['general.cancel']}"
+										actionListener="#{TemplateController.refresh()}"
+										update="@form,:table_form:" immediate="true">
+										<p:confirm header="#{msg['general.cancel']}"
+											icon="ui-icon-alert"
+											message="#{msg['template.confirmCancel']}"></p:confirm>
+									</p:commandButton>
+								</div>
+							</p:outputPanel>
+						</h:panelGrid>
+
+					</p:panel>
+				</p:outputPanel>	
+			</h:form>
+		</ui:define>
+	</ui:composition>
+</body>
+</html>

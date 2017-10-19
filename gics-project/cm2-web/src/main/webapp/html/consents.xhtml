@@ -1,0 +1,510 @@
+<!--
+  ###license-information-start###
+  gICS - a Generic Informed Consent Service
+  __
+  Copyright (C) 2014 - 2017 The MOSAIC Project - Institut fuer Community Medicine der
+  							Universitaetsmedizin Greifswald - mosaic-projekt@uni-greifswald.de
+  							concept and implementation
+  							l. geidel
+  							web client
+  							g. weiher
+  							a. blumentritt
+  							please cite our publications
+  							http://dx.doi.org/10.3414/ME14-01-0133
+  							http://dx.doi.org/10.1186/s12967-015-0545-6
+  __
+  This program is free software: you can redistribute it and/or modify
+  it under the terms of the GNU Affero General Public License as published by
+  the Free Software Foundation, either version 3 of the License, or
+  (at your option) any later version.
+  
+  This program is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  GNU General Public License for more details.
+  
+  You should have received a copy of the GNU Affero General Public License
+  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+  ###license-information-end###
+  -->
+<html xmlns="http://www.w3.org/1999/xhtml"
+	xmlns:h="http://java.sun.com/jsf/html"
+	xmlns:f="http://java.sun.com/jsf/core"
+	xmlns:ui="http://java.sun.com/jsf/facelets"
+	xmlns:jstl="http://java.sun.com/jsp/jstl/functions"
+	xmlns:p="http://primefaces.org/ui"
+	xmlns:custom="http://java.sun.com/jsf/composite/ttp">
+
+<body>
+	<ui:composition template="/template/cm-template.xhtml">
+		<ui:define name="navigationBar">
+			<p:tabMenu activeIndex="4">
+				<p:menuitem value="#{msg['navigation.domain']}" url="domain.xhtml" />
+				<p:menuitem value="#{msg['navigation.policy']}" url="policies.xhtml" />
+				<p:menuitem value="#{msg['navigation.module']}" url="modules.xhtml" />
+				<p:menuitem value="#{msg['navigation.template']}"
+					url="consent-template.xhtml" />
+				<p:menuitem value="#{msg['navigation.consent']}"
+					url="consents.xhtml" />
+				<p:menuitem value="#{msg['navigation.idSearch']}"
+					url="id_search.xhtml" />
+			</p:tabMenu>
+		</ui:define>
+		<ui:define name="navigationPanel">
+			<h:form id="domain_form">
+				<p:dataTable widgetVar="domain_navigation" var="domain"
+					value="#{ConsentController.domains}" rowKey="#{domain.name}"
+					selectionMode="single"
+					filteredValue="#{ConsentController.filteredDomains}"
+					styleClass="navigationTree">
+					<p:ajax listener="#{ConsentController.onDomainSelect}"
+						event="rowSelect" update=":table_form,:create_form:,:preview:" />
+					<f:facet name="header">
+						<div align="center">#{msg['general.selectDomain']}</div>
+						<p:separator />
+						<div align="right">
+							<p:outputPanel>
+								<p:inputText id="globalFilter"
+									onkeyup="PF('domain_navigation').filter();" style="width:150px" />
+								<p:watermark for="globalFilter"
+									value="#{msg['general.filterDomains']}"></p:watermark>
+
+							</p:outputPanel>
+						</div>
+					</f:facet>
+					<p:column filterBy="#{domain.label}" filterMatchMode="contains"
+						filterStyle="display:none;">
+								<h:outputText id="domain_display" title="#{domain.label}" value="#{domain.label}" converter="TrimConverter"/><br/>
+						<h:outputText value="#{domain.name.equals(domain.label)?'':(domain.name)}" style=" opacity: 0.35;"/>
+						<p:tooltip for="domain_display"></p:tooltip>
+							</p:column>
+				</p:dataTable>
+			</h:form>
+		</ui:define>
+		<ui:define name="contentPanel">
+			<h:form id="table_form">
+
+				<h:outputText rendered="#{empty ConsentController.selectedDomain}"
+					value="#{msg['general.pleaseSelectDomain']}" />
+				<p:outputPanel rendered="#{not empty ConsentController.selectedDomain}">
+					<h:outputText styleClass="headline"
+						value="#{msg['consent.tableHeader']}, #{msg['general.entriesFound']}#{ConsentController.consents.size()}" />
+					<p:dataTable widgetVar="consent_table" var="consent"
+						value="#{ConsentController.consents}" selectionMode="single"
+						sortBy="#{consent.key.consentDate}" sortOrder="descending"
+						selection="#{ConsentController.selectedConsent}"
+						paginator="true" rows="10" paginatorAlwaysVisible="false"
+						paginatorPosition="bottom"
+						currentPageReportTemplate="Page {currentPage}({startRecord}-{endRecord} of {totalRecords})"
+						paginatorTemplate=" {JumpToPageDropdown}  {FirstPageLink} {PreviousPageLink} {CurrentPageReport} {NextPageLink} {LastPageLink} {RowsPerPageDropdown}"
+						rowsPerPageTemplate="10,20,30,40,50"
+						filteredValue="#{ConsentController.filteredConsents}"
+						rowKey="#{consent.key}">
+						<f:facet name="header">
+							<div align="right">
+								<p:outputPanel>
+									<p:inputText id="globalFilter"
+										onkeyup="PF('consent_table').filter();" style="width:150px" />
+									<p:watermark for="globalFilter"
+										value="#{msg['consent.filter']}"></p:watermark>
+
+								</p:outputPanel>
+							</div>
+						</f:facet>
+						<p:ajax event="rowSelect" update="@form,:preview"
+							listener="#{ConsentController.onConsentSelect}"></p:ajax>
+						<p:column headerText="#{msg['consent.date']}"
+							sortBy="#{consent.key.consentDate}" filterStyle="display:none"
+							filterMatchMode="contains" filterBy="#{consent.key.consentDate}">
+							<h:outputText value="#{consent.key.consentDate}" >
+								<f:convertDateTime pattern="HH:mm:ss MM-dd-yyyy" />
+							</h:outputText>
+						</p:column>
+						<p:column headerText="#{msg['modules.signerIds']}"
+							filterStyle="display:none" filterMatchMode="contains"
+							filterBy="#{consent.key.signerIds}">
+							<p:dataList value="#{consent.key.signerIds}" var="id" type="definition">
+								#{id.idType}: #{id.id}
+							</p:dataList>
+						</p:column>
+						<p:column headerText="#{msg['template.version']}"
+							sortBy="#{consent.key.consentTemplateKey.version}"
+							filterStyle="display:none" filterMatchMode="contains"
+							filterBy="#{consent.key.consentTemplateKey.version}">			
+							<h:outputText value="#{consent.key.consentTemplateKey.version}" />
+						</p:column>
+						<p:column headerText="#{msg['consent.scan']}"
+							styleClass="nonExpandingColumn"
+							sortBy="#{consent.scanBase64}"
+							filterStyle="display:none" filterMatchMode="contains"
+							filterBy="#{consent.scanBase64}">
+							<h:outputText
+								value="#{not empty consent.scanBase64? msg['general.yes'] : msg['general.no']}" />
+						</p:column>
+						<p:column styleClass="nonExpandingColumn">
+							<p:commandButton actionListener="#{ConsentController.onShowDetails(consent)}" update="@form:details_dialog" icon="ui-icon ui-icon-search" oncomplete="PF('details_dialog').show()"></p:commandButton>
+						</p:column>
+					</p:dataTable>
+					<p:dialog widgetVar="details_dialog" id="details_dialog" header="Detail View" height="500" >
+						<p:outputPanel id="ic_details" rendered="#{not empty ConsentController.detailsConsent}">
+								<h:outputText value="General"  styleClass="headline"/>
+								 <p:panelGrid columns="2" columnClasses="labelColumn">
+									<h:outputText value="Persisted at"/>
+									<h:outputText value="#{ConsentController.detailsConsent.key.consentDate}">
+										<f:convertDateTime pattern="HH:mm:ss MM-dd-yyyy" />
+									</h:outputText>
+													
+									<h:outputText value="#{msg['consent.template']}:"/>
+									<h:outputText value="#{ConsentController.detailsConsent.key.consentTemplateKey.name}, Version #{ConsentController.detailsConsent.key.consentTemplateKey.version}" />																																
+								</p:panelGrid>
+								<h:outputText value="Custom Fields" styleClass="headline"/>
+									<p:dataTable styleClass="hideTableHeader"  value="#{ConsentController.detailsConsent.freeTextVals.entrySet()}" var="freeText">
+										<p:column styleClass="labelColumn">
+											#{freeText.key}
+										</p:column>
+										<p:column style="max-width:400px">
+											<h:outputText value="#{freeText.value}"/>
+										</p:column>
+									</p:dataTable>
+								<h:outputText value="Modules" styleClass="headline"/>
+									<p:dataTable styleClass="hideTableHeader" var="moduleStatus" value="#{ConsentController.detailsConsent.moduleStates.entrySet()}">
+										<p:column styleClass="labelColumn">
+											#{moduleStatus.key.name}, Version #{moduleStatus.key.version}
+										</p:column>
+										<p:column>
+											#{moduleStatus.value.consentStatusType}
+										</p:column>
+								</p:dataTable>
+								<h:outputText value="Signer" styleClass="headline"/>
+								<p:panelGrid columns="2"  columnClasses="labelColumn">
+									<h:outputText value="Ids"/>
+									<h:dataTable var="signerId" value="#{ConsentController.detailsConsent.key.signerIds}">
+										<h:column columnClasses="labelColumn">
+											#{signerId.idType}:
+										</h:column>
+										<h:column>
+											#{signerId.id}
+										</h:column>
+									</h:dataTable>
+								
+									<h:outputText value="Signed at"/>
+									<h:outputText value="#{ConsentController.detailsConsent.patientSigningDate}">
+										<f:convertDateTime pattern="MM-dd-yyyy" />
+									</h:outputText>
+													
+									<h:outputText value="Signature"/>
+									<p:graphicImage height="100px"
+											value="#{mediaProvider.patientSignatureStream}" cache="false" rendered="#{not empty ConsentController.detailsConsent.patientSignatureBase64}"></p:graphicImage>																	
+								</p:panelGrid>
+								<h:outputText value="Physican" styleClass="headline"/>
+								<p:panelGrid columns="2"  columnClasses="labelColumn">
+									<h:outputText value="Id"/>
+									<h:outputText value="#{ConsentController.detailsConsent.physicanId}" />
+																		
+									<h:outputText value="Signed at"/>
+									<h:outputText value="#{ConsentController.detailsConsent.physicanSigningDate}">
+										<f:convertDateTime pattern="MM-dd-yyyy" />
+									</h:outputText>
+													
+									<h:outputText value="Signature"/>
+									<p:graphicImage height="100px"
+											value="#{mediaProvider.physicianSignatureStream}" cache="false" rendered="#{not empty ConsentController.detailsConsent.physicanSignatureBase64}"></p:graphicImage>																	
+								</p:panelGrid>
+								<div align="right" class="buttonBlock">
+									<p:commandButton value="Close" onclick="PF('details_dialog').hide()">
+									</p:commandButton>
+								</div>
+						</p:outputPanel>
+					</p:dialog>
+					<p:outputPanel styleClass="buttonBlock" style="float:left;">
+						<div align="left">
+							<p:commandButton
+								disabled="#{empty ConsentController.selectedConsent or not empty ConsentController.selectedConsent.scanBase64}"
+								value="#{msg['consent.addScan']}"
+								onclick="PF('file_dialog').show()"></p:commandButton>
+							<p:commandButton id="appemd_scan_button"
+								disabled="#{empty ConsentController.selectedConsent or empty ConsentController.selectedConsent.scanBase64}"
+								value="#{msg['consent.downloadScan']}" ajax="false"
+								onclick="PrimeFaces.monitorDownload(start, stop)">
+								<p:fileDownload value="#{mediaProvider.consentPDFStream}" />
+							</p:commandButton>
+						</div>
+					</p:outputPanel>
+					<p:outputPanel styleClass="buttonBlock" style="overflow:hidden;">
+						<div align="right">
+							<p:commandButton
+								disabled="#{empty ConsentController.selectedDomain}"
+								actionListener="#{ConsentController.onAddConsent}"
+								update="@form,:create_form:,:preview"
+								value="#{msg['consent.addConsent']}"></p:commandButton>
+							<p:separator styleClass="verticalSeparator"></p:separator>
+							<p:commandButton actionListener="#{ConsentController.refresh()}"
+								update="@form,:create_form:,:preview"
+								value="#{msg['general.refresh']}">
+							</p:commandButton>
+						</div>
+					</p:outputPanel>
+					<!-- </h:panelGrid> -->
+				</p:outputPanel>
+			</h:form>
+			<h:form id="create_form" enctype="multipart/form-data">
+				<p:focus context="create_form"/>
+				<p:outputPanel
+					rendered="#{not empty ConsentController.selectedConsent}">
+					<p:spacer height="10px" width="100%"></p:spacer>
+					<h:outputText value="#{msg['consent.addConsent']}"  styleClass="headline"/>
+					<p:panel styleClass="noBackgroundColor">
+						<p:outputLabel value="#{msg['consent.template']}" />
+						<br />
+						<p:selectOneMenu id="template_select" required="true"
+							value="#{ConsentController.selectedConsent.key.consentTemplateKey}"
+							converter="#{TemplateKeyConverter}">
+							<p:ajax update="@(form:not(.signerPanel*))"
+								listener="#{ConsentController.onTemplateChanged}"></p:ajax>
+							<f:selectItem noSelectionOption="true"
+								itemLabel="#{msg['consent.selectTemplate']}" itemValue="" />
+							<f:selectItems value="#{ConsentController.templateKeys}"
+								var="key" itemLabel="#{key.name}, #{key.version}"
+								itemValue="#{key}" />
+						</p:selectOneMenu>
+						<p:outputPanel styleClass="inputColumn">
+							<p:spacer height="4px"></p:spacer>
+							<br />
+							<p:outputLabel value="#{msg['template.header']}"></p:outputLabel>
+							<br />
+							<p:inputTextarea readonly="true"
+								style="background:none repeat scroll 0 0 #D3D3D3"
+								value="#{ConsentController.template.header}"></p:inputTextarea>
+							<p:spacer height="4px"></p:spacer>
+							<br />
+							<p:outputLabel value="#{msg['consent.modules']}"></p:outputLabel>
+							<p:panel>
+								<h:outputText value="No template selected" rendered="#{empty ConsentController.selectedConsent.key.consentTemplateKey}"/>
+								<ui:repeat value="#{ConsentController.moduleStates}"
+									var="moduleStatus" varStatus="iterrationStatus">
+									<b> <h:outputText
+											value="#{moduleStatus.assignedModule.module.key.name},Version #{moduleStatus.assignedModule.module.key.version}" />
+									</b>
+									<br />
+									<h:outputText
+										value="#{moduleStatus.assignedModule.module.text}" />
+									<br />
+									<p:selectOneRadio required="true"
+										label="#{moduleStatus.assignedModule.module.key.name}"
+										value="#{moduleStatus.status}">
+										<f:selectItems
+											value="#{moduleStatus.assignedModule.displayCheckboxes}"
+											var="status"
+											itemLabel="#{ConsentController.getConsentStatusLabel(status)}" />
+									</p:selectOneRadio>
+									<p:separator rendered="#{not iterrationStatus.last}"></p:separator>
+								</ui:repeat>
+							</p:panel>
+							<p:spacer height="4px"></p:spacer>
+							<br />
+							<p:outputLabel value="#{msg['consent.customInputs']}"></p:outputLabel>
+							<p:panel>
+								<h:outputText value="#{msg['consent.noTemplate']}" rendered="#{empty ConsentController.selectedConsent.key.consentTemplateKey}"/>
+								<h:outputText rendered="#{empty ConsentController.freeTexts and not empty ConsentController.selectedConsent.key.consentTemplateKey}" value="No Custom Fields defined." />
+								<ui:repeat var="freeText" value="#{ConsentController.freeTexts}">
+									<h:panelGrid columns="2" columnClasses="labelColumn,inputColumn"
+										rendered="#{freeText.freeTextDef.type=='String'}">
+										<p:outputLabel for="text_input"
+											value="#{freeText.freeTextDef.name}" />								
+											<p:inputTextarea id="text_input" value="#{freeText.value}"
+											required="#{freeText.freeTextDef.required}" ></p:inputTextarea>								
+									</h:panelGrid>
+									<h:panelGrid columns="2" columnClasses="labelColumn"
+										rendered="#{freeText.freeTextDef.type=='Date'}">
+										<p:outputLabel for="date_input"
+											value="#{freeText.freeTextDef.name}" />
+										<p:calendar id="date_input"
+											required="#{freeText.freeTextDef.required}"
+											pattern="#{freeText.freeTextDef.converterString}"
+											converter="FreeDateConverter" value="#{freeText.value}"
+											showOn="button">
+										</p:calendar>
+									</h:panelGrid>
+									<h:panelGrid columns="2" columnClasses="labelColumn,inputColumn"
+										rendered="#{freeText.freeTextDef.type=='Integer'}">
+										<p:outputLabel for="integer_input"
+											value="#{freeText.freeTextDef.name}" />
+										<p:inputText id="integer_input" value="#{freeText.value}"
+											converter="javax.faces.Integer"
+											required="#{freeText.freeTextDef.required}">
+										</p:inputText>
+									</h:panelGrid>
+									<h:panelGrid columns="2" columnClasses="labelColumn,inputColumn"
+										rendered="#{freeText.freeTextDef.type=='Double'}">
+										
+										<p:outputLabel for="double_input"
+											value="#{freeText.freeTextDef.name}" />
+										<p:inputText id="double_input" value="#{freeText.value}"
+											converter="javax.faces.Double"
+											required="#{freeText.freeTextDef.required}">
+										</p:inputText>
+									</h:panelGrid>																		
+								</ui:repeat>
+							</p:panel>
+							<p:spacer height="4px"></p:spacer>
+							<br />
+							<h:outputText value="Patient" />
+							<p:panel styleClass="signerPanel">
+								<h:dataTable
+									value="#{ConsentController.selectedConsent.key.signerIds}"
+									var="signerId" columnClasses="labelColumn,inputColumn">
+									<h:column>
+										<p:outputLabel for="signer_input" value="#{signerId.idType}"></p:outputLabel>
+									</h:column>
+									<h:column>
+										<p:inputText label="#{signerId.id}" required="true" id="signer_input" value="#{signerId.id}"></p:inputText>
+									</h:column>
+								</h:dataTable>
+								<h:panelGrid columns="2" columnClasses="labelColumn">
+									<p:outputLabel for="patient_calendar"
+										value="#{msg['consent.patientDate']}"></p:outputLabel>
+									<p:calendar id="patient_calendar" pattern="dd.MM.yyyy"
+										required="true"
+										value="#{ConsentController.selectedConsent.patientSigningDate}"
+										showOn="button" />
+									<p:outputLabel for="patient_signature">Signature</p:outputLabel>
+									<p:outputPanel>
+										<p:outputPanel id="patient_signature_img">
+											<p:graphicImage rendered="#{not empty ConsentController.selectedConsent.patientSignatureBase64}"
+												height="100px"
+												value="#{mediaProvider.patientSignatureStream}" cache="false"></p:graphicImage>
+										</p:outputPanel>									
+										<p:fileUpload  id="patient_signature" required="true"  
+											allowTypes="/(\.|\/)(png)$/" auto="true"
+											multiple="false" uploadLabel="#{msg['consent.upload']}" invalidFileMessage="#{msg['consent.message.notPNG']}" styleClass="noProcess"
+											label="#{msg['consent.signatureUpload']}"
+											fileUploadListener="#{ConsentController.handlePatientSignatureUplaod}"
+											process="patient_signature" update="patient_signature_img">
+										</p:fileUpload>
+									</p:outputPanel>
+								</h:panelGrid>
+							</p:panel>
+							<p:spacer height="4px"></p:spacer>
+							<br />
+							<h:outputText value="Physician" />
+							<p:panel styleClass="signerPanel">
+								<!-- <p:outputLabel for="signerId_input"
+									value="#{msg['consent.patientID']}" />
+								<p:inputText id="signerId_input" style="width:100%"
+									required="true"
+									value="#{ConsentController.selectedConsent.key.signerIds}"></p:inputText> -->
+								<h:panelGrid columns="2" columnClasses="labelColumn,inputColumn">
+									<p:outputLabel for="physicianId_input"
+										value="#{msg['consent.physicianID']}" />
+									<p:inputText style="width:100%" id="physicianId_input"
+										required="true"
+										value="#{ConsentController.selectedConsent.physicanId}"></p:inputText>
+
+								</h:panelGrid>
+								<h:panelGrid columns="2" columnClasses="labelColumn">
+									<p:outputLabel for="physician_calendar"
+										value="#{msg['consent.physicianDate']}"></p:outputLabel>
+									<p:calendar id="physician_calendar" pattern="dd.MM.yyyy"
+										required="true"
+										value="#{ConsentController.selectedConsent.physicanSigningDate}"
+										showOn="button" />
+									<p:outputLabel for="physican_signature" >Signature</p:outputLabel>
+									<p:outputPanel>
+										<p:outputPanel id="physican_signature_img" >
+											<p:graphicImage rendered="#{not empty ConsentController.selectedConsent.physicanSignatureBase64}"
+												height="100px"
+												value="#{mediaProvider.physicianSignatureStream}" cache="false"></p:graphicImage>
+										</p:outputPanel>
+										<p:fileUpload id="physican_signature" styleClass="noProcess" required="true"   
+											allowTypes="/(\.|\/)(png)$/" auto="true"
+											multiple="false" uploadLabel="#{msg['consent.upload']}"
+											label="#{msg['consent.signatureUpload']}"
+											fileUploadListener="#{ConsentController.handlePhysicianSignatureUplaod}"
+											process="physican_signature" update="physican_signature_img">
+										</p:fileUpload>
+									</p:outputPanel>
+								</h:panelGrid>
+							</p:panel>
+							<p:spacer height="4px"></p:spacer>
+							<br />
+							<p:commandButton style="width:auto" id="append_scan_button" type="button"
+									immediate="true" value="#{msg['consent.appendScan']}"
+									onclick="PF('upload_panel').show();"></p:commandButton>
+							<p:spacer height="4px"></p:spacer>
+							<br />
+							<p:outputLabel value="#{msg['template.footer']}"></p:outputLabel>
+							<p:inputTextarea readonly="true"
+								style="width:100%;background:none repeat scroll 0 0 #D3D3D3"
+								value="#{ConsentController.template.footer}"></p:inputTextarea>
+							<p:spacer height="4px"></p:spacer>
+							<br />
+							<div align="right" class="buttonBlock">
+								<p:commandButton value="#{msg['consent.saveConsent']}"
+									actionListener="#{ConsentController.onSaveConsent}"
+									update="@form,:table_form:,:preview"></p:commandButton>
+								<p:commandButton value="#{msg['general.cancel']}"
+									actionListener="#{ConsentController.refresh()}"
+									immediate="true" process="@(form :not(.noProcess))" update="@form,:table_form:,:preview">
+									<p:confirm header="#{msg['general.cancel']}"
+										icon="ui-icon-alert" message="#{msg['consent.confirmCancel']}"></p:confirm>
+								</p:commandButton>
+							</div>
+						</p:outputPanel>
+					</p:panel>
+				</p:outputPanel>
+			</h:form>
+			<p:overlayPanel for=":create_form:append_scan_button"
+				widgetVar="upload_panel" hideEffect="fade">
+				<h:form enctype="multipart/form-data">
+					<h:outputText value="#{msg.pdfOnly}"/>
+					<p:spacer width="100%" height="4px"></p:spacer>
+					<p:fileUpload allowTypes="/(\.|\/)(pdf||jpe?g)$/" auto="true" multiple="false"
+						uploadLabel="#{msg['consent.upload']}"
+						sizeLimit="4194304"
+						label="#{msg['consent.chooseScan']}"
+						fileUploadListener="#{ConsentController.handleFileUpload}"
+						update=":preview" oncomplete="PF('upload_panel').hide()">
+					</p:fileUpload>
+				</h:form>
+			</p:overlayPanel>
+			<p:overlayPanel widgetVar="file_dialog"
+				for=":table_form:appemd_scan_button" hideEffect="fade">
+				<h:form enctype="multipart/form-data">
+					<h:outputText value="#{msg.pdfOnly}"/>
+					<p:spacer width="100%" height="4px"></p:spacer>
+					<p:fileUpload allowTypes="/(\.|\/)(pdf||jpe?g)$/" multiple="false" 
+						sizeLimit="4194304"
+						uploadLabel="#{msg['consent.upload']}"
+						label="#{msg['consent.chooseScan']}"
+						fileUploadListener="#{ConsentController.handleScanUpload}"
+						update=":preview,:table_form"
+						oncomplete="PF('file_dialog').hide()">
+					</p:fileUpload>
+				</h:form>
+			</p:overlayPanel>
+			
+		</ui:define>
+		<ui:define name="bottom_panel">
+			<h:form id="preview">
+				<p:outputPanel
+					rendered="#{not empty ConsentController.selectedConsent}">
+					<h:outputText value="#{msg['general.preview']}" />
+					<br />
+					<h:outputText
+						rendered="#{empty ConsentController.selectedConsent.scanBase64}"
+						value="#{msg['general.noPreview']}" />
+					<p:media
+						rendered="#{not empty ConsentController.selectedConsent.scanBase64}"
+						width="100%" height="600px" player="pdf"
+						value="#{mediaProvider.consentPDFStream}">
+						pdf not supported
+						<p:commandLink value="Click" ajax="false">
+							<p:fileDownload value="#{mediaProvider.consentPDFStream}"></p:fileDownload>
+						</p:commandLink>
+					</p:media>
+				</p:outputPanel>
+			</h:form>
+		</ui:define>
+	</ui:composition>
+</body>
+</html>

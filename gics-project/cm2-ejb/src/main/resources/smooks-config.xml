@@ -1,0 +1,100 @@
+<?xml version="1.0"?>
+<!--
+  ###license-information-start###
+  gICS - a Generic Informed Consent Service
+  __
+  Copyright (C) 2014 - 2017 The MOSAIC Project - Institut fuer Community Medicine der
+  							Universitaetsmedizin Greifswald - mosaic-projekt@uni-greifswald.de
+  							concept and implementation
+  							l. geidel
+  							web client
+  							g. weiher
+  							a. blumentritt
+  							please cite our publications
+  							http://dx.doi.org/10.3414/ME14-01-0133
+  							http://dx.doi.org/10.1186/s12967-015-0545-6
+  __
+  This program is free software: you can redistribute it and/or modify
+  it under the terms of the GNU Affero General Public License as published by
+  the Free Software Foundation, either version 3 of the License, or
+  (at your option) any later version.
+  
+  This program is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  GNU General Public License for more details.
+  
+  You should have received a copy of the GNU Affero General Public License
+  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+  ###license-information-end###
+  -->
+
+<smooks-resource-list xmlns="http://www.milyn.org/xsd/smooks-1.1.xsd" xmlns:jb="http://www.milyn.org/xsd/smooks/javabean-1.2.xsd">
+
+	<jb:bean beanId="persons" class="java.util.HashMap" createOnElement="ClinicalDocument">
+		<jb:wiring property="patient" beanIdRef="patient" />
+		<jb:wiring property="physican" beanIdRef="physican" />
+		<jb:wiring property="guardian" beanIdRef="guardian" />
+	</jb:bean>
+
+	<jb:bean beanId="consents" class="java.util.ArrayList" createOnElement="ClinicalDocument">
+		<jb:wiring beanIdRef="consent" />
+	</jb:bean>
+
+	<jb:bean beanId="free_texts" class="java.util.ArrayList" createOnElement="ClinicalDocument">
+		<jb:wiring beanIdRef="freeText" />
+	</jb:bean>
+
+	<jb:bean beanId="values" class="java.util.HashMap" createOnElement="ClinicalDocument">
+		<jb:value property="case_id" data="ClinicalDocument/setId/@extension" />
+		<jb:value property="doc_id" data="ClinicalDocument/author/assignedAuthor/id/@extension" />
+		<jb:value property="consent_type" data="ClinicalDocument/consentType/@value" />
+		<jb:value property="mpi" data="ClinicalDocument/recordTarget/patientRole/id/@extension" />
+		<jb:value property="date" decoder="Date" data="ClinicalDocument/effectiveTime/@value" default="1970-01-02-00:00:00">
+			<jb:decodeParam name="format">yyyy-MM-dd-HH:mm:ss</jb:decodeParam>
+			<jb:decodeParam name="locale-language">de</jb:decodeParam>
+			<jb:decodeParam name="locale-country">DE</jb:decodeParam>
+		</jb:value>
+	</jb:bean>
+
+	<jb:bean beanId="patient" class="java.util.HashMap" createOnElement="legalAuthenticator">
+		<jb:value property="date" decoder="Date" data="legalAuthenticator/time/@value" default="1970-01-02-00:00:00">
+			<jb:decodeParam name="format">yyyy-MM-dd-HH:mm:ss</jb:decodeParam>
+			<jb:decodeParam name="locale-language">de</jb:decodeParam>
+			<jb:decodeParam name="locale-country">DE</jb:decodeParam>
+		</jb:value>
+		<jb:value property="signature" data="legalAuthenticator/assignedEntity/assignedWetSignature/text" />
+	</jb:bean>
+
+	<jb:bean beanId="physican" class="java.util.HashMap" createOnElement="authenticator">
+		<jb:value property="date" decoder="Date" data="authenticator/time/@value" default="1970-01-02-00:00:00">
+			<jb:decodeParam name="format">yyyy-MM-dd-HH:mm:ss</jb:decodeParam>
+			<jb:decodeParam name="locale-language">de</jb:decodeParam>
+			<jb:decodeParam name="locale-country">DE</jb:decodeParam>
+		</jb:value>
+		<jb:value property="signature" data="authenticator/assignedEntity/assignedWetSignature/text" />
+	</jb:bean>
+
+	<jb:bean beanId="guardian" class="java.util.HashMap" createOnElement="guardian">
+		<jb:value property="date" decoder="Date" data="guardian/time/@value" default="1970-01-02-00:00:00">
+			<jb:decodeParam name="format">yyyy-MM-dd-HH:mm:ss</jb:decodeParam>
+			<jb:decodeParam name="locale-language">de</jb:decodeParam>
+			<jb:decodeParam name="locale-country">DE</jb:decodeParam>
+		</jb:value>
+		<jb:value property="signature" data="guardian/assignedEntity/assignedWetSignature/text" />
+	</jb:bean>
+
+	<jb:bean beanId="consent" class="java.util.HashMap" createOnElement="section">
+		<jb:value property="name" data="section/id/@extension" />
+		<jb:value property="title" data="section/title" />
+		<jb:value property="text" data="section/text" />
+		<jb:value property="version" data="section/version" />
+		<jb:value property="consented" data="section/consented/@value" />
+	</jb:bean>
+
+	<jb:bean beanId="freeText" class="java.util.HashMap" createOnElement="freetext">
+		<jb:value property="name" data="freetext/@name" />
+		<jb:value property="text" data="freetext" />
+	</jb:bean>
+
+</smooks-resource-list>
