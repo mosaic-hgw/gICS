@@ -4,16 +4,21 @@ package org.emau.icmvc.ganimed.ttp.cm2.dto;
  * ###license-information-start###
  * gICS - a Generic Informed Consent Service
  * __
- * Copyright (C) 2014 - 2017 The MOSAIC Project - Institut fuer Community Medicine der
- * 							Universitaetsmedizin Greifswald - mosaic-projekt@uni-greifswald.de
+ * Copyright (C) 2014 - 2018 The MOSAIC Project - Institut fuer Community
+ * 							Medicine of the University Medicine Greifswald -
+ * 							mosaic-projekt@uni-greifswald.de
+ * 
  * 							concept and implementation
- * 							l. geidel
+ * 							l.geidel
  * 							web client
- * 							g. weiher
- * 							a. blumentritt
+ * 							a.blumentritt, m.bialke
+ * 
+ * 							Selected functionalities of gICS were developed as part of the MAGIC Project (funded by the DFG HO 1937/5-1).
+ * 
  * 							please cite our publications
  * 							http://dx.doi.org/10.3414/ME14-01-0133
  * 							http://dx.doi.org/10.1186/s12967-015-0545-6
+ * 							http://dx.doi.org/10.3205/17gmds146
  * __
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -34,6 +39,8 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.emau.icmvc.ganimed.ttp.cm2.dto.enums.ConsentTemplateType;
+
 /**
  * ein consent template kann mehrere module (mit jeweils mehreren policies) enthalten, es entspricht dem elektronischen aequivalent eines nicht ausgefuellten konsentdokumentes
  * 
@@ -42,12 +49,13 @@ import java.util.List;
  */
 public class ConsentTemplateDTO implements Serializable {
 
-	private static final long serialVersionUID = -6534801792556042050L;
+	private static final long serialVersionUID = -875195702630175964L;
 	private ConsentTemplateKeyDTO key;
 	private String title;
 	private String propertiesString;
 	private String comment;
 	private String externProperties;
+	private ConsentTemplateType type;
 	private String header;
 	private String footer;
 	private String scanBase64;
@@ -65,7 +73,7 @@ public class ConsentTemplateDTO implements Serializable {
 	}
 
 	public ConsentTemplateDTO(ConsentTemplateKeyDTO key, String title, String propertiesString, String comment, String externProperties,
-			String header, String footer, String scanBase64, String scanFileType, List<AssignedModuleDTO> assignedModules,
+			ConsentTemplateType type, String header, String footer, String scanBase64, String scanFileType, List<AssignedModuleDTO> assignedModules,
 			List<FreeTextDefDTO> freeTextDefs) {
 		super();
 		this.key = key;
@@ -73,6 +81,7 @@ public class ConsentTemplateDTO implements Serializable {
 		this.propertiesString = propertiesString;
 		this.comment = comment;
 		this.externProperties = externProperties;
+		this.type = type;
 		this.header = header;
 		this.footer = footer;
 		this.scanBase64 = scanBase64;
@@ -121,6 +130,14 @@ public class ConsentTemplateDTO implements Serializable {
 
 	public void setExternProperties(String externProperties) {
 		this.externProperties = externProperties;
+	}
+
+	public ConsentTemplateType getType() {
+		return type;
+	}
+
+	public void setType(ConsentTemplateType type) {
+		this.type = type;
 	}
 
 	public String getHeader() {
@@ -191,6 +208,7 @@ public class ConsentTemplateDTO implements Serializable {
 		int result = 1;
 		result = prime * result + ((comment == null) ? 0 : comment.hashCode());
 		result = prime * result + ((externProperties == null) ? 0 : externProperties.hashCode());
+		result = prime * result + ((type == null) ? 0 : type.hashCode());
 		result = prime * result + ((footer == null) ? 0 : footer.hashCode());
 		result = prime * result + ((header == null) ? 0 : header.hashCode());
 		result = prime * result + ((key == null) ? 0 : key.hashCode());
@@ -227,6 +245,11 @@ public class ConsentTemplateDTO implements Serializable {
 			if (other.externProperties != null)
 				return false;
 		} else if (!externProperties.equals(other.externProperties))
+			return false;
+		if (type == null) {
+			if (other.type != null)
+				return false;
+		} else if (!type.equals(other.type))
 			return false;
 		if (footer == null) {
 			if (other.footer != null)
@@ -286,6 +309,8 @@ public class ConsentTemplateDTO implements Serializable {
 		sb.append(comment);
 		sb.append("', extern properties '");
 		sb.append(externProperties);
+		sb.append("', type '");
+		sb.append(type);
 		sb.append("', properties '");
 		sb.append(propertiesString);
 		sb.append("', ");

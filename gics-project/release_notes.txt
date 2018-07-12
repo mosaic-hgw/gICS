@@ -1,0 +1,230 @@
+
+RELEASE NOTES
+
+generic Informed Consent Service gICS
+
+Date: 2018-07-11
+
+--------------------------------------------------------------------------------
+
+*** VERSION 2.8.5***
+
+
+ADDED
+- [GICS-200] Consentsuche nach Signer-Id (nicht nur Filter)
+- [GICS-194] Nachträgliches hinzufügen von SignerIds
+- [GICS-102] Angabe von external Properties bei Modulzuordnung im Template ermöglichen
+- [GICS-204] Modul Auswahloptionen bei Templateerstellung sortieren
+- [GICS-199] Formularbasierter Login
+- Responsive Design für alle Seiten
+- Willkommen Text
+- Info Text
+- neues Logo
+- Fehlende Authorangaben
+- Material Design Icons
+- gras create und init script
+- weiße Tags in Consent Details für Modulstatus die keiner Zustimmung/Ablehnung entsprechen
+
+CHANGED
+- [GICS-203] Consentliste: Versteckte Spalten entfernen
+- Consentseite und Suchergebnisse refactored (Modi)
+- Doppelten Scan Dialog Code entfernt
+- CSS aus consents.xhtml in extra Datei verschoben
+- Consent Details optisch überarbeitet
+- ttp-web-common Version 2.4.0
+- Primefaces auf 6.2 aktualisiert
+- wutka-dtdparser kommt nun aus Maven Repository
+
+FIXED
+- [GICS-188] Encoding Problem bei export und import von fhir xml (UTF-8) gelöst
+- In seltenen Fällen wurde beim Drucken das falsche Template selektiert
+- Titel von Modul Auswahloptionen
+- NPE Beim Aufruf der Domänenverwaltung wenn keine Domäne vorhanden ist
+- Bitte Warten Hinweis beim Filtern von sehr großen Listen flackerte
+- Consent Speichern Button entfernt, wenn noch kein Template Typ ausgewählt ist
+- [GICS-188] obsoleten kommentar entfernt
+- Domänen werden nicht aktualisiert bei Hinzufügen über SOAP
+
+--------------------------------------------------------------------------------
+
+
+***VERSION 2.8.4***
+
+
+MINOR copyright updated
+
+ATTENTION
+- Die Packagebezeichnung des Webprojektes hat sich von org.emau.icmv zu org.emau.icmvc geändert. Das Logging in der standalone.xml muss entsprechend angepasst werden.
+
+ADDED
+- [GICS-93] Automatische Erkennung von papierbasiertes Einwilligungen (auf Basis von Templates erstellt)
+- [GICS-103] Anzeige ob PatientSignature is from Guardian
+- [GICS-139] Generierung FHIR Export je Domain
+- [GICS-158] Scanvorschau anzeigen
+- [GICS-177] Darstellung der Module-Policy-Hierarchie
+- [GICS-186] Version 2.7.x integrieren
+	o [GICS-125] Scan ersetzen
+- [GICS-188] Erweiterter Export auch im Frontend nutzbar machen
+
+CHANGED
+- [GICS-139] Generierung FHIR Export je Domain (ImportFormat in ExchangeFormat umbenannt)
+- [GICS-181] Übersetzung von 'Widerruf' korrigieren
+- [GICS-185] ValidateConsentProzessor Warning statt Error
+
+FIXED
+- [GICS-147] Layout verschiebt sich beim Hochladen von langen Unterschriften
+- [GICS-149] Blocksatz im Editor funktioniert nicht
+- [GICS-153] Einige Felder werden bei Validierungsfehler nicht gespeichert
+
+*** VERSION 2.8.2 ***
+
+FIXED
+- [GICS-180] Fehler bei Domänenwechsel
+
+--------------------------------------------------------------------------------
+
+
+*** VERSION 2.8.1 ***
+
+ADDED
+- [GICS-155] Kommentar und externe Eigenschaften hinzufügen
+- [GICS-156] Invalidieren von Einwilligung/Widerruf/Ablehnung
+- [GICS-157] Druck mehrerer Vorlagen mit Signer IDs
+- [GICS-159] Statistik Graphendarstellung
+- [GICS-160] Automatischer Scan Upload beim Einlesen einer Vorlage
+- [GICS-161] (Teil von GICS-178) Erkennen von Template und Signer IDs aus QR-Code
+- [GICS-162] (Teil von GICS-159) Statistik Graphen download
+- [GICS-179] Scan Upload beim Ausfüllen eines Consents
+- Progressbar Template Vorlagenscan
+- Dateiname sollte TemplateKey enthalten beim Druck von Einwilligungen und Templates
+
+CHANGED
+- [GICS-94] Modul-Policy und Template-Modul Zuordnungen alphabetisch sortieren
+- [GICS-101] Versionsbezeichung bei Template-Bearbeitung anzeigen
+- Kreuze statt Haken bei Modulstatus und Freetext Checkbox
+- Ja / Nein statt Akzeptiert / Abgelehnt beim Ausfüllen eines IC
+- UI Verbesserungen auf Statistik-Seite
+- Beschriftung von Buttons beim Drucken
+- Hilfetexte für Widerruf / Ablehnung
+- Pagination in der SignerID Liste beim Vorlagendruck hinzugefügt
+- Buttons zum Ausfüllen / Einlesen von Einwilligungen besser unterscheidbar gemacht
+- ttp-web-common Version 2.2.12
+
+FIXED
+- [GICS-105] SignatureDate falscher Tag bei Sommerzeit
+- Texteditor Inhalt ist leer nach Validation Error
+- Eingabefelder Inhalt ist leer nach Validation Error, wenn eine Datei (Signatur / Scan) hochgeladen wurde
+- Werte von Eingabefeldern bleiben nach Abbruch erhalten, wenn zuvor Validation Error auftrat
+- Template ist noch vorausgewählt nach Abbruch
+- Eingabefelder editierbar beim Drucken
+- FreeText Felder fehlen beim Drucken
+- Falsche Sortierung von Modulen beim Aufruf von Consent Details
+- Fehlendes Dateilimit beim Scanupload
+- NPE beim Drucken einer leeren Vorlage und anschließendem Drucken einer ausgefüllten Vorlage
+- Teilweise kein Template Name beim Drucken angezeigt
+- Leere Seite, wenn während des Druckens ausgefüllter Vorlagen die Domäne gewechselt wird
+- Freetexts Watermark im Druck sichtbar
+- Blasse Schriftfarbe von deaktivieren Feldern beim Templatedruck
+- Fehlermeldung beim Löschen einer Vorlage, die in Verwendung ist
+
+--------------------------------------------------------------------------------
+
+*** VERSION 2.8.0***
+
+REMOVED ganimed-import schnittstelle (das verwendete smooks funktioniert im wildfly nicht mehr)
+ADDED updatePolicy
+ADDED updateModule
+CHANGED versionen der verwendeten libs/plugins hochgezogen
+ADDED cache fuer die version converter klassen
+CHANGED update consent template und update module in der fhir-schnittstelle setzt jetzt alle in fhir vorhandenen felder (durch verwenden von delete+add)
+BUGFIX alle delete... funktionen loeschten durch einen bug in eclipselink nicht immer das zu loeschende objekt aus dem em-cache
+ADDED tests fuers loeschen
+ADDED loeschskript fuer die magic-jmeter tests
+CHANGED meta-klassen generierung (jpa) auf eclipselink umgestellt
+
+--------------------------------------------------------------------------------
+
+*** VERSION 2.7.3***
+
+ADDED
+- [GICS-132] - PrimeFaces BarCode vom Typ QRCode auf Einwilligung ergänzt
+- Anzeige der verbleibenden Zeichen bei Policy, Modul und Templatenamen
+- Ladeanzeige wenn Filteroperation länger dauert
+
+CHANGED
+- Druckseite öffnet in neuem Tab und wird nicht automatisch geschlossen
+
+FIXED
+- Geschwindigkeit des Filterns von Consenten erhöht
+- Zeichenlänge bei Policy, Modul und Tempaltenamen begrenzen
+
+*** VERSION 2.7.2***
+FIXED
+- [GICS-133] - Filtern von Consenten nicht möglich
+
+--------------------------------------------------------------------------------
+
+*** VERSION 2.7.1***
+
+ADDED
+- [GICS-127] - Typ in Consent Template Liste anzeigen
+- [GICS-129] - Druck CSS für Einwilligung
+- [GICS-130] - Drucken einer leeren Einwilligung aus Template Seite heraus
+- [GICS-131] - Drucken einer ausgefüllten Einwilligung aus Einwilligung Seite heraus
+
+CHANGED
+- Ladesymbol verbessert
+
+FIXED
+- [GICS-123] - Scan Download möglich obwohl kein Scan vorhanden
+- [GICS-124] - Scanstatus wird nach Hochladen nicht sofort aktualisiert
+- [GICS-128] - Scan Download nicht möglich wenn filetype nicht gesetzt
+
+
+--------------------------------------------------------------------------------
+
+*** VERSION 2.7.0***
+
+FIXED
+- ttp-web-common version
+
+ADDED
+[GICS-108] - Neues Design
+[GICS-109] - Rich Text Editor
+[GICS-110] - Policies / Module direkt beim Anlegen eines Templates hinzufügen
+
+CHANGED
+[GICS-111] - gerenderetes HTML in Modul/Consent Tabelle anzeigen
+[GICS-112] - Text in Modultabelle anzeigen
+[GICS-113] - Zuordnungsfenster für Policies und Module vergrößern
+[GICS-114] - Reihenfolge der Textfelder beim Modul bearbeiten anpassen
+[GICS-115] - Domäne aus der Managementseite heraus als aktive Domäne setzen
+
+--------------------------------------------------------------------------------
+
+*** VERSION 2.6.0***
+
+IMRPOVED:
+- If epxirationDate is actually infinite the year of the date should not be greater than 9999
+
+BUGFIX service should now be threadsafe
+CHANGED addSignerId -> addSignerIdToConsent
+BUGFIX addSignerIdToConsent: old consent must not be removed
+BUGFIX isConsented didn't consider config.getUnknownStateIsConsideredAsDecline if config.isExactMatchForSignerIds is set
+BUGFIX isConsented didn't consider version numbers if config.isExactMatchForSignerIds is set
+ADDED cache for virtualPersons -> signedPolicies
+CHANGED isConsented now also uses cache if config.isExactMatchForSignerIds is set
+
+--------------------------------------------------------------------------------
+
+*** VERSION 2.5.8***
+
+BUGFIXES
+[GICS-87] - Sortierung von FreeTextDefitions wird nicht berücksichtigt
+
+IMPROVEMENTS
+[GICS-89] - Consent Scan löschen Funktion entfernen
+
+ADDED
+[GICS-88] - FreeTextDefition Typ Boolean hinzufügen
+

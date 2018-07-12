@@ -4,16 +4,21 @@ package org.emau.icmvc.ganimed.ttp.cm2.dto;
  * ###license-information-start###
  * gICS - a Generic Informed Consent Service
  * __
- * Copyright (C) 2014 - 2017 The MOSAIC Project - Institut fuer Community Medicine der
- * 							Universitaetsmedizin Greifswald - mosaic-projekt@uni-greifswald.de
+ * Copyright (C) 2014 - 2018 The MOSAIC Project - Institut fuer Community
+ * 							Medicine of the University Medicine Greifswald -
+ * 							mosaic-projekt@uni-greifswald.de
+ * 
  * 							concept and implementation
- * 							l. geidel
+ * 							l.geidel
  * 							web client
- * 							g. weiher
- * 							a. blumentritt
+ * 							a.blumentritt, m.bialke
+ * 
+ * 							Selected functionalities of gICS were developed as part of the MAGIC Project (funded by the DFG HO 1937/5-1).
+ * 
  * 							please cite our publications
  * 							http://dx.doi.org/10.3414/ME14-01-0133
  * 							http://dx.doi.org/10.1186/s12967-015-0545-6
+ * 							http://dx.doi.org/10.3205/17gmds146
  * __
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -31,6 +36,7 @@ package org.emau.icmvc.ganimed.ttp.cm2.dto;
  */
 
 import java.io.Serializable;
+import java.util.Arrays;
 import java.util.List;
 
 import org.emau.icmvc.ganimed.ttp.cm2.config.DomainProperties;
@@ -46,7 +52,7 @@ import org.emau.icmvc.ganimed.ttp.cm2.config.DomainProperties;
  */
 public class DomainDTO implements Serializable {
 
-	private static final long serialVersionUID = 9087590078101024900L;
+	private static final long serialVersionUID = 9152603229919432413L;
 	private String name;
 	private String label;
 	private String ctVersionConverter;
@@ -55,12 +61,14 @@ public class DomainDTO implements Serializable {
 	private String properties;
 	private String comment;
 	private String externProperties;
+	private String logo;
 	private List<String> signerIdTypes;
 
 	public DomainDTO() {
 	}
 
-	public DomainDTO(String name, String ctVersionConverter, String moduleVersionConverter, String policyVersionConverter, List<String> signerIdTypes) {
+	public DomainDTO(String name, String ctVersionConverter, String moduleVersionConverter, String policyVersionConverter,
+			List<String> signerIdTypes) {
 		super();
 		this.name = name;
 		this.ctVersionConverter = ctVersionConverter;
@@ -72,7 +80,7 @@ public class DomainDTO implements Serializable {
 	}
 
 	public DomainDTO(String name, String label, String ctVersionConverter, String moduleVersionConverter, String policyVersionConverter,
-			String properties, String comment, String externProperties, List<String> signerIdTypes) {
+			String properties, String comment, String externProperties, String logo, List<String> signerIdTypes) {
 		super();
 		this.name = name;
 		this.label = label;
@@ -82,6 +90,7 @@ public class DomainDTO implements Serializable {
 		this.properties = properties;
 		this.comment = comment;
 		this.externProperties = externProperties;
+		this.logo = logo;
 		if (signerIdTypes != null) {
 			this.signerIdTypes = signerIdTypes;
 		}
@@ -127,6 +136,27 @@ public class DomainDTO implements Serializable {
 		this.policyVersionConverter = policyVersionConverter;
 	}
 
+	public String getProperty(String key) {
+		// check if key is valid
+		boolean found = false;
+		for (DomainProperties prop : Arrays.asList(DomainProperties.values())) {
+			if (key.equals(prop.toString())) {
+				found = true;
+				break;
+			}
+		}
+
+		// check if key-value-pair is found in config
+		if (found) {
+			for (String pair : properties.split(";")) {
+				if (pair.contains(key)) {
+					return pair.split("=")[1].trim();
+				}
+			}
+		}
+		return null;
+	}
+
 	public String getProperties() {
 		return properties;
 	}
@@ -151,6 +181,14 @@ public class DomainDTO implements Serializable {
 		this.externProperties = externProperties;
 	}
 
+	public String getLogo() {
+		return logo;
+	}
+
+	public void setLogo(String logo) {
+		this.logo = logo;
+	}
+
 	public List<String> getSignerIdTypes() {
 		return signerIdTypes;
 	}
@@ -168,9 +206,10 @@ public class DomainDTO implements Serializable {
 		result = prime * result + ((comment == null) ? 0 : comment.hashCode());
 		result = prime * result + ((ctVersionConverter == null) ? 0 : ctVersionConverter.hashCode());
 		result = prime * result + ((externProperties == null) ? 0 : externProperties.hashCode());
+		result = prime * result + ((logo == null) ? 0 : logo.hashCode());
 		result = prime * result + ((label == null) ? 0 : label.hashCode());
-		result = prime * result + ((name == null) ? 0 : name.hashCode());
 		result = prime * result + ((moduleVersionConverter == null) ? 0 : moduleVersionConverter.hashCode());
+		result = prime * result + ((name == null) ? 0 : name.hashCode());
 		result = prime * result + ((policyVersionConverter == null) ? 0 : policyVersionConverter.hashCode());
 		result = prime * result + ((properties == null) ? 0 : properties.hashCode());
 		result = prime * result + ((signerIdTypes == null) ? 0 : signerIdTypes.hashCode());
@@ -201,20 +240,25 @@ public class DomainDTO implements Serializable {
 				return false;
 		} else if (!externProperties.equals(other.externProperties))
 			return false;
+		if (logo == null) {
+			if (other.logo != null)
+				return false;
+		} else if (!logo.equals(other.logo))
+			return false;
 		if (label == null) {
 			if (other.label != null)
 				return false;
 		} else if (!label.equals(other.label))
 			return false;
-		if (name == null) {
-			if (other.name != null)
-				return false;
-		} else if (!name.equals(other.name))
-			return false;
 		if (moduleVersionConverter == null) {
 			if (other.moduleVersionConverter != null)
 				return false;
 		} else if (!moduleVersionConverter.equals(other.moduleVersionConverter))
+			return false;
+		if (name == null) {
+			if (other.name != null)
+				return false;
+		} else if (!name.equals(other.name))
 			return false;
 		if (policyVersionConverter == null) {
 			if (other.policyVersionConverter != null)
@@ -253,6 +297,7 @@ public class DomainDTO implements Serializable {
 		sb.append(externProperties);
 		sb.append("', the following properties: '");
 		sb.append(properties);
+		sb.append((logo != null && !logo.isEmpty()) ? ", a logo" : ", no logo");
 		sb.append("' and signerIdTypes:");
 		for (String signerIdType : signerIdTypes) {
 			sb.append(" '");

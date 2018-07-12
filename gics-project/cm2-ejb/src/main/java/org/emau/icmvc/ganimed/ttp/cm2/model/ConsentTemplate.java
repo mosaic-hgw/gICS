@@ -4,16 +4,21 @@ package org.emau.icmvc.ganimed.ttp.cm2.model;
  * ###license-information-start###
  * gICS - a Generic Informed Consent Service
  * __
- * Copyright (C) 2014 - 2017 The MOSAIC Project - Institut fuer Community Medicine der
- * 							Universitaetsmedizin Greifswald - mosaic-projekt@uni-greifswald.de
+ * Copyright (C) 2014 - 2018 The MOSAIC Project - Institut fuer Community
+ * 							Medicine of the University Medicine Greifswald -
+ * 							mosaic-projekt@uni-greifswald.de
+ * 
  * 							concept and implementation
- * 							l. geidel
+ * 							l.geidel
  * 							web client
- * 							g. weiher
- * 							a. blumentritt
+ * 							a.blumentritt, m.bialke
+ * 
+ * 							Selected functionalities of gICS were developed as part of the MAGIC Project (funded by the DFG HO 1937/5-1).
+ * 
  * 							please cite our publications
  * 							http://dx.doi.org/10.3414/ME14-01-0133
  * 							http://dx.doi.org/10.1186/s12967-015-0545-6
+ * 							http://dx.doi.org/10.3205/17gmds146
  * __
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -31,26 +36,27 @@ package org.emau.icmvc.ganimed.ttp.cm2.model;
  */
 
 import java.io.Serializable;
+import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
-import java.util.Properties;
 
 import javax.persistence.CascadeType;
 import javax.persistence.Column;
 import javax.persistence.EmbeddedId;
 import javax.persistence.Entity;
+import javax.persistence.EnumType;
+import javax.persistence.Enumerated;
 import javax.persistence.FetchType;
 import javax.persistence.JoinColumn;
 import javax.persistence.ManyToOne;
 import javax.persistence.MapsId;
 import javax.persistence.OneToMany;
 import javax.persistence.OneToOne;
+import javax.persistence.OrderColumn;
 import javax.persistence.PostLoad;
-import javax.persistence.PrePersist;
-import javax.persistence.PreUpdate;
+import javax.persistence.PreRemove;
 import javax.persistence.Table;
 import javax.persistence.Transient;
 
@@ -63,10 +69,15 @@ import org.emau.icmvc.ganimed.ttp.cm2.dto.ConsentTemplateDTO;
 import org.emau.icmvc.ganimed.ttp.cm2.dto.ConsentTemplateKeyDTO;
 import org.emau.icmvc.ganimed.ttp.cm2.dto.FreeTextDefDTO;
 import org.emau.icmvc.ganimed.ttp.cm2.dto.ModuleKeyDTO;
+import org.emau.icmvc.ganimed.ttp.cm2.dto.enums.ConsentTemplateType;
 import org.emau.icmvc.ganimed.ttp.cm2.exceptions.FreeTextConverterStringException;
+import org.emau.icmvc.ganimed.ttp.cm2.exceptions.InvalidPropertiesException;
 import org.emau.icmvc.ganimed.ttp.cm2.exceptions.InvalidVersionException;
+import org.emau.icmvc.ganimed.ttp.cm2.exceptions.UnknownDomainException;
 import org.emau.icmvc.ganimed.ttp.cm2.exceptions.UnknownModuleException;
 import org.emau.icmvc.ganimed.ttp.cm2.exceptions.VersionConverterClassException;
+import org.emau.icmvc.ganimed.ttp.cm2.internal.ConsentTemplatePropertiesObject;
+import org.emau.icmvc.ganimed.ttp.cm2.internal.VersionConverterCache;
 
 /**
  * ein consent template kann mehrere module (mit jeweils mehreren policies) enthalten, es entspricht dem elektronischen aequivalent eines nicht ausgefuellten konsentdokumentes
@@ -79,24 +90,26 @@ import org.emau.icmvc.ganimed.ttp.cm2.exceptions.VersionConverterClassException;
 @Cache(isolation = CacheIsolationType.PROTECTED)
 public class ConsentTemplate implements Serializable {
 
-	private static final long serialVersionUID = -2069012339762817311L;
-	private static final String PROPERTY_DELIMITER = ";";
+	private static final long serialVersionUID = 2069983297054960850L;
 	@EmbeddedId
 	private ConsentTemplateKey key;
+	private String title;
 	// die properties werden als semikolon-getrennte liste in der db gespeichert
-	// dafuer sorgen die funktionen "persistPropertiesToString" und "loadPropertiesFromString"
+	// dafuer sorgt die funktion "loadPropertiesFromString"
 	// ausser in eclipselink:
 	// https://bugs.eclipse.org/bugs/show_bug.cgi?id=273304
 	// https://bugs.eclipse.org/bugs/show_bug.cgi?id=336066
 	// deswegen das "loadPropertiesFromString" in "getProperties"
 	@Transient
-	private Properties properties;
-	private String title;
+	private ConsentTemplatePropertiesObject propertiesObject = null;
 	@Column(name = "PROPERTIES")
 	private String propertiesString;
 	private String comment;
 	@Column(name = "EXTERN_PROPERTIES")
 	private String externProperties;
+	@Column(columnDefinition = "char(20)")
+	@Enumerated(EnumType.STRING)
+	private ConsentTemplateType type;
 	@OneToMany(mappedBy = "consentTemplate", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
 	@BatchFetch(BatchFetchType.IN)
 	private List<ModuleConsentTemplate> moduleConsentTemplates = new ArrayList<ModuleConsentTemplate>();
@@ -115,6 +128,7 @@ public class ConsentTemplate implements Serializable {
 	private Text scanBase64;
 	private String scanFileType;
 	@OneToMany(mappedBy = "consentTemplate", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
+	@OrderColumn(name = "POS")
 	@BatchFetch(BatchFetchType.IN)
 	private List<FreeTextDef> freeTextDefs = new ArrayList<FreeTextDef>();
 	// keine explizite relation zu consents! die wuerden sonst bei fast jedem zugriff auf das template geladen (muessten mit in equals und hashcode rein)
@@ -122,15 +136,21 @@ public class ConsentTemplate implements Serializable {
 	public ConsentTemplate() {
 	}
 
-	public ConsentTemplate(Domain domain, ConsentTemplateDTO dto, Map<ModuleKeyDTO, Module> modules) throws VersionConverterClassException,
-			InvalidVersionException, FreeTextConverterStringException, UnknownModuleException {
+	public ConsentTemplate(Domain domain, ConsentTemplateDTO dto, Map<ModuleKeyDTO, Module> modules, VersionConverterCache vcc)
+			throws VersionConverterClassException, InvalidVersionException, FreeTextConverterStringException, UnknownModuleException,
+			InvalidPropertiesException {
 		super();
-		this.key = new ConsentTemplateKey(domain.getCTVersionConverterInstance(), dto.getKey());
+		try {
+			this.key = new ConsentTemplateKey(vcc.getCTVersionConverter(domain.getName()), dto.getKey());
+		} catch (UnknownDomainException impossible) {
+			throw new VersionConverterClassException("impossible UnknownDomainException", impossible);
+		}
 		this.title = dto.getTitle();
 		this.propertiesString = dto.getPropertiesString();
 		loadPropertiesFromString();
 		this.comment = dto.getComment();
 		this.externProperties = dto.getExternProperties();
+		this.type = dto.getType();
 		this.header = new Text(key, TextType.HEADER, dto.getHeader());
 		this.footer = new Text(key, TextType.FOOTER, dto.getFooter());
 		this.scanBase64 = new Text(key, TextType.CONSENTTEMPLATESCAN, dto.getScanBase64());
@@ -145,8 +165,8 @@ public class ConsentTemplate implements Serializable {
 			if (assignedModuleDTO.getParent() != null) {
 				parent = modules.get(assignedModuleDTO.getParent());
 				if (parent == null) {
-					throw new UnknownModuleException(assignedModuleDTO.getParent() + ", which is set as parent of " + module + " is not part of "
-							+ key);
+					throw new UnknownModuleException(
+							assignedModuleDTO.getParent() + ", which is set as parent of " + module + " is not part of " + key);
 				}
 			}
 			ModuleConsentTemplate moduleConsentTemplate = new ModuleConsentTemplate(this, module, assignedModuleDTO, parent);
@@ -158,33 +178,12 @@ public class ConsentTemplate implements Serializable {
 	/**
 	 * this method is called by jpa
 	 */
-	@PreUpdate
-	@PrePersist
-	public void persistPropertiesToString() {
-		StringBuilder sb = new StringBuilder();
-		for (Entry<?, ?> property : properties.entrySet()) {
-			sb.append(property.getKey());
-			sb.append("=");
-			sb.append(property.getValue());
-			sb.append(PROPERTY_DELIMITER);
-		}
-		propertiesString = sb.toString();
-	}
-
-	/**
-	 * this method is called by jpa
-	 */
 	@PostLoad
-	public void loadPropertiesFromString() {
-		properties = new Properties();
-		if (propertiesString != null) {
-			String[] propertyList = propertiesString.split(PROPERTY_DELIMITER);
-			for (String property : propertyList) {
-				String[] propertyParts = property.split("=");
-				if (propertyParts.length == 2) {
-					properties.put(propertyParts[0].trim(), propertyParts[1].trim());
-				}
-			}
+	public void loadPropertiesFromString() throws InvalidPropertiesException {
+		try {
+			propertiesObject = new ConsentTemplatePropertiesObject(propertiesString);
+		} catch (ParseException e) {
+			throw new InvalidPropertiesException(e);
 		}
 	}
 
@@ -196,11 +195,15 @@ public class ConsentTemplate implements Serializable {
 		return title;
 	}
 
-	public Properties getProperties() {
-		if (properties == null) {
+	public void setTitle(String title) {
+		this.title = title;
+	}
+
+	public ConsentTemplatePropertiesObject getPropertiesObject() throws InvalidPropertiesException {
+		if (propertiesObject == null) {
 			loadPropertiesFromString();
 		}
-		return properties;
+		return propertiesObject;
 	}
 
 	public String getPropertiesString() {
@@ -227,6 +230,14 @@ public class ConsentTemplate implements Serializable {
 		this.externProperties = externProperties;
 	}
 
+	public ConsentTemplateType getType() {
+		return type;
+	}
+
+	public void setType(ConsentTemplateType type) {
+		this.type = type;
+	}
+
 	public List<ModuleConsentTemplate> getModuleConsentTemplates() {
 		return moduleConsentTemplates;
 	}
@@ -237,6 +248,11 @@ public class ConsentTemplate implements Serializable {
 
 	public Text getFooter() {
 		return footer;
+	}
+
+	public void setScanBase64(String scanBase64, String fileType) {
+		this.scanBase64.setText(scanBase64);
+		this.scanFileType = fileType;
 	}
 
 	public Text getScanBase64() {
@@ -251,61 +267,61 @@ public class ConsentTemplate implements Serializable {
 		return scanFileType;
 	}
 
-	public ConsentTemplateDTO toDTO() throws VersionConverterClassException, InvalidVersionException {
-		ConsentTemplateKeyDTO dtoKey = key.toDTO(domain.getCTVersionConverterInstance());
-		ConsentTemplateDTO result = new ConsentTemplateDTO(dtoKey);
-		result.setTitle(title);
-		result.setComment(comment);
-		result.setExternProperties(externProperties);
-		result.setFooter(footer.getText());
-		result.setHeader(header.getText());
-		result.setScanBase64(scanBase64.getText());
-		result.setScanFileType(scanFileType);
-		result.setPropertiesString(propertiesString);
-		List<AssignedModuleDTO> assignedModuleDTOs = new ArrayList<AssignedModuleDTO>();
-		// nach ordernumber sortieren
-		Collections.sort(moduleConsentTemplates);
-		for (ModuleConsentTemplate moduleConsentTemplate : moduleConsentTemplates) {
-			assignedModuleDTOs.add(moduleConsentTemplate.toAssignedModuleDTO());
-			ModuleKeyDTO moduleKeyDTO = moduleConsentTemplate.getModule().getKey().toDTO(domain.getModuleVersionConverterInstance());
-			Map<ModuleKeyDTO, ArrayList<ModuleKeyDTO>> children = result.getStructure().getChildren();
-			if (children.get(moduleKeyDTO) == null) {
-				children.put(moduleKeyDTO, new ArrayList<ModuleKeyDTO>());
-			}
-			if (moduleConsentTemplate.getParent() == null) {
-				result.getStructure().getFirstLevelModules().add(moduleKeyDTO);
-			} else {
-				ModuleKeyDTO parentKeyDTO = moduleConsentTemplate.getParent().getKey().toDTO(domain.getModuleVersionConverterInstance());
-				if (children.get(parentKeyDTO) == null) {
-					children.put(parentKeyDTO, new ArrayList<ModuleKeyDTO>());
+	public ConsentTemplateDTO toDTO(VersionConverterCache vcc) throws VersionConverterClassException, InvalidVersionException {
+		try {
+			ConsentTemplateKeyDTO dtoKey = key.toDTO(vcc.getCTVersionConverter(domain.getName()));
+			ConsentTemplateDTO result = new ConsentTemplateDTO(dtoKey);
+			result.setTitle(title);
+			result.setComment(comment);
+			result.setExternProperties(externProperties);
+			result.setType(type);
+			result.setFooter(footer.getText());
+			result.setHeader(header.getText());
+			result.setScanBase64(scanBase64.getText());
+			result.setScanFileType(scanFileType);
+			result.setPropertiesString(propertiesString);
+			List<AssignedModuleDTO> assignedModuleDTOs = new ArrayList<AssignedModuleDTO>();
+			// nach ordernumber sortieren
+			Collections.sort(moduleConsentTemplates);
+			for (ModuleConsentTemplate moduleConsentTemplate : moduleConsentTemplates) {
+				assignedModuleDTOs.add(moduleConsentTemplate.toAssignedModuleDTO(vcc));
+				ModuleKeyDTO moduleKeyDTO = moduleConsentTemplate.getModule().getKey().toDTO(vcc.getModuleVersionConverter(domain.getName()));
+				Map<ModuleKeyDTO, ArrayList<ModuleKeyDTO>> children = result.getStructure().getChildren();
+				if (children.get(moduleKeyDTO) == null) {
+					children.put(moduleKeyDTO, new ArrayList<ModuleKeyDTO>());
 				}
-				children.get(parentKeyDTO).add(moduleKeyDTO);
+				if (moduleConsentTemplate.getParent() == null) {
+					result.getStructure().getFirstLevelModules().add(moduleKeyDTO);
+				} else {
+					ModuleKeyDTO parentKeyDTO = moduleConsentTemplate.getParent().getKey().toDTO(vcc.getModuleVersionConverter(domain.getName()));
+					if (children.get(parentKeyDTO) == null) {
+						children.put(parentKeyDTO, new ArrayList<ModuleKeyDTO>());
+					}
+					children.get(parentKeyDTO).add(moduleKeyDTO);
+				}
 			}
+			result.setAssignedModules(assignedModuleDTOs);
+			List<FreeTextDefDTO> freeTextDTOs = new ArrayList<FreeTextDefDTO>();
+			for (FreeTextDef freeText : freeTextDefs) {
+				freeTextDTOs.add(freeText.toDTO());
+			}
+			result.setFreeTextDefs(freeTextDTOs);
+			return result;
+		} catch (UnknownDomainException impossible) {
+			throw new VersionConverterClassException("impossible unknownDomainException", impossible);
 		}
-		result.setAssignedModules(assignedModuleDTOs);
-		List<FreeTextDefDTO> freeTextDTOs = new ArrayList<FreeTextDefDTO>();
-		for (FreeTextDef freeText : freeTextDefs) {
-			freeTextDTOs.add(freeText.toDTO());
-		}
-		result.setFreeTextDefs(freeTextDTOs);
-		return result;
+	}
+
+	@PreRemove
+	private void beforeRemove() {
+		domain.getConsentTemplates().remove(this);
 	}
 
 	@Override
 	public int hashCode() {
 		final int prime = 31;
 		int result = 1;
-		result = prime * result + ((comment == null) ? 0 : comment.hashCode());
-		result = prime * result + ((externProperties == null) ? 0 : externProperties.hashCode());
-		result = prime * result + ((footer == null) ? 0 : footer.hashCode());
-		result = prime * result + ((freeTextDefs == null) ? 0 : freeTextDefs.hashCode());
-		result = prime * result + ((header == null) ? 0 : header.hashCode());
 		result = prime * result + ((key == null) ? 0 : key.hashCode());
-		result = prime * result + ((moduleConsentTemplates == null) ? 0 : moduleConsentTemplates.hashCode());
-		result = prime * result + ((propertiesString == null) ? 0 : propertiesString.hashCode());
-		result = prime * result + ((scanBase64 == null) ? 0 : scanBase64.hashCode());
-		result = prime * result + ((scanFileType == null) ? 0 : scanFileType.hashCode());
-		result = prime * result + ((title == null) ? 0 : title.hashCode());
 		return result;
 	}
 
@@ -318,60 +334,10 @@ public class ConsentTemplate implements Serializable {
 		if (getClass() != obj.getClass())
 			return false;
 		ConsentTemplate other = (ConsentTemplate) obj;
-		if (comment == null) {
-			if (other.comment != null)
-				return false;
-		} else if (!comment.equals(other.comment))
-			return false;
-		if (externProperties == null) {
-			if (other.externProperties != null)
-				return false;
-		} else if (!externProperties.equals(other.externProperties))
-			return false;
-		if (footer == null) {
-			if (other.footer != null)
-				return false;
-		} else if (!footer.equals(other.footer))
-			return false;
-		if (freeTextDefs == null) {
-			if (other.freeTextDefs != null)
-				return false;
-		} else if (!freeTextDefs.equals(other.freeTextDefs))
-			return false;
-		if (header == null) {
-			if (other.header != null)
-				return false;
-		} else if (!header.equals(other.header))
-			return false;
 		if (key == null) {
 			if (other.key != null)
 				return false;
 		} else if (!key.equals(other.key))
-			return false;
-		if (moduleConsentTemplates == null) {
-			if (other.moduleConsentTemplates != null)
-				return false;
-		} else if (!moduleConsentTemplates.equals(other.moduleConsentTemplates))
-			return false;
-		if (propertiesString == null) {
-			if (other.propertiesString != null)
-				return false;
-		} else if (!propertiesString.equals(other.propertiesString))
-			return false;
-		if (scanBase64 == null) {
-			if (other.scanBase64 != null)
-				return false;
-		} else if (!scanBase64.equals(other.scanBase64))
-			return false;
-		if (scanFileType == null) {
-			if (other.scanFileType != null)
-				return false;
-		} else if (!scanFileType.equals(other.scanFileType))
-			return false;
-		if (title == null) {
-			if (other.title != null)
-				return false;
-		} else if (!title.equals(other.title))
 			return false;
 		return true;
 	}
@@ -382,10 +348,12 @@ public class ConsentTemplate implements Serializable {
 		sb.append(key);
 		sb.append(" with title '");
 		sb.append(title);
-		sb.append(", comment '");
+		sb.append("', comment '");
 		sb.append(comment);
 		sb.append("', extern properties: '");
 		sb.append(externProperties);
+		sb.append("', type: '");
+		sb.append(type);
 		sb.append("', properties: '");
 		sb.append(propertiesString);
 		sb.append("', ");

@@ -4,16 +4,21 @@ package org.emau.icmvc.ganimed.ttp.cm2.model;
  * ###license-information-start###
  * gICS - a Generic Informed Consent Service
  * __
- * Copyright (C) 2014 - 2017 The MOSAIC Project - Institut fuer Community Medicine der
- * 							Universitaetsmedizin Greifswald - mosaic-projekt@uni-greifswald.de
+ * Copyright (C) 2014 - 2018 The MOSAIC Project - Institut fuer Community
+ * 							Medicine of the University Medicine Greifswald -
+ * 							mosaic-projekt@uni-greifswald.de
+ * 
  * 							concept and implementation
- * 							l. geidel
+ * 							l.geidel
  * 							web client
- * 							g. weiher
- * 							a. blumentritt
+ * 							a.blumentritt, m.bialke
+ * 
+ * 							Selected functionalities of gICS were developed as part of the MAGIC Project (funded by the DFG HO 1937/5-1).
+ * 
  * 							please cite our publications
  * 							http://dx.doi.org/10.3414/ME14-01-0133
  * 							http://dx.doi.org/10.1186/s12967-015-0545-6
+ * 							http://dx.doi.org/10.3205/17gmds146
  * __
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -41,7 +46,7 @@ import org.eclipse.persistence.annotations.Cache;
 import org.eclipse.persistence.config.CacheIsolationType;
 
 /**
- * extra tabelle, um das blob-feld auszulagern<br>
+ * extra tabelle, um text-blob-felder auszulagern<br>
  * nur ein string und nicht die felder domain, name, version, type als fk-teile eines zusammengesetzten pks, da die ersten drei aus unterschiedlichen tabellen kommen koennen (module, consenttemplate
  * und consent)
  * 
@@ -55,7 +60,6 @@ public class Text implements Serializable {
 
 	private static final long serialVersionUID = -2526546843194537950L;
 	private static final String DELIMITER = "_###_";
-	private static final String CONSENT_DELIMITER = "_###_";
 	@Id
 	private String id;
 	@Lob
@@ -79,8 +83,8 @@ public class Text implements Serializable {
 	public Text(ConsentKey consentKey, TextType type, String text) {
 		super();
 		ConsentTemplateKey ctKey = consentKey.getCtKey();
-		this.id = createId(ctKey.getDomainName(), ctKey.getName() + CONSENT_DELIMITER + consentKey.getVirtualPersonId() + CONSENT_DELIMITER
-				+ consentKey.getConsentDate(), ctKey.getVersion(), type);
+		this.id = createId(ctKey.getDomainName(),
+				ctKey.getName() + DELIMITER + consentKey.getVirtualPersonId() + DELIMITER + consentKey.getConsentDate(), ctKey.getVersion(), type);
 		this.text = text;
 	}
 

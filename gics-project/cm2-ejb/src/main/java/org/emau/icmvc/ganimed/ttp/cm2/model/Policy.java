@@ -4,16 +4,21 @@ package org.emau.icmvc.ganimed.ttp.cm2.model;
  * ###license-information-start###
  * gICS - a Generic Informed Consent Service
  * __
- * Copyright (C) 2014 - 2017 The MOSAIC Project - Institut fuer Community Medicine der
- * 							Universitaetsmedizin Greifswald - mosaic-projekt@uni-greifswald.de
+ * Copyright (C) 2014 - 2018 The MOSAIC Project - Institut fuer Community
+ * 							Medicine of the University Medicine Greifswald -
+ * 							mosaic-projekt@uni-greifswald.de
+ * 
  * 							concept and implementation
- * 							l. geidel
+ * 							l.geidel
  * 							web client
- * 							g. weiher
- * 							a. blumentritt
+ * 							a.blumentritt, m.bialke
+ * 
+ * 							Selected functionalities of gICS were developed as part of the MAGIC Project (funded by the DFG HO 1937/5-1).
+ * 
  * 							please cite our publications
  * 							http://dx.doi.org/10.3414/ME14-01-0133
  * 							http://dx.doi.org/10.1186/s12967-015-0545-6
+ * 							http://dx.doi.org/10.3205/17gmds146
  * __
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -42,6 +47,7 @@ import javax.persistence.JoinColumn;
 import javax.persistence.ManyToMany;
 import javax.persistence.ManyToOne;
 import javax.persistence.MapsId;
+import javax.persistence.PreRemove;
 import javax.persistence.Table;
 
 import org.eclipse.persistence.annotations.Cache;
@@ -49,7 +55,9 @@ import org.eclipse.persistence.config.CacheIsolationType;
 import org.emau.icmvc.ganimed.ttp.cm2.dto.PolicyDTO;
 import org.emau.icmvc.ganimed.ttp.cm2.dto.PolicyKeyDTO;
 import org.emau.icmvc.ganimed.ttp.cm2.exceptions.InvalidVersionException;
+import org.emau.icmvc.ganimed.ttp.cm2.exceptions.UnknownDomainException;
 import org.emau.icmvc.ganimed.ttp.cm2.exceptions.VersionConverterClassException;
+import org.emau.icmvc.ganimed.ttp.cm2.internal.VersionConverterCache;
 
 /**
  * eine policy ist die kleinstmoegliche unterteilung eines consents; sie repraesentiert eine atomare, zustimmbare einheit
@@ -62,7 +70,7 @@ import org.emau.icmvc.ganimed.ttp.cm2.exceptions.VersionConverterClassException;
 @Cache(isolation = CacheIsolationType.PROTECTED)
 public class Policy implements Serializable {
 
-	private static final long serialVersionUID = -7411027119873993119L;
+	private static final long serialVersionUID = -6924143607672264446L;
 	@EmbeddedId
 	private PolicyKey key;
 	@ManyToOne(fetch = FetchType.EAGER)
@@ -79,9 +87,13 @@ public class Policy implements Serializable {
 	public Policy() {
 	}
 
-	public Policy(Domain domain, PolicyDTO dto) throws VersionConverterClassException, InvalidVersionException {
+	public Policy(Domain domain, PolicyDTO dto, VersionConverterCache vcc) throws VersionConverterClassException, InvalidVersionException {
 		super();
-		this.key = new PolicyKey(domain.getPolicyVersionConverterInstance(), dto.getKey());
+		try {
+			this.key = new PolicyKey(vcc.getPolicyVersionConverter(domain.getName()), dto.getKey());
+		} catch (UnknownDomainException impossible) {
+			throw new VersionConverterClassException("impossible UnknownDomainException", impossible);
+		}
 		this.comment = dto.getComment();
 		this.externProperties = dto.getExternProperties();
 		this.domain = domain;
@@ -115,20 +127,28 @@ public class Policy implements Serializable {
 		return modules;
 	}
 
-	public PolicyDTO toDTO() throws VersionConverterClassException, InvalidVersionException {
-		PolicyKeyDTO dtoKey = key.toDTO(domain.getPolicyVersionConverterInstance());
+	public PolicyDTO toDTO(VersionConverterCache vcc) throws VersionConverterClassException, InvalidVersionException {
+		PolicyKeyDTO dtoKey;
+		try {
+			dtoKey = key.toDTO(vcc.getPolicyVersionConverter(domain.getName()));
+		} catch (UnknownDomainException impossible) {
+			throw new VersionConverterClassException("impossible UnknownDomainException", impossible);
+		}
 		PolicyDTO result = new PolicyDTO(dtoKey);
 		result.setComment(comment);
 		result.setExternProperties(externProperties);
 		return result;
 	}
 
+	@PreRemove
+	private void beforeRemove() {
+		domain.getPolicies().remove(this);
+	}
+
 	@Override
 	public int hashCode() {
 		final int prime = 31;
 		int result = 1;
-		result = prime * result + ((comment == null) ? 0 : comment.hashCode());
-		result = prime * result + ((externProperties == null) ? 0 : externProperties.hashCode());
 		result = prime * result + ((key == null) ? 0 : key.hashCode());
 		return result;
 	}
@@ -142,16 +162,6 @@ public class Policy implements Serializable {
 		if (getClass() != obj.getClass())
 			return false;
 		Policy other = (Policy) obj;
-		if (comment == null) {
-			if (other.comment != null)
-				return false;
-		} else if (!comment.equals(other.comment))
-			return false;
-		if (externProperties == null) {
-			if (other.externProperties != null)
-				return false;
-		} else if (!externProperties.equals(other.externProperties))
-			return false;
 		if (key == null) {
 			if (other.key != null)
 				return false;

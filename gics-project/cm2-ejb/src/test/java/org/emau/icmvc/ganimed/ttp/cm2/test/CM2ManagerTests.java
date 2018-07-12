@@ -4,16 +4,21 @@ package org.emau.icmvc.ganimed.ttp.cm2.test;
  * ###license-information-start###
  * gICS - a Generic Informed Consent Service
  * __
- * Copyright (C) 2014 - 2017 The MOSAIC Project - Institut fuer Community Medicine der
- * 							Universitaetsmedizin Greifswald - mosaic-projekt@uni-greifswald.de
+ * Copyright (C) 2014 - 2018 The MOSAIC Project - Institut fuer Community
+ * 							Medicine of the University Medicine Greifswald -
+ * 							mosaic-projekt@uni-greifswald.de
+ * 
  * 							concept and implementation
- * 							l. geidel
+ * 							l.geidel
  * 							web client
- * 							g. weiher
- * 							a. blumentritt
+ * 							a.blumentritt, m.bialke
+ * 
+ * 							Selected functionalities of gICS were developed as part of the MAGIC Project (funded by the DFG HO 1937/5-1).
+ * 
  * 							please cite our publications
  * 							http://dx.doi.org/10.3414/ME14-01-0133
  * 							http://dx.doi.org/10.1186/s12967-015-0545-6
+ * 							http://dx.doi.org/10.3205/17gmds146
  * __
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -42,30 +47,36 @@ import javax.xml.namespace.QName;
 import javax.xml.ws.Service;
 
 import org.apache.log4j.Logger;
-import org.emau.icmvc.ganimed.ttp.cm2.CM2Manager;
+import org.emau.icmvc.ganimed.ttp.cm2.GICSService;
 import org.emau.icmvc.ganimed.ttp.cm2.config.CheckConsentConfig;
 import org.emau.icmvc.ganimed.ttp.cm2.config.ConsentField;
 import org.emau.icmvc.ganimed.ttp.cm2.dto.AssignedModuleDTO;
 import org.emau.icmvc.ganimed.ttp.cm2.dto.ConsentDTO;
 import org.emau.icmvc.ganimed.ttp.cm2.dto.ConsentKeyDTO;
-import org.emau.icmvc.ganimed.ttp.cm2.dto.ConsentStatus;
+import org.emau.icmvc.ganimed.ttp.cm2.dto.ConsentLightDTO;
 import org.emau.icmvc.ganimed.ttp.cm2.dto.ConsentTemplateDTO;
 import org.emau.icmvc.ganimed.ttp.cm2.dto.ConsentTemplateKeyDTO;
 import org.emau.icmvc.ganimed.ttp.cm2.dto.DomainDTO;
 import org.emau.icmvc.ganimed.ttp.cm2.dto.FreeTextDefDTO;
-import org.emau.icmvc.ganimed.ttp.cm2.dto.FreeTextType;
+import org.emau.icmvc.ganimed.ttp.cm2.dto.HashMapWrapper;
 import org.emau.icmvc.ganimed.ttp.cm2.dto.ModuleDTO;
 import org.emau.icmvc.ganimed.ttp.cm2.dto.ModuleKeyDTO;
+import org.emau.icmvc.ganimed.ttp.cm2.dto.ModuleStateDTO;
 import org.emau.icmvc.ganimed.ttp.cm2.dto.PolicyDTO;
 import org.emau.icmvc.ganimed.ttp.cm2.dto.PolicyKeyDTO;
 import org.emau.icmvc.ganimed.ttp.cm2.dto.SignerIdDTO;
+import org.emau.icmvc.ganimed.ttp.cm2.dto.enums.ConsentStatus;
+import org.emau.icmvc.ganimed.ttp.cm2.dto.enums.ConsentTemplateType;
+import org.emau.icmvc.ganimed.ttp.cm2.dto.enums.FreeTextType;
 import org.emau.icmvc.ganimed.ttp.cm2.exceptions.DuplicateEntryException;
 import org.emau.icmvc.ganimed.ttp.cm2.exceptions.FreeTextConverterStringException;
+import org.emau.icmvc.ganimed.ttp.cm2.exceptions.InvalidConsentStatusException;
 import org.emau.icmvc.ganimed.ttp.cm2.exceptions.InvalidFreeTextException;
 import org.emau.icmvc.ganimed.ttp.cm2.exceptions.InvalidVersionException;
 import org.emau.icmvc.ganimed.ttp.cm2.exceptions.MandatoryFieldsException;
 import org.emau.icmvc.ganimed.ttp.cm2.exceptions.MissingRequiredObjectException;
 import org.emau.icmvc.ganimed.ttp.cm2.exceptions.ObjectInUseException;
+import org.emau.icmvc.ganimed.ttp.cm2.exceptions.UnknownConsentTemplateException;
 import org.emau.icmvc.ganimed.ttp.cm2.exceptions.UnknownDomainException;
 import org.emau.icmvc.ganimed.ttp.cm2.exceptions.UnknownModuleException;
 import org.emau.icmvc.ganimed.ttp.cm2.exceptions.UnknownPolicyException;
@@ -80,34 +91,36 @@ import org.junit.Test;
 
 public class CM2ManagerTests {
 
-	private static final String ANOTHER_ID_TYPE = "another_id_type";
-	private static final String MPI_ID_TYPE = "mpi_id_type";
-	private static final String NO_TITLE = "no_title";
-	private static final String NO_COMMENT = "no_comment";
-	private static final String NO_EXTERN_PROPERTIES = "no_extern_properties";
 	/*-
 	loeschscript:
 	delete from signed_policy where CT_DOMAIN_NAME = 'test12345_cm_test' or CT_DOMAIN_NAME = 'test12345_cm_version_test';
 	delete from signature where CT_DOMAIN_NAME = 'test12345_cm_test' or CT_DOMAIN_NAME = 'test12345_cm_version_test';
 	delete from free_text_val where CT_DOMAIN_NAME = 'test12345_cm_test' or CT_DOMAIN_NAME = 'test12345_cm_version_test';
 	delete from consent where CT_DOMAIN_NAME = 'test12345_cm_test' or CT_DOMAIN_NAME = 'test12345_cm_version_test';
-	delete from module_consent_template where CT_DOMAIN = 'test12345_cm_test' or CT_DOMAIN = 'test12345_cm_version_test';
-	delete from module_policy where M_DOMAIN_NAME = 'test12345_cm_test' or M_DOMAIN_NAME = 'test12345_cm_version_test';
+	delete from module_consent_template where CT_DOMAIN = 'test12345_cm_test' or CT_DOMAIN = 'test12345_cm_version_test' or CT_DOMAIN = 'test12345_cm_deletion_test';
+	delete from module_policy where M_DOMAIN_NAME = 'test12345_cm_test' or M_DOMAIN_NAME = 'test12345_cm_version_test' or M_DOMAIN_NAME = 'test12345_cm_deletion_test';
 	delete from free_text_def where DOMAIN_NAME = 'test12345_cm_test' or DOMAIN_NAME = 'test12345_cm_version_test';
-	delete from consent_template where DOMAIN_NAME = 'test12345_cm_test' or DOMAIN_NAME = 'test12345_cm_version_test';
-	delete from module where DOMAIN_NAME = 'test12345_cm_test' or DOMAIN_NAME = 'test12345_cm_version_test';
-	delete from policy where DOMAIN_NAME = 'test12345_cm_test' or DOMAIN_NAME = 'test12345_cm_version_test';
-	delete from text where ID like 'test12345_cm_test%' or ID like 'test12345_cm_version_test%';
+	delete from consent_template where DOMAIN_NAME = 'test12345_cm_test' or DOMAIN_NAME = 'test12345_cm_version_test' or DOMAIN_NAME = 'test12345_cm_deletion_test';
+	delete from module where DOMAIN_NAME = 'test12345_cm_test' or DOMAIN_NAME = 'test12345_cm_version_test' or DOMAIN_NAME = 'test12345_cm_deletion_test';
+	delete from policy where DOMAIN_NAME = 'test12345_cm_test' or DOMAIN_NAME = 'test12345_cm_version_test' or DOMAIN_NAME = 'test12345_cm_deletion_test';
+	delete from text where ID like 'test12345_cm_test%' or ID like 'test12345_cm_version_test%' or ID like 'test12345_cm_deletion_test%';
 	delete from virtual_person_signer_id where SIT_DOMAIN_NAME = 'test12345_cm_test' or SIT_DOMAIN_NAME = 'test12345_cm_version_test';
 	delete from signer_id where SIT_DOMAIN_NAME = 'test12345_cm_test' or SIT_DOMAIN_NAME = 'test12345_cm_version_test';
-	delete from signer_id_type where DOMAIN_NAME = 'test12345_cm_test' or DOMAIN_NAME = 'test12345_cm_version_test';
-	delete from domain where NAME = 'test12345_cm_test' or NAME = 'test12345_cm_version_test'
+	delete from signer_id_type where DOMAIN_NAME = 'test12345_cm_test' or DOMAIN_NAME = 'test12345_cm_version_test' or DOMAIN_NAME = 'test12345_cm_deletion_test' or DOMAIN_NAME = 'crash-test-dummy';
+	delete from domain where NAME = 'test12345_cm_test' or NAME = 'test12345_cm_version_test' or NAME = 'test12345_cm_deletion_test' or NAME = 'crash-test-dummy';
 	 */
+	private static final String ANOTHER_ID_TYPE = "another_id_type";
+	private static final String MPI_ID_TYPE = "mpi_id_type";
+	private static final String NO_TITLE = "no_title";
+	private static final String NO_COMMENT = "no_comment";
+	private static final String NO_EXTERN_PROPERTIES = "no_extern_properties";
 	private static final String DOMAIN = "test12345_cm_test";
 	private static final String VERSION_DOMAIN = "test12345_cm_version_test";
+	private static final String DELETION_DOMAIN = "test12345_cm_deletion_test";
 	private static final String CM2_URL = "http://localhost:8080/gics/gicsService?wsdl";
-	private static CM2Manager cm2Manager;
+	private static GICSService cm2Manager;
 	private static final Logger logger = Logger.getLogger(CM2ManagerTests.class);
+	private static final String DELETION_TEST = "deletion_test";
 
 	private final static PolicyKeyDTO policyKey11 = new PolicyKeyDTO(DOMAIN, "test1", "1");
 	private final static PolicyDTO policy11 = new PolicyDTO(policyKey11);
@@ -117,6 +130,8 @@ public class CM2ManagerTests {
 	private final static PolicyDTO policy22 = new PolicyDTO(policyKey22);
 	private final static PolicyKeyDTO policyKey31 = new PolicyKeyDTO(DOMAIN, "test3", "1");
 	private final static PolicyDTO policy31 = new PolicyDTO(policyKey31);
+	private final static PolicyKeyDTO policyKeyForDeletion = new PolicyKeyDTO(DELETION_DOMAIN, DELETION_TEST, "1");
+	private final static PolicyDTO policyForDeletion = new PolicyDTO(policyKeyForDeletion);
 	private final static ModuleKeyDTO moduleKey11 = new ModuleKeyDTO(DOMAIN, "test11", "1");
 	private final static ModuleDTO module11 = new ModuleDTO(moduleKey11, "kein sinnvoller modultext 11", NO_TITLE, NO_COMMENT, NO_EXTERN_PROPERTIES,
 			Arrays.asList(policy11));
@@ -132,10 +147,15 @@ public class CM2ManagerTests {
 	private final static ModuleKeyDTO moduleKey2231 = new ModuleKeyDTO(DOMAIN, "test2231", "2");
 	private final static ModuleDTO module2231 = new ModuleDTO(moduleKey2231, "kein sinnvoller modultext 2231", NO_TITLE, NO_COMMENT,
 			NO_EXTERN_PROPERTIES, Arrays.asList(policy22, policy31));
+	private final static ModuleKeyDTO moduleKeyForDeletion = new ModuleKeyDTO(DELETION_DOMAIN, DELETION_TEST, "1");
+	private final static ModuleDTO moduleForDeletion = new ModuleDTO(moduleKeyForDeletion, "kein sinnvoller modultext", NO_TITLE, NO_COMMENT,
+			NO_EXTERN_PROPERTIES, Arrays.asList(policyForDeletion));
 	private final static ConsentTemplateKeyDTO ctKey11 = new ConsentTemplateKeyDTO(DOMAIN, "testCT1", "1");
 	private final static ConsentTemplateKeyDTO ctKey12 = new ConsentTemplateKeyDTO(DOMAIN, "testCT1", "2");
-	private final static ConsentTemplateKeyDTO ctKey21 = new ConsentTemplateKeyDTO(DOMAIN, "testCT2", "1");
+	private final static ConsentTemplateKeyDTO ctKeyForDeletion = new ConsentTemplateKeyDTO(DELETION_DOMAIN, DELETION_TEST, "1");
 	private final static ConsentTemplateDTO ct11 = new ConsentTemplateDTO(ctKey11);
+	private final static ConsentTemplateKeyDTO ctKey21 = new ConsentTemplateKeyDTO(DOMAIN, "testCT2", "1");
+	private final static ConsentTemplateDTO ctForDeletion = new ConsentTemplateDTO(ctKeyForDeletion);
 	private final static List<ConsentStatus> allConsentStatus = Arrays.asList(ConsentStatus.values());
 	private final static AssignedModuleDTO am11 = new AssignedModuleDTO(module11, true, ConsentStatus.UNKNOWN, allConsentStatus, 0, null,
 			"no comment", "no extern properties");
@@ -147,16 +167,18 @@ public class CM2ManagerTests {
 			"no comment", "no extern properties");
 	private final static AssignedModuleDTO am2231 = new AssignedModuleDTO(module2231, true, ConsentStatus.UNKNOWN, allConsentStatus, 0, moduleKey11,
 			"no comment", "no extern properties");
+	private final static AssignedModuleDTO amForDeletion = new AssignedModuleDTO(moduleForDeletion, true, ConsentStatus.UNKNOWN, allConsentStatus, 0,
+			null, "no comment", "no extern properties");
 	private final static List<String> idTypes = Arrays.asList(MPI_ID_TYPE, ANOTHER_ID_TYPE);
 
 	@BeforeClass
 	public static void storeBasicEntries() throws Exception {
 		logger.info("setup");
-		QName serviceName = new QName("http://cm2.ttp.ganimed.icmvc.emau.org/", "CM2ManagerBeanService");
+		QName serviceName = new QName("http://cm2.ttp.ganimed.icmvc.emau.org/", "GICSServiceImplService");
 		URL wsdlURL = new URL(CM2_URL);
 		Service service = Service.create(wsdlURL, serviceName);
 		Assert.assertNotNull("webservice object for CM2Manager is null", service);
-		cm2Manager = (CM2Manager) service.getPort(CM2Manager.class);
+		cm2Manager = (GICSService) service.getPort(GICSService.class);
 		Assert.assertNotNull("cm2 manager object is null", cm2Manager);
 
 		try {
@@ -164,7 +186,7 @@ public class CM2ManagerTests {
 		} catch (UnknownDomainException maybe) {
 			try {
 				DomainDTO domainDTO = new DomainDTO(DOMAIN, "dummy", SimpleVersionConverter.class.getName(), SimpleVersionConverter.class.getName(),
-						SimpleVersionConverter.class.getName(), "", "test-domain", "no extern properties", idTypes);
+						SimpleVersionConverter.class.getName(), "", "test-domain", "no extern properties", "logo", idTypes);
 				logger.info("creating test domain: " + domainDTO);
 				cm2Manager.addDomain(domainDTO);
 			} catch (DuplicateEntryException ignore) {
@@ -178,7 +200,7 @@ public class CM2ManagerTests {
 			try {
 				DomainDTO domainDTO = new DomainDTO(VERSION_DOMAIN, "dummy", MajorMinorVersionConverter.class.getName(),
 						MajorMinorVersionConverter.class.getName(), MajorMinorMaintenanceVersionConverter.class.getName(), "", "version-test-domain",
-						"no extern properties", idTypes);
+						"no extern properties", "logo", idTypes);
 				logger.info("creating version test domain: " + domainDTO);
 				cm2Manager.addDomain(domainDTO);
 			} catch (DuplicateEntryException ignore) {
@@ -206,6 +228,9 @@ public class CM2ManagerTests {
 		ct12.getAssignedModules().add(am1122);
 		ct21.getAssignedModules().add(am11);
 		ct21.getAssignedModules().add(am2231);
+		ct11.setType(ConsentTemplateType.CONSENT);
+		ct12.setType(ConsentTemplateType.CONSENT);
+		ct21.setType(ConsentTemplateType.CONSENT);
 		cm2Manager.addConsentTemplate(ct11);
 		cm2Manager.addConsentTemplate(ct12);
 		cm2Manager.addConsentTemplate(ct21);
@@ -265,6 +290,7 @@ public class CM2ManagerTests {
 		logger.info("try to create a consent template with duplicate modules");
 		ConsentTemplateKeyDTO tempCTKey = new ConsentTemplateKeyDTO(DOMAIN, "temtCT", "1");
 		ConsentTemplateDTO tempCT = new ConsentTemplateDTO(tempCTKey);
+		tempCT.setType(ConsentTemplateType.CONSENT);
 		tempCT.getAssignedModules().add(am11);
 		tempCT.getAssignedModules().add(am11);
 		try {
@@ -277,6 +303,7 @@ public class CM2ManagerTests {
 		logger.info("try to create a consent template with duplicate policies");
 		tempCTKey = new ConsentTemplateKeyDTO(DOMAIN, "temtCT", "1");
 		tempCT = new ConsentTemplateDTO(tempCTKey);
+		tempCT.setType(ConsentTemplateType.CONSENT);
 		tempCT.getAssignedModules().add(am1121);
 		tempCT.getAssignedModules().add(am1131);
 		try {
@@ -289,6 +316,7 @@ public class CM2ManagerTests {
 		logger.info("try to create a consent template with duplicate policies in different versions");
 		tempCTKey = new ConsentTemplateKeyDTO(DOMAIN, "temtCT", "1");
 		tempCT = new ConsentTemplateDTO(tempCTKey);
+		tempCT.setType(ConsentTemplateType.CONSENT);
 		tempCT.getAssignedModules().add(am1121);
 		tempCT.getAssignedModules().add(am2231);
 		try {
@@ -301,6 +329,7 @@ public class CM2ManagerTests {
 		logger.info("try to create a consent template with a module with a parent which is not part of that consent template");
 		tempCTKey = new ConsentTemplateKeyDTO(DOMAIN, "temtCT", "1");
 		tempCT = new ConsentTemplateDTO(tempCTKey);
+		tempCT.setType(ConsentTemplateType.CONSENT);
 		tempCT.getAssignedModules().add(am2231);
 		try {
 			cm2Manager.addConsentTemplate(tempCT);
@@ -334,6 +363,33 @@ public class CM2ManagerTests {
 		} catch (UnknownModuleException expected) {
 			logger.info("expected UnknownModuleException: " + expected);
 		}
+
+		logger.info("try to update some consent template fields");
+		Date date = new Date();
+		String newExternProperties = "externProperties_" + date;
+		String newComment = "comment_" + date;
+		String text = "nur ein testtext";
+		String pdfType = "pdf";
+		cm2Manager.updateConsentTemplate(ctKey11, newExternProperties, newComment, text, pdfType);
+		tempCT = cm2Manager.getConsentTemplate(ctKey11);
+		Assert.assertEquals(newExternProperties, tempCT.getExternProperties());
+		Assert.assertEquals(newComment, tempCT.getComment());
+		Assert.assertEquals(text, tempCT.getScanBase64());
+		Assert.assertEquals(pdfType, tempCT.getScanFileType());
+
+		logger.info("try to update some policy fields");
+		cm2Manager.updatePolicy(policyKey11, newExternProperties, newComment);
+		PolicyDTO tempPolicy = cm2Manager.getPolicy(policyKey11);
+		Assert.assertEquals(newExternProperties, tempPolicy.getExternProperties());
+		Assert.assertEquals(newComment, tempPolicy.getComment());
+
+		logger.info("try to update some module fields");
+		String title = "title_" + date;
+		cm2Manager.updateModule(moduleKey11, title, newExternProperties, newComment);
+		ModuleDTO tempModule = cm2Manager.getModule(moduleKey11);
+		Assert.assertEquals(newExternProperties, tempModule.getExternProperties());
+		Assert.assertEquals(newComment, tempModule.getComment());
+		Assert.assertEquals(title, tempModule.getTitle());
 		logger.info("### basic test end");
 	}
 
@@ -343,26 +399,41 @@ public class CM2ManagerTests {
 		logger.info("list all consent templates");
 		List<ConsentTemplateDTO> all = cm2Manager.listConsentTemplates(DOMAIN);
 		Assert.assertTrue("wrong number of consent templates: " + all.size(), all.size() > 2 || all.size() < 6); // je nachdem, welche tests schon ausgefuehrt wurden
+		Assert.assertTrue("wrong number of consent templates: " + all.size(), all.size() > 2 || all.size() < 6); // je nachdem, welche tests schon ausgefuehrt wurden
 		for (ConsentTemplateDTO dto : all) {
 			logger.info(dto);
 		}
 		logger.info("get the newest version of consent template 'testCT1'");
-		ConsentTemplateDTO newest = cm2Manager.getNewestConsentTemplate("testCT1", DOMAIN);
+		ConsentTemplateDTO newest = cm2Manager.getCurrentConsentTemplate("testCT1", DOMAIN);
 		Assert.assertEquals("wrong version number for newest consent template", newest.getKey().getVersion(), "2");
 		logger.info(newest);
-		logger.info("list consents paginated");
-		List<ConsentDTO> consents = null;
+		logger.info("get list with the newest version of each consent template");
+		List<ConsentTemplateDTO> currentCTs = cm2Manager.listCurrentConsentTemplates(DOMAIN);
+		for (ConsentTemplateDTO ct : currentCTs) {
+			logger.info(ct);
+		}
+		logger.info("list all consents without scans");
+		List<ConsentLightDTO> consents = cm2Manager.getAllConsentsForDomainWithoutScan(DOMAIN);
+		for (ConsentLightDTO consentLight : consents) {
+			ConsentDTO consent = cm2Manager.getConsent(consentLight.getKey());
+			Assert.assertTrue("getAllConsentsForDomainWithoutScan got a consent WITH scan: " + consent.getKey(),
+					consent.getScanBase64() == null || consent.getScanBase64().isEmpty()); // kein trim, die abfrage ueber criteriabuilder gibt das nicht her
+		}
+		logger.info("found " + consents.size() + " consents without scan");
+		logger.info("list consents paginated (2 consents per page)");
 		int i = 0;
 		do {
-			consents = cm2Manager.getConsentsForDomainPaginated(DOMAIN, i++, 2, ConsentField.DATE, true);
-			for (ConsentDTO dto : consents) {
+			consents = cm2Manager.getConsentsForDomainPaginated(DOMAIN, i++, 2, ConsentField.DATE, true, new HashMapWrapper<ConsentField, Object>());
+			for (ConsentLightDTO dto : consents) {
 				logger.info("page " + i + ": " + dto);
 			}
 		} while (consents.size() > 0);
+		logger.info("list consents paginated (3 consents per page)");
 		i = 0;
 		do {
-			consents = cm2Manager.getConsentsForDomainPaginated(DOMAIN, i++, 2, ConsentField.CT_NAME, true);
-			for (ConsentDTO dto : consents) {
+			consents = cm2Manager.getConsentsForDomainPaginated(DOMAIN, i++, 3, ConsentField.CT_NAME, true,
+					new HashMapWrapper<ConsentField, Object>());
+			for (ConsentLightDTO dto : consents) {
 				logger.info("page " + i + ": " + dto);
 			}
 		} while (consents.size() > 0);
@@ -372,18 +443,19 @@ public class CM2ManagerTests {
 	@Test
 	public void consentTest() throws Exception {
 		logger.info("### consent test start");
-		String policyNameMandatory = "policyForConsentTestMandatory";
-		String policyNameMandatory2 = "policyForConsentTestMandatory2";
-		String policyNameMandatory3 = "policyForConsentTestMandatory3";
-		String policyNameOptional = "policyForConsentTestOptional";
-		PolicyKeyDTO policyKeyForConsentTestMandatory = new PolicyKeyDTO(DOMAIN, policyNameMandatory, "1");
-		PolicyDTO policyForConsentTestMandatory = new PolicyDTO(policyKeyForConsentTestMandatory, "no comment", "no extern properties");
-		PolicyKeyDTO policyKeyForConsentTestMandatory2 = new PolicyKeyDTO(DOMAIN, policyNameMandatory2, "1");
-		PolicyDTO policyForConsentTestMandatory2 = new PolicyDTO(policyKeyForConsentTestMandatory2);
-		PolicyKeyDTO policyKeyForConsentTestMandatory3 = new PolicyKeyDTO(DOMAIN, policyNameMandatory3, "1");
-		PolicyDTO policyForConsentTestMandatory3 = new PolicyDTO(policyKeyForConsentTestMandatory3);
-		PolicyKeyDTO policyKeyForConsentTestOptional = new PolicyKeyDTO(DOMAIN, policyNameOptional, "1");
-		PolicyDTO policyForConsentTestOptional = new PolicyDTO(policyKeyForConsentTestOptional);
+		final String policyNameMandatory = "policyForConsentTestMandatory";
+		final String policyNameMandatory2 = "policyForConsentTestMandatory2";
+		final String policyNameMandatory3 = "policyForConsentTestMandatory3";
+		final String policyNameOptional = "policyForConsentTestOptional";
+		final List<PolicyKeyDTO> emptyPolicyKeyList = new ArrayList<PolicyKeyDTO>();
+		final PolicyKeyDTO policyKeyForConsentTestMandatory = new PolicyKeyDTO(DOMAIN, policyNameMandatory, "1");
+		final PolicyDTO policyForConsentTestMandatory = new PolicyDTO(policyKeyForConsentTestMandatory, "no comment", "no extern properties");
+		final PolicyKeyDTO policyKeyForConsentTestMandatory2 = new PolicyKeyDTO(DOMAIN, policyNameMandatory2, "1");
+		final PolicyDTO policyForConsentTestMandatory2 = new PolicyDTO(policyKeyForConsentTestMandatory2);
+		final PolicyKeyDTO policyKeyForConsentTestMandatory3 = new PolicyKeyDTO(DOMAIN, policyNameMandatory3, "1");
+		final PolicyDTO policyForConsentTestMandatory3 = new PolicyDTO(policyKeyForConsentTestMandatory3);
+		final PolicyKeyDTO policyKeyForConsentTestOptional = new PolicyKeyDTO(DOMAIN, policyNameOptional, "1");
+		final PolicyDTO policyForConsentTestOptional = new PolicyDTO(policyKeyForConsentTestOptional);
 		try {
 			cm2Manager.addPolicy(policyForConsentTestMandatory);
 			cm2Manager.addPolicy(policyForConsentTestMandatory2);
@@ -412,12 +484,13 @@ public class CM2ManagerTests {
 		}
 		AssignedModuleDTO amMandatory = new AssignedModuleDTO(moduleForConsentTestMandatory, true, ConsentStatus.UNKNOWN, allConsentStatus, 0, null,
 				"no comment", "no extern properties");
-		AssignedModuleDTO amMandatory2 = new AssignedModuleDTO(moduleForConsentTestMandatory2, true, ConsentStatus.UNKNOWN, allConsentStatus, 0,
-				null, "no comment", "no extern properties");
+		AssignedModuleDTO amMandatory2 = new AssignedModuleDTO(moduleForConsentTestMandatory2, true, ConsentStatus.UNKNOWN, allConsentStatus, 0, null,
+				"no comment", "no extern properties");
 		AssignedModuleDTO amOptional = new AssignedModuleDTO(moduleForConsentTestOptional, false, ConsentStatus.UNKNOWN, allConsentStatus, 0,
 				moduleKeyForConsentTestMandatory, "no comment", "no extern properties");
 		ConsentTemplateKeyDTO ctKeyConsentTest = new ConsentTemplateKeyDTO(DOMAIN, "ConsentTest", "1");
 		ConsentTemplateDTO ctConsentTest = new ConsentTemplateDTO(ctKeyConsentTest);
+		ctConsentTest.setType(ConsentTemplateType.CONSENT);
 		ctConsentTest.setComment("no comment");
 		ctConsentTest.setExternProperties("no extern properties");
 		ctConsentTest.getAssignedModules().add(amMandatory);
@@ -434,8 +507,12 @@ public class CM2ManagerTests {
 		Set<SignerIdDTO> ids = new HashSet<SignerIdDTO>();
 		ids.add(new SignerIdDTO(MPI_ID_TYPE, id));
 		ConsentKeyDTO consentKey = new ConsentKeyDTO(ctKeyConsentTest, ids, new Date());
+		long time = consentKey.getConsentDate().getTime();
+		consentKey.getConsentDate().setTime(time - time % 1000); // db speichert keine millis
 		ConsentDTO consent = new ConsentDTO(consentKey);
-		consent.getModuleStates().put(moduleKeyForConsentTestMandatory, ConsentStatus.ACCEPTED);
+		// policyKeys muessen nicht gesetzt werden, da sie ausgewertet werden
+		consent.getModuleStates().put(moduleKeyForConsentTestMandatory,
+				new ModuleStateDTO(moduleKeyForConsentTestMandatory, ConsentStatus.ACCEPTED, emptyPolicyKeyList));
 		try {
 			cm2Manager.addConsent(consent);
 			Assert.fail("could create a consent with a missing consent status");
@@ -443,8 +520,11 @@ public class CM2ManagerTests {
 			logger.info("expected MissingRequiredObjectException: " + expected);
 		}
 		ModuleKeyDTO invalidModuleKeyForConsent = new ModuleKeyDTO(DOMAIN, "gibt's nich", "1");
-		consent.getModuleStates().put(moduleKeyForConsentTestMandatory2, ConsentStatus.ACCEPTED);
-		consent.getModuleStates().put(moduleKeyForConsentTestOptional, ConsentStatus.UNKNOWN);
+		// policyKeys muessen nicht gesetzt werden, da sie ausgewertet werden
+		consent.getModuleStates().put(moduleKeyForConsentTestMandatory2,
+				new ModuleStateDTO(moduleKeyForConsentTestMandatory2, ConsentStatus.ACCEPTED, emptyPolicyKeyList));
+		consent.getModuleStates().put(moduleKeyForConsentTestOptional,
+				new ModuleStateDTO(moduleKeyForConsentTestOptional, ConsentStatus.UNKNOWN, emptyPolicyKeyList));
 		try {
 			cm2Manager.addConsent(consent);
 			Assert.fail("could create a consent without the mandatory signatures and signature dates");
@@ -456,7 +536,9 @@ public class CM2ManagerTests {
 		consent.setPhysicanSignatureBase64("dummy");
 		consent.setPhysicanSigningDate(new Date());
 		consent.setPhysicanId("123");
-		consent.getModuleStates().put(invalidModuleKeyForConsent, ConsentStatus.ACCEPTED);
+		// policyKeys muessen nicht gesetzt werden, da sie ausgewertet werden
+		consent.getModuleStates().put(invalidModuleKeyForConsent,
+				new ModuleStateDTO(invalidModuleKeyForConsent, ConsentStatus.ACCEPTED, emptyPolicyKeyList));
 		try {
 			cm2Manager.addConsent(consent);
 			Assert.fail("could create a consent with an invalid policy");
@@ -464,9 +546,13 @@ public class CM2ManagerTests {
 			logger.info("expected UnknownModuleException: " + expected);
 		}
 		consent.getModuleStates().clear();
-		consent.getModuleStates().put(moduleKeyForConsentTestMandatory, ConsentStatus.ACCEPTED);
-		consent.getModuleStates().put(moduleKeyForConsentTestMandatory2, ConsentStatus.DECLINED);
-		consent.getModuleStates().put(moduleKeyForConsentTestOptional, ConsentStatus.UNKNOWN);
+		// policyKeys muessen nicht gesetzt werden, da sie ausgewertet werden
+		consent.getModuleStates().put(moduleKeyForConsentTestMandatory,
+				new ModuleStateDTO(moduleKeyForConsentTestMandatory, ConsentStatus.ACCEPTED, emptyPolicyKeyList));
+		consent.getModuleStates().put(moduleKeyForConsentTestMandatory2,
+				new ModuleStateDTO(moduleKeyForConsentTestMandatory2, ConsentStatus.DECLINED, emptyPolicyKeyList));
+		consent.getModuleStates().put(moduleKeyForConsentTestOptional,
+				new ModuleStateDTO(moduleKeyForConsentTestOptional, ConsentStatus.UNKNOWN, emptyPolicyKeyList));
 		try {
 			cm2Manager.addConsent(consent);
 			Assert.fail("could create a consent with a mandatory-fields-logic-error");
@@ -475,9 +561,15 @@ public class CM2ManagerTests {
 		}
 		logger.info("add valid consent");
 		consent.getModuleStates().clear();
-		consent.getModuleStates().put(moduleKeyForConsentTestMandatory, ConsentStatus.ACCEPTED);
-		consent.getModuleStates().put(moduleKeyForConsentTestMandatory2, ConsentStatus.ACCEPTED);
-		consent.getModuleStates().put(moduleKeyForConsentTestOptional, ConsentStatus.UNKNOWN);
+		// policyKeys muessen nicht gesetzt werden, da sie ausgewertet werden
+		consent.getModuleStates().put(moduleKeyForConsentTestMandatory,
+				new ModuleStateDTO(moduleKeyForConsentTestMandatory, ConsentStatus.ACCEPTED, emptyPolicyKeyList));
+		consent.getModuleStates().put(moduleKeyForConsentTestMandatory2,
+				new ModuleStateDTO(moduleKeyForConsentTestMandatory2, ConsentStatus.ACCEPTED, emptyPolicyKeyList));
+		consent.getModuleStates().put(moduleKeyForConsentTestOptional,
+				new ModuleStateDTO(moduleKeyForConsentTestOptional, ConsentStatus.UNKNOWN, emptyPolicyKeyList));
+		consent.setComment("no comment");
+		consent.setExternProperties("no extern properties");
 		cm2Manager.addConsent(consent);
 		logger.info("check consent states");
 		CheckConsentConfig config = new CheckConsentConfig();
@@ -493,7 +585,47 @@ public class CM2ManagerTests {
 				cm2Manager.isConsentedFromExcludingToExcluding(ids, DOMAIN, policyNameMandatory, "1", "1", config));
 
 		logger.info("### add scan to consent");
-		cm2Manager.addScanToConsent(consentKey, "nur ein test", "pure text for test");
+		String text = "nur ein test";
+		final String txtType = "txt";
+		final String pdfType = "pdf";
+		cm2Manager.addScanToConsent(consentKey, text, txtType);
+		consent = cm2Manager.getConsent(consentKey);
+		Assert.assertEquals(text, consent.getScanBase64());
+		Assert.assertEquals(txtType, consent.getScanFileType());
+
+		logger.info("try to update some consent fields");
+		Date date = new Date();
+		String newExternProperties = "externProperties_" + date;
+		String newComment = "comment_" + date;
+		text = "ein neuer testtext";
+		cm2Manager.updateConsent(consentKey, newExternProperties, newComment, text, pdfType);
+		consent = cm2Manager.getConsent(consentKey);
+		Assert.assertEquals(newExternProperties, consent.getExternProperties());
+		Assert.assertEquals(newComment, consent.getComment());
+		Assert.assertEquals(text, consent.getScanBase64());
+		Assert.assertEquals(pdfType, consent.getScanFileType());
+
+		logger.info("test getAllConsentsForPerson");
+		List<ConsentLightDTO> consentsForPerson = cm2Manager.getAllConsentsForPerson(DOMAIN, ids);
+		logger.info("found " + consentsForPerson.size() + " consents");
+
+		logger.info("try to invalidate consent");
+		try {
+			cm2Manager.invalidateConsent(consent.getKey(), ConsentStatus.ACCEPTED, "no comment", null);
+			Assert.fail("could \"invalidate\" a consent with ConsentStatus.ACCEPTED");
+		} catch (InvalidConsentStatusException expected) {
+			logger.info("expected InvalidConsentStatusException: " + expected.getMessage());
+		}
+		try {
+			cm2Manager.invalidateConsent(consent.getKey(), ConsentStatus.NOT_ASKED, "no comment", null);
+			Assert.fail("could \"invalidate\" a consent with ConsentStatus.NOT_ASKED");
+		} catch (InvalidConsentStatusException expected) {
+			logger.info("expected InvalidConsentStatusException: " + expected.getMessage());
+		}
+		Thread.sleep(1000); // 1 sekunde pause wegen pk vom consent, da ist die zeit mit drin; sonst duplicate key moeglich
+		cm2Manager.invalidateConsent(consent.getKey(), ConsentStatus.REVOKED, "no comment", null);
+		Assert.assertFalse("isConsented() returned 'true' where it should return 'false'",
+				cm2Manager.isConsented(ids, policyKeyForConsentTestMandatory, config));
 		logger.info("### consent test end");
 	}
 
@@ -502,7 +634,7 @@ public class CM2ManagerTests {
 		logger.info("### version test start");
 		try {
 			DomainDTO domainDTO = new DomainDTO("crash-test-dummy", "dummy", "abc.def.ghi", SimpleVersionConverter.class.getName(),
-					SimpleVersionConverter.class.getName(), "", "crash-test-domain", "no extern properties", idTypes);
+					SimpleVersionConverter.class.getName(), "", "crash-test-domain", "no extern properties", "", idTypes);
 			logger.info("creating crash test domain: " + domainDTO);
 			cm2Manager.addDomain(domainDTO);
 			Assert.fail("could create a domain with an unknown ctVersionConverterClass");
@@ -511,7 +643,7 @@ public class CM2ManagerTests {
 		}
 		try {
 			DomainDTO domainDTO = new DomainDTO("crash-test-dummy", "dummy", SimpleVersionConverter.class.getName(), "abc.def.ghi",
-					SimpleVersionConverter.class.getName(), "", "crash-test-domain", "no extern properties", idTypes);
+					SimpleVersionConverter.class.getName(), "", "crash-test-domain", "no extern properties", "", idTypes);
 			logger.info("creating crash test domain: " + domainDTO);
 			cm2Manager.addDomain(domainDTO);
 			Assert.fail("could create a domain with an unknown moduleVersionConverterClass");
@@ -520,7 +652,7 @@ public class CM2ManagerTests {
 		}
 		try {
 			DomainDTO domainDTO = new DomainDTO("crash-test-dummy", "dummy", SimpleVersionConverter.class.getName(),
-					SimpleVersionConverter.class.getName(), "abc.def.ghi", "", "crash-test-domain", "no extern properties", idTypes);
+					SimpleVersionConverter.class.getName(), "abc.def.ghi", "", "crash-test-domain", "no extern properties", "", idTypes);
 			logger.info("creating crash test domain: " + domainDTO);
 			cm2Manager.addDomain(domainDTO);
 			Assert.fail("could create a domain with an unknown policyVersionConverterClass");
@@ -528,24 +660,46 @@ public class CM2ManagerTests {
 			logger.info("expected VersionConverterClassException: " + expected);
 		}
 
+		logger.info("try to add some policies with invalid version strings");
+		try {
+			PolicyKeyDTO versionPolicyKey = new PolicyKeyDTO(VERSION_DOMAIN, "test", "1");
+			PolicyDTO versionPolicy = new PolicyDTO(versionPolicyKey);
+			cm2Manager.addPolicy(versionPolicy);
+			Assert.fail("could create a policy with an invalid version string");
+		} catch (InvalidVersionException expected) {
+			logger.info("expected InvalidVersionException: " + expected);
+		}
+		try {
+			PolicyKeyDTO versionPolicyKey = new PolicyKeyDTO(VERSION_DOMAIN, "test", "999.111");
+			PolicyDTO versionPolicy = new PolicyDTO(versionPolicyKey);
+			cm2Manager.addPolicy(versionPolicy);
+			Assert.fail("could create a policy with an invalid version string");
+		} catch (InvalidVersionException expected) {
+			logger.info("expected InvalidVersionException: " + expected);
+		}
+		try {
+			PolicyKeyDTO versionPolicyKey = new PolicyKeyDTO(VERSION_DOMAIN, "test", "1111.1.2");
+			PolicyDTO versionPolicy = new PolicyDTO(versionPolicyKey);
+			cm2Manager.addPolicy(versionPolicy);
+			Assert.fail("could create a policy with an invalid version string");
+		} catch (InvalidVersionException expected) {
+			logger.info("expected InvalidVersionException: " + expected);
+		}
+
 		logger.info("add some policies with valid version strings");
-		PolicyKeyDTO versionPolicyKey = new PolicyKeyDTO(VERSION_DOMAIN, "test", "1");
+		PolicyKeyDTO versionPolicyKey = new PolicyKeyDTO(VERSION_DOMAIN, "test", "1.999.0");
 		PolicyDTO versionPolicy = new PolicyDTO(versionPolicyKey);
 		cm2Manager.addPolicy(versionPolicy);
 		cm2Manager.deletePolicy(versionPolicyKey);
-		versionPolicyKey = new PolicyKeyDTO(VERSION_DOMAIN, "test", "1");
+		versionPolicyKey = new PolicyKeyDTO(VERSION_DOMAIN, "test", "1.0.0");
 		versionPolicy = new PolicyDTO(versionPolicyKey);
 		cm2Manager.addPolicy(versionPolicy);
 		cm2Manager.deletePolicy(versionPolicyKey);
-		versionPolicyKey = new PolicyKeyDTO(VERSION_DOMAIN, "test", "1.999");
+		versionPolicyKey = new PolicyKeyDTO(VERSION_DOMAIN, "test", "999.999.999");
 		versionPolicy = new PolicyDTO(versionPolicyKey);
 		cm2Manager.addPolicy(versionPolicy);
 		cm2Manager.deletePolicy(versionPolicyKey);
-		versionPolicyKey = new PolicyKeyDTO(VERSION_DOMAIN, "test", "999.111.56");
-		versionPolicy = new PolicyDTO(versionPolicyKey);
-		cm2Manager.addPolicy(versionPolicy);
-		cm2Manager.deletePolicy(versionPolicyKey);
-		versionPolicyKey = new PolicyKeyDTO(VERSION_DOMAIN, "test", "01.8.002");
+		versionPolicyKey = new PolicyKeyDTO(VERSION_DOMAIN, "test", "01.002.030");
 		versionPolicy = new PolicyDTO(versionPolicyKey);
 		cm2Manager.addPolicy(versionPolicy);
 		cm2Manager.deletePolicy(versionPolicyKey);
@@ -597,13 +751,14 @@ public class CM2ManagerTests {
 		logger.info("create a consent template with free texts");
 		ConsentTemplateKeyDTO tempCTKey = new ConsentTemplateKeyDTO(DOMAIN, "freeTextCT", "1");
 		ConsentTemplateDTO tempCT = new ConsentTemplateDTO(tempCTKey);
-		FreeTextDefDTO freeText1 = new FreeTextDefDTO(REQUIRED_FREE_TEXT, true, FreeTextType.String, "", "comment");
+		tempCT.setType(ConsentTemplateType.CONSENT);
+		FreeTextDefDTO freeText1 = new FreeTextDefDTO(REQUIRED_FREE_TEXT, true, FreeTextType.String, "", 1, "comment");
 		tempCT.getFreeTextDefs().add(freeText1);
-		FreeTextDefDTO freeText2 = new FreeTextDefDTO(DATE_FREE_TEXT, false, FreeTextType.Date, "dd.MM.yyyy", "comment");
+		FreeTextDefDTO freeText2 = new FreeTextDefDTO(DATE_FREE_TEXT, false, FreeTextType.Date, "dd.MM.yyyy", 2, "comment");
 		tempCT.getFreeTextDefs().add(freeText2);
-		FreeTextDefDTO freeText3 = new FreeTextDefDTO(INTEGER_FREE_TEXT, false, FreeTextType.Integer, "", "comment");
+		FreeTextDefDTO freeText3 = new FreeTextDefDTO(INTEGER_FREE_TEXT, false, FreeTextType.Integer, "", 3, "comment");
 		tempCT.getFreeTextDefs().add(freeText3);
-		FreeTextDefDTO freeText4 = new FreeTextDefDTO(DOUBLE_FREE_TEXT, false, FreeTextType.Double, "", "comment");
+		FreeTextDefDTO freeText4 = new FreeTextDefDTO(DOUBLE_FREE_TEXT, false, FreeTextType.Double, "", 4, "comment");
 		tempCT.getFreeTextDefs().add(freeText4);
 		try {
 			cm2Manager.addConsentTemplate(tempCT);
@@ -663,7 +818,8 @@ public class CM2ManagerTests {
 		logger.info("try to create consent templates with erronous free texts");
 		ConsentTemplateKeyDTO erronousCTKey = new ConsentTemplateKeyDTO(DOMAIN, "erronous free text ct", "1");
 		ConsentTemplateDTO erronousCT = new ConsentTemplateDTO(erronousCTKey);
-		FreeTextDefDTO erronousFreeText = new FreeTextDefDTO("erronous free text", false, FreeTextType.Date, "d.MGTRH.yyyy", "comment");
+		erronousCT.setType(ConsentTemplateType.CONSENT);
+		FreeTextDefDTO erronousFreeText = new FreeTextDefDTO("erronous free text", false, FreeTextType.Date, "d.MGTRH.yyyy", 1, "comment");
 		erronousCT.getFreeTextDefs().add(erronousFreeText);
 		try {
 			cm2Manager.addConsentTemplate(erronousCT);
@@ -671,7 +827,7 @@ public class CM2ManagerTests {
 		} catch (FreeTextConverterStringException expected) {
 			logger.info("expected FreeTextConverterStringException: " + expected);
 		}
-		erronousFreeText = new FreeTextDefDTO("erronous free text", false, FreeTextType.Date, null, "comment");
+		erronousFreeText = new FreeTextDefDTO("erronous free text", false, FreeTextType.Date, null, 1, "comment");
 		erronousCT.getFreeTextDefs().clear();
 		erronousCT.getFreeTextDefs().add(erronousFreeText);
 		try {
@@ -689,12 +845,14 @@ public class CM2ManagerTests {
 		logger.info("try to update some domain fields");
 		Date date = new Date();
 		String newLabel = "label_" + date;
-		String newProperties = "date=" + date + ";"; // achtung! fuer den test den propertiesString ohne leerzeichen, da die intern getrimmt werden; ausserdem mit trennzeichen ';'
+		String newLogo = "logo_" + date;
+		String newExternProperties = "externProperties_" + date;
 		String newComment = "comment_" + date;
-		cm2Manager.updateDomain(DOMAIN, newLabel, newProperties, newComment);
+		cm2Manager.updateDomain(DOMAIN, newLabel, newLogo, newExternProperties, newComment);
 		DomainDTO domain = cm2Manager.getDomain(DOMAIN);
 		Assert.assertEquals(newLabel, domain.getLabel());
-		Assert.assertEquals(newProperties, domain.getProperties());
+		Assert.assertEquals(newLogo, domain.getLogo());
+		Assert.assertEquals(newExternProperties, domain.getExternProperties());
 		Assert.assertEquals(newComment, domain.getComment());
 		logger.info("### domain test end");
 	}
@@ -706,5 +864,81 @@ public class CM2ManagerTests {
 		cm2Manager.addSignerIdType(DOMAIN, "dummySignerIdType");
 		cm2Manager.deleteSignerIdType(DOMAIN, "dummySignerIdType");
 		logger.info("### signer id test end");
+	}
+
+	@Test
+	public void deletionTests() throws Exception {
+		logger.info("### deletion tests start");
+		DomainDTO domainDTO = new DomainDTO(DELETION_DOMAIN, DELETION_TEST, SimpleVersionConverter.class.getName(),
+				SimpleVersionConverter.class.getName(), SimpleVersionConverter.class.getName(), "", "test-domain", "no extern properties", "logo",
+				idTypes);
+		ctForDeletion.getAssignedModules().add(amForDeletion);
+		ctForDeletion.setType(ConsentTemplateType.CONSENT);
+		logger.info("add domain");
+		cm2Manager.addDomain(domainDTO);
+		logger.info("add policy");
+		cm2Manager.addPolicy(policyForDeletion);
+		logger.info("add module");
+		cm2Manager.addModule(moduleForDeletion);
+		logger.info("add consent template");
+		cm2Manager.addConsentTemplate(ctForDeletion);
+		logger.info("try to delete a used module");
+		try {
+			cm2Manager.deleteModule(moduleKeyForDeletion);
+			Assert.fail("could delete a used module");
+		} catch (ObjectInUseException expected) {
+			logger.info("expected ObjectInUseException: " + expected);
+		}
+		logger.info("remove consent template");
+		cm2Manager.deleteConsentTemplate(ctKeyForDeletion);
+		logger.info("try to get the deleted consent template");
+		try {
+			cm2Manager.getConsentTemplate(ctKeyForDeletion);
+			Assert.fail("deleted consent template still found");
+		} catch (UnknownConsentTemplateException expected) {
+			logger.info("expected UnknownConsentTemplateException: " + expected);
+		}
+		logger.info("try to delete a used policy");
+		try {
+			cm2Manager.deletePolicy(policyKeyForDeletion);
+			Assert.fail("could delete a used policy");
+		} catch (ObjectInUseException expected) {
+			logger.info("expected ObjectInUseException: " + expected);
+		}
+		logger.info("remove module");
+		cm2Manager.deleteModule(moduleKeyForDeletion);
+		logger.info("try to get the deleted module");
+		try {
+			cm2Manager.getModule(moduleKeyForDeletion);
+			Assert.fail("deleted module still found");
+		} catch (UnknownModuleException expected) {
+			logger.info("expected UnknownModuleException: " + expected);
+		}
+		logger.info("try to delete a used domain");
+		try {
+			cm2Manager.deleteDomain(DELETION_DOMAIN);
+			Assert.fail("could delete a used domain");
+		} catch (ObjectInUseException expected) {
+			logger.info("expected ObjectInUseException: " + expected);
+		}
+		logger.info("remove policy");
+		cm2Manager.deletePolicy(policyKeyForDeletion);
+		logger.info("try to get the deleted policy");
+		try {
+			cm2Manager.getPolicy(policyKeyForDeletion);
+			Assert.fail("deleted policy still found");
+		} catch (UnknownPolicyException expected) {
+			logger.info("expected UnknownPolicyException: " + expected);
+		}
+		logger.info("remove domain");
+		cm2Manager.deleteDomain(DELETION_DOMAIN);
+		logger.info("try to get the deleted domain");
+		try {
+			cm2Manager.getDomain(DELETION_DOMAIN);
+			Assert.fail("deleted domain still found");
+		} catch (UnknownDomainException expected) {
+			logger.info("expected UnknownDomainException: " + expected);
+		}
+		logger.info("### deletion tests end");
 	}
 }

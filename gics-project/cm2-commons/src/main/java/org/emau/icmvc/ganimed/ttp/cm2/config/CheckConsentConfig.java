@@ -4,16 +4,21 @@ package org.emau.icmvc.ganimed.ttp.cm2.config;
  * ###license-information-start###
  * gICS - a Generic Informed Consent Service
  * __
- * Copyright (C) 2014 - 2017 The MOSAIC Project - Institut fuer Community Medicine der
- * 							Universitaetsmedizin Greifswald - mosaic-projekt@uni-greifswald.de
+ * Copyright (C) 2014 - 2018 The MOSAIC Project - Institut fuer Community
+ * 							Medicine of the University Medicine Greifswald -
+ * 							mosaic-projekt@uni-greifswald.de
+ * 
  * 							concept and implementation
- * 							l. geidel
+ * 							l.geidel
  * 							web client
- * 							g. weiher
- * 							a. blumentritt
+ * 							a.blumentritt, m.bialke
+ * 
+ * 							Selected functionalities of gICS were developed as part of the MAGIC Project (funded by the DFG HO 1937/5-1).
+ * 
  * 							please cite our publications
  * 							http://dx.doi.org/10.3414/ME14-01-0133
  * 							http://dx.doi.org/10.1186/s12967-015-0545-6
+ * 							http://dx.doi.org/10.3205/17gmds146
  * __
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -30,38 +35,57 @@ package org.emau.icmvc.ganimed.ttp.cm2.config;
  * ###license-information-end###
  */
 
-
 import java.io.Serializable;
 
-import org.emau.icmvc.ganimed.ttp.cm2.dto.ConsentStatusType;
+import org.emau.icmvc.ganimed.ttp.cm2.dto.enums.ConsentStatusType;
 
 /**
- * konfiguration fuer die ueberpruefung, ob eine policy fuer eine bestimmte id (person) als konsentiert gilt <br>
+ * configuration for the check whether the given policy is consented by the given person
+ * <p>
+ * <b>idMatchingType</b><br>
+ * match at least one, at least all or exact all of the given signer identifiers<br>
+ * default = AT_LEAST_ONE
+ * <p>
  * <b>ignoreVersionNumber</b><br>
- * ignore the version number of the policy <br>
- * default = false <br>
+ * ignore the version number of the policy<br>
+ * default = false
+ * <p>
  * <b>unknownStateIsConsideredAsDecline</b><br>
- * if the consent state type "unknown" is encountered, it's considered as "declined" for the "isConsented...()"-functions; see {@link ConsentStatusType} <br>
- * default = false <br>
+ * if the consent state type "unknown" is encountered, it's considered as "declined" for the "isConsented...()"-functions; see {@link ConsentStatusType}<br>
+ * default = false
+ * <p>
  * 
  * @author geidell
  * 
  */
 public class CheckConsentConfig implements Serializable {
 
-	private static final long serialVersionUID = -7510061392753117771L;
+	private static final long serialVersionUID = -6636704676431609622L;
 	/**
-	 * ignore the version number of the policy <br>
+	 * match at least one, at least all or exact all of the given signer identifiers<br>
+	 * default = AT_LEAST_ONE
+	 */
+	private IdMatching idMatchingType = IdMatching.AT_LEAST_ONE;
+	/**
+	 * ignore the version number of the policy<br>
 	 * default = false
 	 */
 	private boolean ignoreVersionNumber = false;
 	/**
-	 * if the consent state type "unknown" is encountered, it's considered as "declined" for the "isConsented...()"-functions; see {@link ConsentStatusType} <br>
+	 * if the consent state type "unknown" is encountered, it's considered as "declined" for the "isConsented...()"-functions; see {@link ConsentStatusType}<br>
 	 * default = false
 	 */
 	private boolean unknownStateIsConsideredAsDecline = false;
 
 	public CheckConsentConfig() {
+	}
+
+	public IdMatching getIdMatchingType() {
+		return idMatchingType;
+	}
+
+	public void setIdMatchingType(IdMatching idMatchingType) {
+		this.idMatchingType = idMatchingType;
 	}
 
 	public boolean getIgnoreVersionNumber() {
@@ -84,6 +108,7 @@ public class CheckConsentConfig implements Serializable {
 	public int hashCode() {
 		final int prime = 31;
 		int result = 1;
+		result = prime * result + ((idMatchingType == null) ? 0 : idMatchingType.hashCode());
 		result = prime * result + (ignoreVersionNumber ? 1231 : 1237);
 		result = prime * result + (unknownStateIsConsideredAsDecline ? 1231 : 1237);
 		return result;
@@ -98,6 +123,8 @@ public class CheckConsentConfig implements Serializable {
 		if (getClass() != obj.getClass())
 			return false;
 		CheckConsentConfig other = (CheckConsentConfig) obj;
+		if (idMatchingType != other.idMatchingType)
+			return false;
 		if (ignoreVersionNumber != other.ignoreVersionNumber)
 			return false;
 		if (unknownStateIsConsideredAsDecline != other.unknownStateIsConsideredAsDecline)
@@ -108,10 +135,16 @@ public class CheckConsentConfig implements Serializable {
 	@Override
 	public String toString() {
 		StringBuilder sb = new StringBuilder("check consent config with the following settings:\n");
-		sb.append("ignore version number: ");
+		sb.append("signer id matching type: ");
+		sb.append(idMatchingType);
+		sb.append("\nignore version number: ");
 		sb.append(ignoreVersionNumber);
 		sb.append("\nunknown state is considered as decline: ");
 		sb.append(unknownStateIsConsideredAsDecline);
 		return sb.toString();
+	}
+
+	public enum IdMatching {
+		AT_LEAST_ONE, AT_LEAST_ALL, EXACT;
 	}
 }

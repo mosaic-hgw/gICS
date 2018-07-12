@@ -4,16 +4,21 @@ package org.emau.icmvc.ganimed.ttp.cm2.model;
  * ###license-information-start###
  * gICS - a Generic Informed Consent Service
  * __
- * Copyright (C) 2014 - 2017 The MOSAIC Project - Institut fuer Community Medicine der
- * 							Universitaetsmedizin Greifswald - mosaic-projekt@uni-greifswald.de
+ * Copyright (C) 2014 - 2018 The MOSAIC Project - Institut fuer Community
+ * 							Medicine of the University Medicine Greifswald -
+ * 							mosaic-projekt@uni-greifswald.de
+ * 
  * 							concept and implementation
- * 							l. geidel
+ * 							l.geidel
  * 							web client
- * 							g. weiher
- * 							a. blumentritt
+ * 							a.blumentritt, m.bialke
+ * 
+ * 							Selected functionalities of gICS were developed as part of the MAGIC Project (funded by the DFG HO 1937/5-1).
+ * 
  * 							please cite our publications
  * 							http://dx.doi.org/10.3414/ME14-01-0133
  * 							http://dx.doi.org/10.1186/s12967-015-0545-6
+ * 							http://dx.doi.org/10.3205/17gmds146
  * __
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -32,6 +37,7 @@ package org.emau.icmvc.ganimed.ttp.cm2.model;
 
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -55,14 +61,20 @@ import org.eclipse.persistence.annotations.BatchFetchType;
 import org.eclipse.persistence.annotations.Cache;
 import org.eclipse.persistence.config.CacheIsolationType;
 import org.emau.icmvc.ganimed.ttp.cm2.dto.ConsentDTO;
-import org.emau.icmvc.ganimed.ttp.cm2.dto.ConsentStatus;
+import org.emau.icmvc.ganimed.ttp.cm2.dto.ConsentLightDTO;
 import org.emau.icmvc.ganimed.ttp.cm2.dto.ModuleKeyDTO;
+import org.emau.icmvc.ganimed.ttp.cm2.dto.ModuleStateDTO;
 import org.emau.icmvc.ganimed.ttp.cm2.dto.PolicyKeyDTO;
+import org.emau.icmvc.ganimed.ttp.cm2.dto.enums.ConsentStatus;
 import org.emau.icmvc.ganimed.ttp.cm2.exceptions.InconsistentStatusException;
+import org.emau.icmvc.ganimed.ttp.cm2.exceptions.InternalException;
 import org.emau.icmvc.ganimed.ttp.cm2.exceptions.InvalidFreeTextException;
+import org.emau.icmvc.ganimed.ttp.cm2.exceptions.InvalidPropertiesException;
 import org.emau.icmvc.ganimed.ttp.cm2.exceptions.InvalidVersionException;
 import org.emau.icmvc.ganimed.ttp.cm2.exceptions.MissingRequiredObjectException;
+import org.emau.icmvc.ganimed.ttp.cm2.exceptions.UnknownDomainException;
 import org.emau.icmvc.ganimed.ttp.cm2.exceptions.VersionConverterClassException;
+import org.emau.icmvc.ganimed.ttp.cm2.internal.VersionConverterCache;
 
 /**
  * ein consent ist ein ausgefuelltes und unterschriebenes konsentdokument (consent template)
@@ -75,12 +87,12 @@ import org.emau.icmvc.ganimed.ttp.cm2.exceptions.VersionConverterClassException;
 @Cache(isolation = CacheIsolationType.ISOLATED)
 public class Consent implements Serializable {
 
-	private static final long serialVersionUID = 1413013617439366206L;
+	private static final long serialVersionUID = 5603707985566847520L;
 	@EmbeddedId
 	private ConsentKey key;
 	// muss "eager" sein - auf das feld wird nicht direkt zugegriffen und daher weiss jpa nicht, wann das nachgeladen werden muss
 	@OneToMany(mappedBy = "consent", fetch = FetchType.EAGER, cascade = CascadeType.ALL)
-	@BatchFetch(BatchFetchType.IN)
+	// kein batchfetch - mysql kriegt das resultierende sql nicht vernuenftig optimiert wenn mehr als ein consent zu einer person existiert
 	private List<Signature> signatures = new ArrayList<Signature>();
 	@Column(name = "PATIENTSIGNATURE_IS_FROM_GUARDIAN")
 	private Boolean patientSignatureIsFromGuardian;
@@ -90,6 +102,9 @@ public class Consent implements Serializable {
 	@MapsId("ctKey")
 	private ConsentTemplate consentTemplate;
 	private String physicanId;
+	private String comment;
+	@Column(name = "EXTERN_PROPERTIES")
+	private String externProperties;
 	@OneToOne(fetch = FetchType.LAZY, cascade = CascadeType.ALL)
 	@JoinColumn(name = "SCAN_BASE64", referencedColumnName = "ID")
 	private Text scanBase64;
@@ -128,9 +143,11 @@ public class Consent implements Serializable {
 		signatures.add(new Signature(this, SignatureType.PHYSICAN, dto.getPhysicanSignatureBase64(), dto.getPhysicanSigningDate()));
 		this.scanBase64 = new Text(key, TextType.CONSENTSCAN, dto.getScanBase64());
 		this.scanFileType = dto.getScanFileType();
-		for (Entry<ModuleKeyDTO, ConsentStatus> moduleEntry : dto.getModuleStates().entrySet()) {
-			for (Policy policy : modules.get(moduleEntry.getKey()).getPolicies()) {
-				SignedPolicy signedPolicy = new SignedPolicy(this, policy, moduleEntry.getValue());
+		this.comment = dto.getComment();
+		this.externProperties = dto.getExternProperties();
+		for (Entry<ModuleKeyDTO, ModuleStateDTO> moduleState : dto.getModuleStates().entrySet()) {
+			for (Policy policy : modules.get(moduleState.getKey()).getPolicies()) {
+				SignedPolicy signedPolicy = new SignedPolicy(this, policy, moduleState.getValue().getConsentState());
 				signedPolicies.add(signedPolicy);
 			}
 		}
@@ -180,6 +197,22 @@ public class Consent implements Serializable {
 		return physicanId;
 	}
 
+	public String getComment() {
+		return comment;
+	}
+
+	public void setComment(String comment) {
+		this.comment = comment;
+	}
+
+	public String getExternProperties() {
+		return externProperties;
+	}
+
+	public void setExternProperties(String externProperties) {
+		this.externProperties = externProperties;
+	}
+
 	public void setScanBase64(String scanBase64, String fileType) {
 		this.scanBase64.setText(scanBase64);
 		this.scanFileType = fileType;
@@ -201,45 +234,70 @@ public class Consent implements Serializable {
 		return virtualPerson;
 	}
 
-	public ConsentDTO toDTO() throws VersionConverterClassException, InvalidVersionException, InconsistentStatusException {
-		ConsentDTO result = new ConsentDTO(key.toDTO(consentTemplate.getDomain().getCTVersionConverterInstance(), virtualPerson));
-		result.setPatientSignatureBase64(getPatientSignature().getSignatureScanBase64());
-		result.setPatientSigningDate(getPatientSignature().getSignatureDate());
-		result.setPatientSignatureIsFromGuardian(patientSignatureIsFromGuardian);
-		result.setPhysicanId(physicanId);
-		result.setPhysicanSignatureBase64(getPhysicanSignature().getSignatureScanBase64());
-		result.setPhysicanSigningDate(getPhysicanSignature().getSignatureDate());
-		result.setScanBase64(scanBase64.getText());
-		result.setScanFileType(scanFileType);
-		HashMap<PolicyKeyDTO, ConsentStatus> policyStates = new HashMap<PolicyKeyDTO, ConsentStatus>();
-		for (SignedPolicy signedPolicy : signedPolicies) {
-			policyStates.put(signedPolicy.getKey().getPolicyKey().toDTO(consentTemplate.getDomain().getPolicyVersionConverterInstance()),
-					signedPolicy.getStatus());
+	public Date getExpirationDate() throws InternalException {
+		try {
+			return consentTemplate.getPropertiesObject().getExpirationDateForConsentWithDate(key.getConsentDate());
+		} catch (InvalidPropertiesException e) {
+			throw new InternalException("unexpected exception retrieving consent expiration date: " + e.getMessage());
 		}
-		HashMap<ModuleKeyDTO, ConsentStatus> moduleStates = new HashMap<ModuleKeyDTO, ConsentStatus>();
-		for (ModuleConsentTemplate mct : consentTemplate.getModuleConsentTemplates()) {
-			ConsentStatus moduleStatus = null;
-			for (Policy policy : mct.getModule().getPolicies()) {
-				ConsentStatus tempModuleStatus = policyStates.get(policy.getKey().toDTO(
-						consentTemplate.getDomain().getPolicyVersionConverterInstance()));
-				if (moduleStatus == null) {
-					moduleStatus = tempModuleStatus;
-				} else if (!moduleStatus.equals(tempModuleStatus)) {
-					StringBuilder sb = new StringBuilder();
-					sb.append("inconsistence for ");
-					sb.append(key);
-					sb.append(" signed consent for ");
-					sb.append(policy.getKey());
-					sb.append(" status should be ");
-					sb.append(moduleStatus);
-					sb.append(" but is ");
-					sb.append(tempModuleStatus);
-					throw new InconsistentStatusException(sb.toString());
-				}
+	}
+
+	public ConsentLightDTO toLightDTO(VersionConverterCache vcc)
+			throws InvalidVersionException, VersionConverterClassException, InconsistentStatusException {
+		try {
+			ConsentLightDTO result = new ConsentLightDTO(
+					key.toDTO(vcc.getCTVersionConverter(consentTemplate.getDomain().getName()), virtualPerson));
+			result.setTemplateType(consentTemplate.getType());
+			result.setPatientSigningDate(getPatientSignature() != null ? getPatientSignature().getSignatureDate() : null);
+			result.setPatientSignatureIsFromGuardian(patientSignatureIsFromGuardian);
+			result.setPhysicanId(physicanId);
+			result.setPhysicanSigningDate(getPhysicanSignature() != null ? getPhysicanSignature().getSignatureDate() : null);
+			result.setComment(comment);
+			result.setExternProperties(externProperties);
+			result.setScanFileType(scanFileType);
+			HashMap<PolicyKeyDTO, ConsentStatus> policyStates = new HashMap<PolicyKeyDTO, ConsentStatus>();
+			for (SignedPolicy signedPolicy : signedPolicies) {
+				policyStates.put(signedPolicy.getKey().getPolicyKey().toDTO(vcc.getPolicyVersionConverter(consentTemplate.getDomain().getName())),
+						signedPolicy.getStatus());
 			}
-			moduleStates.put(mct.getModule().getKey().toDTO(consentTemplate.getDomain().getModuleVersionConverterInstance()), moduleStatus);
+			Map<ModuleKeyDTO, ModuleStateDTO> moduleStates = new HashMap<ModuleKeyDTO, ModuleStateDTO>();
+			for (ModuleConsentTemplate mct : consentTemplate.getModuleConsentTemplates()) {
+				ConsentStatus moduleStatus = null;
+				List<PolicyKeyDTO> policyKeys = new ArrayList<PolicyKeyDTO>();
+				for (Policy policy : mct.getModule().getPolicies()) {
+					PolicyKeyDTO policyKey = policy.getKey().toDTO(vcc.getPolicyVersionConverter(consentTemplate.getDomain().getName()));
+					ConsentStatus tempModuleStatus = policyStates.get(policyKey);
+					if (moduleStatus == null) {
+						moduleStatus = tempModuleStatus;
+					} else if (!moduleStatus.equals(tempModuleStatus)) {
+						StringBuilder sb = new StringBuilder();
+						sb.append("inconsistence for ");
+						sb.append(key);
+						sb.append(" signed consent for ");
+						sb.append(policy.getKey());
+						sb.append(" status should be ");
+						sb.append(moduleStatus);
+						sb.append(" but is ");
+						sb.append(tempModuleStatus);
+						throw new InconsistentStatusException(sb.toString());
+					}
+					policyKeys.add(policyKey);
+				}
+				ModuleKeyDTO moduleKey = mct.getModule().getKey().toDTO(vcc.getModuleVersionConverter(consentTemplate.getDomain().getName()));
+				moduleStates.put(moduleKey, new ModuleStateDTO(moduleKey, moduleStatus, policyKeys));
+			}
+			result.setModuleStates(moduleStates);
+			return result;
+		} catch (UnknownDomainException impossible) {
+			throw new VersionConverterClassException("impossible UnknownDomainException", impossible);
 		}
-		result.setModuleStates(moduleStates);
+	}
+
+	public ConsentDTO toDTO(VersionConverterCache vcc) throws VersionConverterClassException, InvalidVersionException, InconsistentStatusException {
+		ConsentDTO result = new ConsentDTO(toLightDTO(vcc));
+		result.setPatientSignatureBase64(getPatientSignature().getSignatureScanBase64());
+		result.setPhysicanSignatureBase64(getPhysicanSignature().getSignatureScanBase64());
+		result.setScanBase64(scanBase64.getText());
 		Map<String, String> freeTextValuesMap = new HashMap<String, String>();
 		for (FreeTextVal freeTextVal : freeTextValues) {
 			freeTextValuesMap.put(freeTextVal.getKey().getFreeTextDevName(), freeTextVal.getValue());
@@ -253,13 +311,6 @@ public class Consent implements Serializable {
 		final int prime = 31;
 		int result = 1;
 		result = prime * result + ((key == null) ? 0 : key.hashCode());
-		result = prime * result + ((freeTextValues == null) ? 0 : freeTextValues.hashCode());
-		result = prime * result + ((signatures == null) ? 0 : signatures.hashCode());
-		result = prime * result + ((patientSignatureIsFromGuardian == null) ? 0 : patientSignatureIsFromGuardian.hashCode());
-		result = prime * result + ((physicanId == null) ? 0 : physicanId.hashCode());
-		result = prime * result + ((scanBase64 == null) ? 0 : scanBase64.hashCode());
-		result = prime * result + ((scanFileType == null) ? 0 : scanFileType.hashCode());
-		result = prime * result + ((signedPolicies == null) ? 0 : signedPolicies.hashCode());
 		return result;
 	}
 
@@ -277,41 +328,6 @@ public class Consent implements Serializable {
 				return false;
 		} else if (!key.equals(other.key))
 			return false;
-		if (freeTextValues == null) {
-			if (other.freeTextValues != null)
-				return false;
-		} else if (!freeTextValues.equals(other.freeTextValues))
-			return false;
-		if (signatures == null) {
-			if (other.signatures != null)
-				return false;
-		} else if (!signatures.equals(other.signatures))
-			return false;
-		if (patientSignatureIsFromGuardian == null) {
-			if (other.patientSignatureIsFromGuardian != null)
-				return false;
-		} else if (!patientSignatureIsFromGuardian.equals(other.patientSignatureIsFromGuardian))
-			return false;
-		if (physicanId == null) {
-			if (other.physicanId != null)
-				return false;
-		} else if (!physicanId.equals(other.physicanId))
-			return false;
-		if (scanBase64 == null) {
-			if (other.scanBase64 != null)
-				return false;
-		} else if (!scanBase64.equals(other.scanBase64))
-			return false;
-		if (scanFileType == null) {
-			if (other.scanFileType != null)
-				return false;
-		} else if (!scanFileType.equals(other.scanFileType))
-			return false;
-		if (signedPolicies == null) {
-			if (other.signedPolicies != null)
-				return false;
-		} else if (!signedPolicies.equals(other.signedPolicies))
-			return false;
 		return true;
 	}
 
@@ -319,7 +335,11 @@ public class Consent implements Serializable {
 	public String toString() {
 		final StringBuilder sb = new StringBuilder();
 		sb.append(key);
-		sb.append(" with ");
+		sb.append(" with comment '");
+		sb.append(comment);
+		sb.append("', extern properties: '");
+		sb.append(externProperties);
+		sb.append("', ");
 		sb.append(signedPolicies.size());
 		sb.append(" signed policies and ");
 		sb.append(freeTextValues.size());

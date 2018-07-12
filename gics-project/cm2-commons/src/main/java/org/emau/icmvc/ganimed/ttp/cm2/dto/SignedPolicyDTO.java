@@ -4,16 +4,21 @@ package org.emau.icmvc.ganimed.ttp.cm2.dto;
  * ###license-information-start###
  * gICS - a Generic Informed Consent Service
  * __
- * Copyright (C) 2014 - 2017 The MOSAIC Project - Institut fuer Community Medicine der
- * 							Universitaetsmedizin Greifswald - mosaic-projekt@uni-greifswald.de
+ * Copyright (C) 2014 - 2018 The MOSAIC Project - Institut fuer Community
+ * 							Medicine of the University Medicine Greifswald -
+ * 							mosaic-projekt@uni-greifswald.de
+ * 
  * 							concept and implementation
- * 							l. geidel
+ * 							l.geidel
  * 							web client
- * 							g. weiher
- * 							a. blumentritt
+ * 							a.blumentritt, m.bialke
+ * 
+ * 							Selected functionalities of gICS were developed as part of the MAGIC Project (funded by the DFG HO 1937/5-1).
+ * 
  * 							please cite our publications
  * 							http://dx.doi.org/10.3414/ME14-01-0133
  * 							http://dx.doi.org/10.1186/s12967-015-0545-6
+ * 							http://dx.doi.org/10.3205/17gmds146
  * __
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -32,6 +37,8 @@ package org.emau.icmvc.ganimed.ttp.cm2.dto;
 
 import java.io.Serializable;
 
+import org.emau.icmvc.ganimed.ttp.cm2.dto.enums.ConsentStatus;
+
 /**
  * objekt fuer die m-n tabelle consent<->policy
  * 
@@ -40,7 +47,7 @@ import java.io.Serializable;
  */
 public class SignedPolicyDTO implements Serializable {
 
-	private static final long serialVersionUID = 8940697784400894439L;
+	private static final long serialVersionUID = 6530761208022474879L;
 	private ConsentStatus status;
 	private PolicyKeyDTO policyKey;
 	private ConsentKeyDTO consentKey;

@@ -4,16 +4,21 @@ package org.emau.icmvc.ganimed.ttp.cm2.dto;
  * ###license-information-start###
  * gICS - a Generic Informed Consent Service
  * __
- * Copyright (C) 2014 - 2017 The MOSAIC Project - Institut fuer Community Medicine der
- * 							Universitaetsmedizin Greifswald - mosaic-projekt@uni-greifswald.de
+ * Copyright (C) 2014 - 2018 The MOSAIC Project - Institut fuer Community
+ * 							Medicine of the University Medicine Greifswald -
+ * 							mosaic-projekt@uni-greifswald.de
+ * 
  * 							concept and implementation
- * 							l. geidel
+ * 							l.geidel
  * 							web client
- * 							g. weiher
- * 							a. blumentritt
+ * 							a.blumentritt, m.bialke
+ * 
+ * 							Selected functionalities of gICS were developed as part of the MAGIC Project (funded by the DFG HO 1937/5-1).
+ * 
  * 							please cite our publications
  * 							http://dx.doi.org/10.3414/ME14-01-0133
  * 							http://dx.doi.org/10.1186/s12967-015-0545-6
+ * 							http://dx.doi.org/10.3205/17gmds146
  * __
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -41,37 +46,42 @@ import java.util.Map;
  * @author geidell
  * 
  */
-public class ConsentDTO implements Serializable {
+public class ConsentDTO extends ConsentLightDTO implements Serializable {
 
-	private static final long serialVersionUID = 7940346384330664520L;
-	private ConsentKeyDTO key;
+	private static final long serialVersionUID = -4094005853140726190L;
 	private String patientSignatureBase64;
-	private boolean patientSignatureIsFromGuardian;
 	private String physicanSignatureBase64;
-	private String physicanId;
-	private Date patientSigningDate;
-	private Date physicanSigningDate;
 	private String scanBase64;
-	private String scanFileType;
-	private Map<ModuleKeyDTO, ConsentStatus> moduleStates = new HashMap<ModuleKeyDTO, ConsentStatus>();
 	private Map<String, String> freeTextVals = new HashMap<String, String>();
 
 	public ConsentDTO() {
+		super();
 	}
 
 	public ConsentDTO(ConsentKeyDTO key) {
-		super();
-		this.key = key;
+		super(key);
 	}
 
-	public ConsentKeyDTO getKey() {
-		return key;
+	public ConsentDTO(ConsentLightDTO lightDTO) {
+		super(lightDTO);
 	}
 
-	public void setKey(ConsentKeyDTO key) {
-		if (key != null) {
-			this.key = key;
-		}
+	public ConsentDTO(ConsentDTO dto, Date date) {
+		super(new ConsentKeyDTO(dto.getKey().getConsentTemplateKey(), dto.getKey().getSignerIds(), date));
+		super.setComment(dto.getComment());
+		super.setExternProperties(dto.getExternProperties());
+		Map<ModuleKeyDTO, ModuleStateDTO> moduleStates = new HashMap<ModuleKeyDTO, ModuleStateDTO>(dto.getModuleStates());
+		super.setModuleStates(moduleStates);
+		super.setPatientSignatureIsFromGuardian(dto.getPatientSignatureIsFromGuardian());
+		super.setPatientSigningDate(dto.getPatientSigningDate());
+		super.setPhysicanId(dto.getPhysicanId());
+		super.setPhysicanSigningDate(dto.getPhysicanSigningDate());
+		super.setScanFileType(dto.getScanFileType());
+		setPatientSignatureBase64(dto.getPatientSignatureBase64());
+		setPhysicanSignatureBase64(dto.getPhysicanSignatureBase64());
+		setScanBase64(dto.getScanBase64());
+		Map<String, String> freeTextVals = new HashMap<String, String>(dto.getFreeTextVals());
+		setFreeTextVals(freeTextVals);
 	}
 
 	public String getPatientSignatureBase64() {
@@ -82,14 +92,6 @@ public class ConsentDTO implements Serializable {
 		this.patientSignatureBase64 = patientSignatureBase64;
 	}
 
-	public boolean getPatientSignatureIsFromGuardian() {
-		return patientSignatureIsFromGuardian;
-	}
-
-	public void setPatientSignatureIsFromGuardian(boolean patientSignatureIsFromGuardian) {
-		this.patientSignatureIsFromGuardian = patientSignatureIsFromGuardian;
-	}
-
 	public String getPhysicanSignatureBase64() {
 		return physicanSignatureBase64;
 	}
@@ -98,54 +100,12 @@ public class ConsentDTO implements Serializable {
 		this.physicanSignatureBase64 = physicanSignatureBase64;
 	}
 
-	public String getPhysicanId() {
-		return physicanId;
-	}
-
-	public void setPhysicanId(String physicanId) {
-		this.physicanId = physicanId;
-	}
-
-	public Date getPatientSigningDate() {
-		return patientSigningDate;
-	}
-
-	public void setPatientSigningDate(Date patientSigningDate) {
-		this.patientSigningDate = patientSigningDate;
-	}
-
-	public Date getPhysicanSigningDate() {
-		return physicanSigningDate;
-	}
-
-	public void setPhysicanSigningDate(Date physicanSigningDate) {
-		this.physicanSigningDate = physicanSigningDate;
-	}
-
 	public String getScanBase64() {
 		return scanBase64;
 	}
 
 	public void setScanBase64(String scanBase64) {
 		this.scanBase64 = scanBase64;
-	}
-
-	public String getScanFileType() {
-		return scanFileType;
-	}
-
-	public void setScanFileType(String scanFileType) {
-		this.scanFileType = scanFileType;
-	}
-
-	public Map<ModuleKeyDTO, ConsentStatus> getModuleStates() {
-		return moduleStates;
-	}
-
-	public void setModuleStates(Map<ModuleKeyDTO, ConsentStatus> moduleStates) {
-		if (moduleStates != null) {
-			this.moduleStates = moduleStates;
-		}
 	}
 
 	public Map<String, String> getFreeTextVals() {
@@ -161,17 +121,10 @@ public class ConsentDTO implements Serializable {
 	@Override
 	public int hashCode() {
 		final int prime = 31;
-		int result = 1;
-		result = prime * result + ((key == null) ? 0 : key.hashCode());
+		int result = super.hashCode();
 		result = prime * result + ((freeTextVals == null) ? 0 : freeTextVals.hashCode());
 		result = prime * result + ((patientSignatureBase64 == null) ? 0 : patientSignatureBase64.hashCode());
-		result = prime * result + ((patientSignatureIsFromGuardian) ? 1231 : 1237);
-		result = prime * result + ((patientSigningDate == null) ? 0 : patientSigningDate.hashCode());
-		result = prime * result + ((physicanId == null) ? 0 : physicanId.hashCode());
 		result = prime * result + ((physicanSignatureBase64 == null) ? 0 : physicanSignatureBase64.hashCode());
-		result = prime * result + ((physicanSigningDate == null) ? 0 : physicanSigningDate.hashCode());
-		result = prime * result + ((moduleStates == null) ? 0 : moduleStates.hashCode());
-		result = prime * result + ((scanFileType == null) ? 0 : scanFileType.hashCode());
 		result = prime * result + ((scanBase64 == null) ? 0 : scanBase64.hashCode());
 		return result;
 	}
@@ -180,16 +133,11 @@ public class ConsentDTO implements Serializable {
 	public boolean equals(Object obj) {
 		if (this == obj)
 			return true;
-		if (obj == null)
+		if (!super.equals(obj))
 			return false;
 		if (getClass() != obj.getClass())
 			return false;
 		ConsentDTO other = (ConsentDTO) obj;
-		if (key == null) {
-			if (other.key != null)
-				return false;
-		} else if (!key.equals(other.key))
-			return false;
 		if (freeTextVals == null) {
 			if (other.freeTextVals != null)
 				return false;
@@ -200,37 +148,10 @@ public class ConsentDTO implements Serializable {
 				return false;
 		} else if (!patientSignatureBase64.equals(other.patientSignatureBase64))
 			return false;
-		if(patientSignatureIsFromGuardian != other.patientSignatureIsFromGuardian)
-			return false;
-		if (patientSigningDate == null) {
-			if (other.patientSigningDate != null)
-				return false;
-		} else if (!patientSigningDate.equals(other.patientSigningDate))
-			return false;
-		if (physicanId == null) {
-			if (other.physicanId != null)
-				return false;
-		} else if (!physicanId.equals(other.physicanId))
-			return false;
 		if (physicanSignatureBase64 == null) {
 			if (other.physicanSignatureBase64 != null)
 				return false;
 		} else if (!physicanSignatureBase64.equals(other.physicanSignatureBase64))
-			return false;
-		if (physicanSigningDate == null) {
-			if (other.physicanSigningDate != null)
-				return false;
-		} else if (!physicanSigningDate.equals(other.physicanSigningDate))
-			return false;
-		if (moduleStates == null) {
-			if (other.moduleStates != null)
-				return false;
-		} else if (!moduleStates.equals(other.moduleStates))
-			return false;
-		if (scanFileType == null) {
-			if (other.scanFileType != null)
-				return false;
-		} else if (!scanFileType.equals(other.scanFileType))
 			return false;
 		if (scanBase64 == null) {
 			if (other.scanBase64 != null)
@@ -242,11 +163,8 @@ public class ConsentDTO implements Serializable {
 
 	@Override
 	public String toString() {
-		final StringBuilder sb = new StringBuilder();
-		sb.append(key);
-		sb.append(" with ");
-		sb.append(moduleStates.size());
-		sb.append(" module states and ");
+		final StringBuilder sb = new StringBuilder(super.toString());
+		sb.append(" and ");
 		sb.append(freeTextVals.size());
 		sb.append(" free text values");
 		return sb.toString();

@@ -1,0 +1,23 @@
+USE gics;
+
+DROP TABLE IF EXISTS free_text_def;
+DROP TABLE IF EXISTS free_text_val;
+DROP TABLE IF EXISTS module_consent_template;
+DROP TABLE IF EXISTS signed_policy;
+DROP TABLE IF EXISTS virtual_person_signer_id;
+DROP TABLE IF EXISTS module_policy;
+DROP TABLE IF EXISTS MODULE_POLICY;
+DROP TABLE IF EXISTS module;
+DROP TABLE IF EXISTS policy;
+DROP TABLE IF EXISTS sequence;
+DROP TABLE IF EXISTS signature;
+DROP TABLE IF EXISTS consent;
+DROP TABLE IF EXISTS virtual_person;
+DROP TABLE IF EXISTS consent_template;
+DROP TABLE IF EXISTS text;
+DROP TABLE IF EXISTS signer_id;
+DROP TABLE IF EXISTS signer_id_type;
+DROP TABLE IF EXISTS domain;
+DROP TABLE IF EXISTS stat_value;
+DROP TABLE IF EXISTS stat_entry;
+DROP PROCEDURE IF EXISTS updateStats;

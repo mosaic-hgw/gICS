@@ -4,16 +4,21 @@ package org.emau.icmvc.ganimed.ttp.cm2.model;
  * ###license-information-start###
  * gICS - a Generic Informed Consent Service
  * __
- * Copyright (C) 2014 - 2017 The MOSAIC Project - Institut fuer Community Medicine der
- * 							Universitaetsmedizin Greifswald - mosaic-projekt@uni-greifswald.de
+ * Copyright (C) 2014 - 2018 The MOSAIC Project - Institut fuer Community
+ * 							Medicine of the University Medicine Greifswald -
+ * 							mosaic-projekt@uni-greifswald.de
+ * 
  * 							concept and implementation
- * 							l. geidel
+ * 							l.geidel
  * 							web client
- * 							g. weiher
- * 							a. blumentritt
+ * 							a.blumentritt, m.bialke
+ * 
+ * 							Selected functionalities of gICS were developed as part of the MAGIC Project (funded by the DFG HO 1937/5-1).
+ * 
  * 							please cite our publications
  * 							http://dx.doi.org/10.3414/ME14-01-0133
  * 							http://dx.doi.org/10.1186/s12967-015-0545-6
+ * 							http://dx.doi.org/10.3205/17gmds146
  * __
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -90,14 +95,41 @@ public class VirtualPerson implements Serializable {
 	public List<VirtualPersonSignerId> getVirtualPersonSignerIds() {
 		return virtualPersonSignerIds;
 	}
+	
+	/**
+	 * 
+	 * @param idItem particular VirtualPersonSignerId to be added to assigned list of VirtualPersonSignerIDs of the
+	 *  	virtual person	 
+	 */
+	public void addVirtualPersonSignerId(VirtualPersonSignerId idItem) {
+		
+		if(idItem!=null && !virtualPersonSignerIds.contains(idItem))
+		{
+			virtualPersonSignerIds.add(idItem);
+		}
+	}
+	
+	/**
+	 * 
+	 * @param idItem particular VirtualPersonSignerId to be removed from assigned list of VirtualPersonSignerIDs of the
+	 *  	virtual person
+	 * @return updated list of assigned VirtualPersonSignerIds
+	 */
+	public List<VirtualPersonSignerId> removeVirtualPersonSignerId(VirtualPersonSignerId idItem) {
+		
+		if(idItem!=null && virtualPersonSignerIds.contains(idItem))
+		{
+			virtualPersonSignerIds.remove(idItem);
+		}
+				
+		return virtualPersonSignerIds;
+	} 
 
 	@Override
 	public int hashCode() {
 		final int prime = 31;
 		int result = 1;
-		result = prime * result + ((consents == null) ? 0 : consents.hashCode());
 		result = prime * result + ((id == null) ? 0 : id.hashCode());
-		result = prime * result + ((virtualPersonSignerIds == null) ? 0 : virtualPersonSignerIds.hashCode());
 		return result;
 	}
 
@@ -110,20 +142,10 @@ public class VirtualPerson implements Serializable {
 		if (getClass() != obj.getClass())
 			return false;
 		VirtualPerson other = (VirtualPerson) obj;
-		if (consents == null) {
-			if (other.consents != null)
-				return false;
-		} else if (!consents.equals(other.consents))
-			return false;
 		if (id == null) {
 			if (other.id != null)
 				return false;
 		} else if (!id.equals(other.id))
-			return false;
-		if (virtualPersonSignerIds == null) {
-			if (other.virtualPersonSignerIds != null)
-				return false;
-		} else if (!virtualPersonSignerIds.equals(other.virtualPersonSignerIds))
 			return false;
 		return true;
 	}

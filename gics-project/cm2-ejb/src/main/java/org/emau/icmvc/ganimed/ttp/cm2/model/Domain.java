@@ -4,16 +4,21 @@ package org.emau.icmvc.ganimed.ttp.cm2.model;
  * ###license-information-start###
  * gICS - a Generic Informed Consent Service
  * __
- * Copyright (C) 2014 - 2017 The MOSAIC Project - Institut fuer Community Medicine der
- * 							Universitaetsmedizin Greifswald - mosaic-projekt@uni-greifswald.de
+ * Copyright (C) 2014 - 2018 The MOSAIC Project - Institut fuer Community
+ * 							Medicine of the University Medicine Greifswald -
+ * 							mosaic-projekt@uni-greifswald.de
+ * 
  * 							concept and implementation
- * 							l. geidel
+ * 							l.geidel
  * 							web client
- * 							g. weiher
- * 							a. blumentritt
+ * 							a.blumentritt, m.bialke
+ * 
+ * 							Selected functionalities of gICS were developed as part of the MAGIC Project (funded by the DFG HO 1937/5-1).
+ * 
  * 							please cite our publications
  * 							http://dx.doi.org/10.3414/ME14-01-0133
  * 							http://dx.doi.org/10.1186/s12967-015-0545-6
+ * 							http://dx.doi.org/10.3205/17gmds146
  * __
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -33,18 +38,15 @@ package org.emau.icmvc.ganimed.ttp.cm2.model;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map.Entry;
-import java.util.Properties;
 
 import javax.persistence.CascadeType;
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.FetchType;
 import javax.persistence.Id;
+import javax.persistence.Lob;
 import javax.persistence.OneToMany;
 import javax.persistence.PostLoad;
-import javax.persistence.PrePersist;
-import javax.persistence.PreUpdate;
 import javax.persistence.Table;
 import javax.persistence.Transient;
 
@@ -54,9 +56,7 @@ import org.eclipse.persistence.annotations.Cache;
 import org.eclipse.persistence.config.CacheIsolationType;
 import org.emau.icmvc.ganimed.ttp.cm2.dto.DomainDTO;
 import org.emau.icmvc.ganimed.ttp.cm2.exceptions.VersionConverterClassException;
-import org.emau.icmvc.ganimed.ttp.cm2.factories.ReflectionClassFactory;
-import org.emau.icmvc.ganimed.ttp.cm2.internal.DomainPropertiesInstance;
-import org.emau.icmvc.ganimed.ttp.cm2.version.VersionConverter;
+import org.emau.icmvc.ganimed.ttp.cm2.internal.DomainPropertiesObject;
 
 /**
  * zur gruppierung
@@ -69,30 +69,29 @@ import org.emau.icmvc.ganimed.ttp.cm2.version.VersionConverter;
 @Cache(isolation = CacheIsolationType.PROTECTED)
 public class Domain implements Serializable {
 
-	private static final long serialVersionUID = 8029022101386823258L;
-	private static final String PROPERTY_DELIMITER = ";";
+	private static final long serialVersionUID = -7017427406683339204L;
 	@Id
 	@Column(length = 50)
 	private String name;
 	private String label;
-	@OneToMany(mappedBy = "domain", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
+	@OneToMany(mappedBy = "domain", fetch = FetchType.LAZY)
 	@BatchFetch(BatchFetchType.IN)
 	private List<Policy> policies = new ArrayList<Policy>();
-	@OneToMany(mappedBy = "domain", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
+	@OneToMany(mappedBy = "domain", fetch = FetchType.LAZY)
 	@BatchFetch(BatchFetchType.IN)
 	private List<Module> modules = new ArrayList<Module>();
-	@OneToMany(mappedBy = "domain", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
+	@OneToMany(mappedBy = "domain", fetch = FetchType.LAZY)
 	// @BatchFetch(BatchFetchType.IN) auskommentiert wegen bug in eclipselink - die am ct haengenden text-entities werden nicht richtig mitgeladen
 	// (javax.resource.ResourceException: IJ000460: Error checking for a transaction)
 	private List<ConsentTemplate> consentTemplates = new ArrayList<ConsentTemplate>();
 	// die properties werden als semikolon-getrennte liste in der db gespeichert
-	// dafuer sorgen die funktionen "persistPropertiesToString" und "loadPropertiesFromString"
+	// dafuer sorgt die funktion "loadPropertiesFromString"
 	// ausser in eclipselink:
 	// https://bugs.eclipse.org/bugs/show_bug.cgi?id=273304
 	// https://bugs.eclipse.org/bugs/show_bug.cgi?id=336066
 	// deswegen das "loadPropertiesFromString" in "getProperties"
 	@Transient
-	private Properties properties = null;
+	private DomainPropertiesObject propertiesObject = null;
 	@Column(name = "PROPERTIES")
 	private String propertiesString;
 	private String comment;
@@ -104,17 +103,11 @@ public class Domain implements Serializable {
 	private String moduleVersionConverter;
 	@Column(name = "POLICY_VERSION_CONVERTER")
 	private String policyVersionConverter;
-	@Transient
-	private VersionConverter ctVersionConverterInstance = null;
-	@Transient
-	private VersionConverter moduleVersionConverterInstance = null;
-	@Transient
-	private VersionConverter policyVersionConverterInstance = null;
+	@Lob
+	private String logo;
 	@OneToMany(mappedBy = "domain", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
 	@BatchFetch(BatchFetchType.IN)
 	private List<SignerIdType> signerIdTypes = new ArrayList<SignerIdType>();
-	@Transient
-	private DomainPropertiesInstance propertyObjects = null;
 
 	public Domain() {
 	}
@@ -126,13 +119,11 @@ public class Domain implements Serializable {
 		this.ctVersionConverter = dto.getCtVersionConverter();
 		this.moduleVersionConverter = dto.getModuleVersionConverter();
 		this.policyVersionConverter = dto.getPolicyVersionConverter();
-		ctVersionConverterInstance = initVersionConverter(ctVersionConverter);
-		moduleVersionConverterInstance = initVersionConverter(moduleVersionConverter);
-		policyVersionConverterInstance = initVersionConverter(policyVersionConverter);
 		this.propertiesString = dto.getProperties();
 		loadPropertiesFromString();
 		this.comment = dto.getComment();
 		this.externProperties = dto.getExternProperties();
+		this.logo = dto.getLogo();
 		for (String signerIdType : dto.getSignerIdTypes()) {
 			signerIdTypes.add(new SignerIdType(this, signerIdType));
 		}
@@ -141,36 +132,9 @@ public class Domain implements Serializable {
 	/**
 	 * this method is called by jpa
 	 */
-	@PreUpdate
-	@PrePersist
-	public void persistPropertiesToString() {
-		StringBuilder sb = new StringBuilder();
-		for (Entry<?, ?> property : properties.entrySet()) {
-			sb.append(property.getKey());
-			sb.append("=");
-			sb.append(property.getValue());
-			sb.append(PROPERTY_DELIMITER);
-		}
-		propertiesString = sb.toString();
-		propertyObjects = new DomainPropertiesInstance(properties);
-	}
-
-	/**
-	 * this method is called by jpa
-	 */
 	@PostLoad
 	public void loadPropertiesFromString() {
-		properties = new Properties();
-		if (propertiesString != null) {
-			String[] propertyList = propertiesString.split(PROPERTY_DELIMITER);
-			for (String property : propertyList) {
-				String[] propertyParts = property.split("=");
-				if (propertyParts.length == 2) {
-					properties.put(propertyParts[0].trim(), propertyParts[1].trim());
-				}
-			}
-		}
-		propertyObjects = new DomainPropertiesInstance(properties);
+		propertiesObject = new DomainPropertiesObject(propertiesString);
 	}
 
 	public String getName() {
@@ -185,27 +149,15 @@ public class Domain implements Serializable {
 		this.label = label;
 	}
 
-	public Properties getProperties() {
-		if (properties == null) {
+	public DomainPropertiesObject getPropertiesObject() {
+		if (propertiesObject == null) {
 			loadPropertiesFromString();
 		}
-		return properties;
-	}
-
-	public DomainPropertiesInstance getPropertyObjects() {
-		if (propertyObjects == null) {
-			loadPropertiesFromString();
-		}
-		return propertyObjects;
+		return propertiesObject;
 	}
 
 	public String getPropertiesString() {
 		return propertiesString;
-	}
-
-	public void setPropertiesString(String propertiesString) {
-		this.propertiesString = propertiesString;
-		loadPropertiesFromString();
 	}
 
 	public String getComment() {
@@ -241,8 +193,8 @@ public class Domain implements Serializable {
 		for (SignerIdType signerIdType : signerIdTypes) {
 			sIdTypes.add(signerIdType.getKey().getName());
 		}
-		DomainDTO result = new DomainDTO(name, label, ctVersionConverter, moduleVersionConverter, policyVersionConverter, propertiesString, comment,
-				externProperties, sIdTypes);
+		DomainDTO result = new DomainDTO(name, label, ctVersionConverter, moduleVersionConverter, policyVersionConverter, propertiesObject.toString(),
+				comment, externProperties, logo, sIdTypes);
 		return result;
 	}
 
@@ -258,57 +210,23 @@ public class Domain implements Serializable {
 		return policyVersionConverter;
 	}
 
-	public VersionConverter getCTVersionConverterInstance() throws VersionConverterClassException {
-		if (ctVersionConverterInstance == null) {
-			ctVersionConverterInstance = initVersionConverter(ctVersionConverter);
-		}
-		return ctVersionConverterInstance;
+	public String getLogo() {
+		return logo;
 	}
 
-	public VersionConverter getModuleVersionConverterInstance() throws VersionConverterClassException {
-		if (moduleVersionConverterInstance == null) {
-			moduleVersionConverterInstance = initVersionConverter(moduleVersionConverter);
-		}
-		return moduleVersionConverterInstance;
-	}
-
-	public VersionConverter getPolicyVersionConverterInstance() throws VersionConverterClassException {
-		if (policyVersionConverterInstance == null) {
-			policyVersionConverterInstance = initVersionConverter(policyVersionConverter);
-		}
-		return policyVersionConverterInstance;
+	public void setLogo(String logo) {
+		this.logo = logo;
 	}
 
 	public List<SignerIdType> getSignerIdTypes() {
 		return signerIdTypes;
 	}
 
-	private VersionConverter initVersionConverter(String versionConverterClass) throws VersionConverterClassException {
-		try {
-			Class<? extends VersionConverter> converterClass = ReflectionClassFactory.getInstance().getSubClass(versionConverterClass,
-					VersionConverter.class);
-			return converterClass.newInstance();
-		} catch (Exception e) {
-			throw new VersionConverterClassException("exception while instantiating " + versionConverterClass, e);
-		}
-	}
-
 	@Override
 	public int hashCode() {
 		final int prime = 31;
 		int result = 1;
-		result = prime * result + ((comment == null) ? 0 : comment.hashCode());
-		result = prime * result + ((consentTemplates == null) ? 0 : consentTemplates.hashCode());
-		result = prime * result + ((ctVersionConverter == null) ? 0 : ctVersionConverter.hashCode());
-		result = prime * result + ((externProperties == null) ? 0 : externProperties.hashCode());
-		result = prime * result + ((label == null) ? 0 : label.hashCode());
 		result = prime * result + ((name == null) ? 0 : name.hashCode());
-		result = prime * result + ((modules == null) ? 0 : modules.hashCode());
-		result = prime * result + ((moduleVersionConverter == null) ? 0 : moduleVersionConverter.hashCode());
-		result = prime * result + ((policies == null) ? 0 : policies.hashCode());
-		result = prime * result + ((policyVersionConverter == null) ? 0 : policyVersionConverter.hashCode());
-		result = prime * result + ((propertiesString == null) ? 0 : propertiesString.hashCode());
-		result = prime * result + ((signerIdTypes == null) ? 0 : signerIdTypes.hashCode());
 		return result;
 	}
 
@@ -321,65 +239,10 @@ public class Domain implements Serializable {
 		if (getClass() != obj.getClass())
 			return false;
 		Domain other = (Domain) obj;
-		if (comment == null) {
-			if (other.comment != null)
-				return false;
-		} else if (!comment.equals(other.comment))
-			return false;
-		if (consentTemplates == null) {
-			if (other.consentTemplates != null)
-				return false;
-		} else if (!consentTemplates.equals(other.consentTemplates))
-			return false;
-		if (ctVersionConverter == null) {
-			if (other.ctVersionConverter != null)
-				return false;
-		} else if (!ctVersionConverter.equals(other.ctVersionConverter))
-			return false;
-		if (externProperties == null) {
-			if (other.externProperties != null)
-				return false;
-		} else if (!externProperties.equals(other.externProperties))
-			return false;
-		if (label == null) {
-			if (other.label != null)
-				return false;
-		} else if (!label.equals(other.label))
-			return false;
 		if (name == null) {
 			if (other.name != null)
 				return false;
 		} else if (!name.equals(other.name))
-			return false;
-		if (modules == null) {
-			if (other.modules != null)
-				return false;
-		} else if (!modules.equals(other.modules))
-			return false;
-		if (moduleVersionConverter == null) {
-			if (other.moduleVersionConverter != null)
-				return false;
-		} else if (!moduleVersionConverter.equals(other.moduleVersionConverter))
-			return false;
-		if (policies == null) {
-			if (other.policies != null)
-				return false;
-		} else if (!policies.equals(other.policies))
-			return false;
-		if (policyVersionConverter == null) {
-			if (other.policyVersionConverter != null)
-				return false;
-		} else if (!policyVersionConverter.equals(other.policyVersionConverter))
-			return false;
-		if (propertiesString == null) {
-			if (other.propertiesString != null)
-				return false;
-		} else if (!propertiesString.equals(other.propertiesString))
-			return false;
-		if (signerIdTypes == null) {
-			if (other.signerIdTypes != null)
-				return false;
-		} else if (!signerIdTypes.equals(other.signerIdTypes))
 			return false;
 		return true;
 	}
@@ -411,7 +274,8 @@ public class Domain implements Serializable {
 		sb.append(modules.size());
 		sb.append(" modules, ");
 		sb.append(consentTemplates.size());
-		sb.append(" consent templates and ");
+		sb.append(" consent templates");
+		sb.append((logo != null && !logo.isEmpty()) ? ", a logo and " : ", no logo and ");
 		sb.append(signerIdTypes.size());
 		sb.append(" signer id types");
 		return sb.toString();

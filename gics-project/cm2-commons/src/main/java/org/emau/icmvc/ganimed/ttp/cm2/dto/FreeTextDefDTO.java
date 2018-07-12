@@ -4,16 +4,21 @@ package org.emau.icmvc.ganimed.ttp.cm2.dto;
  * ###license-information-start###
  * gICS - a Generic Informed Consent Service
  * __
- * Copyright (C) 2014 - 2017 The MOSAIC Project - Institut fuer Community Medicine der
- * 							Universitaetsmedizin Greifswald - mosaic-projekt@uni-greifswald.de
+ * Copyright (C) 2014 - 2018 The MOSAIC Project - Institut fuer Community
+ * 							Medicine of the University Medicine Greifswald -
+ * 							mosaic-projekt@uni-greifswald.de
+ * 
  * 							concept and implementation
- * 							l. geidel
+ * 							l.geidel
  * 							web client
- * 							g. weiher
- * 							a. blumentritt
+ * 							a.blumentritt, m.bialke
+ * 
+ * 							Selected functionalities of gICS were developed as part of the MAGIC Project (funded by the DFG HO 1937/5-1).
+ * 
  * 							please cite our publications
  * 							http://dx.doi.org/10.3414/ME14-01-0133
  * 							http://dx.doi.org/10.1186/s12967-015-0545-6
+ * 							http://dx.doi.org/10.3205/17gmds146
  * __
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -32,6 +37,8 @@ package org.emau.icmvc.ganimed.ttp.cm2.dto;
 
 import java.io.Serializable;
 
+import org.emau.icmvc.ganimed.ttp.cm2.dto.enums.FreeTextType;
+
 /**
  * freitext
  * 
@@ -40,22 +47,24 @@ import java.io.Serializable;
  */
 public class FreeTextDefDTO implements Serializable {
 
-	private static final long serialVersionUID = -4227586987934016930L;
+	private static final long serialVersionUID = -5624268522251227994L;
 	private String name;
 	private boolean required;
 	private FreeTextType type;
 	private String converterString;
+	private int pos;
 	private String comment;
 
 	public FreeTextDefDTO() {
 	}
 
-	public FreeTextDefDTO(String name, boolean required, FreeTextType type, String converterString, String comment) {
+	public FreeTextDefDTO(String name, boolean required, FreeTextType type, String converterString, int pos, String comment) {
 		super();
 		this.name = name;
 		this.required = required;
 		this.type = type;
 		this.converterString = converterString;
+		this.pos = pos;
 		this.comment = comment;
 	}
 
@@ -91,6 +100,14 @@ public class FreeTextDefDTO implements Serializable {
 		this.converterString = converterString;
 	}
 
+	public int getPos() {
+		return pos;
+	}
+
+	public void setPos(int pos) {
+		this.pos = pos;
+	}
+
 	public String getComment() {
 		return comment;
 	}
@@ -106,6 +123,7 @@ public class FreeTextDefDTO implements Serializable {
 		result = prime * result + ((comment == null) ? 0 : comment.hashCode());
 		result = prime * result + ((converterString == null) ? 0 : converterString.hashCode());
 		result = prime * result + ((name == null) ? 0 : name.hashCode());
+		result = prime * result + pos;
 		result = prime * result + (required ? 1231 : 1237);
 		result = prime * result + ((type == null) ? 0 : type.hashCode());
 		return result;
@@ -135,6 +153,8 @@ public class FreeTextDefDTO implements Serializable {
 				return false;
 		} else if (!name.equals(other.name))
 			return false;
+		if (pos != other.pos)
+			return false;
 		if (required != other.required)
 			return false;
 		if (type != other.type)
@@ -153,7 +173,9 @@ public class FreeTextDefDTO implements Serializable {
 		sb.append((type == null) ? "null" : type.toString());
 		sb.append("' converter string '");
 		sb.append(converterString);
-		sb.append("' which value is ");
+		sb.append("' at pos ");
+		sb.append(pos);
+		sb.append(" which value is ");
 		sb.append(required ? "" : "not ");
 		sb.append("required within a consent");
 		return sb.toString();

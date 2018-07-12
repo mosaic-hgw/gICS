@@ -1,0 +1,129 @@
+<!--
+  ###license-information-start###
+  gICS - a Generic Informed Consent Service
+  __
+  Copyright (C) 2014 - 2018 The MOSAIC Project - Institut fuer Community
+  							Medicine of the University Medicine Greifswald -
+  							mosaic-projekt@uni-greifswald.de
+  
+  							concept and implementation
+  							l.geidel
+  							web client
+  							a.blumentritt, m.bialke
+  
+  							Selected functionalities of gICS were developed as part of the MAGIC Project (funded by the DFG HO 1937/5-1).
+  
+  							please cite our publications
+  							http://dx.doi.org/10.3414/ME14-01-0133
+  							http://dx.doi.org/10.1186/s12967-015-0545-6
+  							http://dx.doi.org/10.3205/17gmds146
+  __
+  This program is free software: you can redistribute it and/or modify
+  it under the terms of the GNU Affero General Public License as published by
+  the Free Software Foundation, either version 3 of the License, or
+  (at your option) any later version.
+  
+  This program is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  GNU General Public License for more details.
+  
+  You should have received a copy of the GNU Affero General Public License
+  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+  ###license-information-end###
+  -->
+
+<!-- author: Martin Bialke -->
+
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:h="http://java.sun.com/jsf/html"
+	xmlns:f="http://java.sun.com/jsf/core" xmlns:ui="http://java.sun.com/jsf/facelets"
+	xmlns:jstl="http://java.sun.com/jsp/jstl/functions" xmlns:p="http://primefaces.org/ui"
+	xmlns:component="http://java.sun.com/jsf/composite/components">
+
+<body>
+	<ui:composition template="/resources/templates/gics.xhtml">
+		<ui:define name="header_title">
+			<h:outputText value="#{msg['statistic.titleHeader']}" />
+		</ui:define>
+
+		<ui:define name="title">
+			<h:outputText value="#{msg['statistic.title']}" />
+		</ui:define>
+
+		<ui:define name="js">
+			<script type="text/javascript">
+				function downloadChart(chart) {
+					// exportAsImage() will return a base64 png encoded string
+					img = chart.exportAsImage();
+					document.getElementById('main:pngStream').value = img.src;
+				}
+			</script>
+		</ui:define>
+
+		<ui:define name="help">
+			<h:outputText value="#{msg['statistic.help']}" escape="false" />
+		</ui:define>
+
+		<ui:define name="content">
+			<h:form id="main">
+				<p:panel>
+					<h4>
+						<h:outputText value="#{msg['label.statistic.summary']}" />
+					</h4>
+					<p:dataTable id="tblid" var="details"
+						value="#{statisticController.lastStat.mappedStatValue.entrySet()}" paginatorTemplate=""
+						paginator="false" rows="10" style="margin-bottom:20px">
+						<p:column>
+							<f:facet name="header">
+								<h:outputText value="#{msg['label.statistic.attributeheading']}" />
+							</f:facet>
+							<h:outputText value="#{details.key}" />
+						</p:column>
+						<p:column>
+							<f:facet name="header">
+								<h:outputText
+									value="#{msg['label.statistic.countheading']} (#{statisticController.lastStat.entrydate})" />
+							</f:facet>
+							<h:outputText value="#{details.value}" />
+						</p:column>
+					</p:dataTable>
+
+					<p:commandButton value="#{msg['label.statistic.dowloadSummary']}" ajax="false"
+						icon="mdi mdi-content-save-outline">
+						<p:dataExporter type="csv" target="tblid" fileName="gics_stats" />
+					</p:commandButton>
+					<p:commandButton value="#{msg['label.statistic.dowloadAllData']}" ajax="false"
+						icon="mdi mdi-content-save-outline" onclick="PrimeFaces.monitorDownload(start, stop);">
+						<p:fileDownload value="#{statisticController.csvDownloadFile}" />
+					</p:commandButton>
+				</p:panel>
+
+				<p:panel>
+					<h4>
+						<h:outputText value="#{msg['label.statistic.charts']}" />
+					</h4>
+					<p:chart type="line" model="#{statisticController.statConsentsWithdrawals}"
+						style="height:400px;" widgetVar="chartConsentsWithdrawals" />
+					<p:commandButton value="#{msg['label.statistic.exportgraph']}" ajax="false"
+						icon="mdi mdi-content-save-outline"
+						actionListener="#{statisticController.setChartName('consents')}"
+						onclick="downloadChart(PF('chartConsentsWithdrawals')); PrimeFaces.monitorDownload(start, stop);">
+						<p:fileDownload value="#{statisticController.chartDownloadFile}" />
+					</p:commandButton>
+
+					<p:chart type="line" model="#{statisticController.statSignedPolicies}" style="height:400px;"
+						widgetVar="chartSP" />
+					<p:commandButton value="#{msg['label.statistic.exportgraph']}" ajax="false"
+						icon="mdi mdi-content-save-outline"
+						actionListener="#{statisticController.setChartName('policies')}"
+						onclick="downloadChart(PF('chartSP')); PrimeFaces.monitorDownload(start, stop);">
+						<p:fileDownload value="#{statisticController.chartDownloadFile}" />
+					</p:commandButton>
+
+					<p:inputText id="pngStream" value="#{statisticController.chartBase64}" type="hidden" />
+				</p:panel>
+			</h:form>
+		</ui:define>
+	</ui:composition>
+</body>
+</html>
