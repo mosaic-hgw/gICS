@@ -3,6 +3,8 @@ A Generic Informed Consent Service
 
 The Consent Management solution gICS supports the management of digital and paper-based informed consent documents. It facilitates checking for various policies and modules of a consent in real time.
 
+![context](https://user-images.githubusercontent.com/22166209/42631209-c1a9e236-85d9-11e8-94e8-74b5022a2f43.PNG)
+
 # License
 This Software was developed by the Institute for Community Medicine of the University Medicine Greifswald. It it licensed under AGPLv3 and initially provided by the DFG-funded MOSAIC-Project (grant number HO 1937/2-1).
 
@@ -23,3 +25,9 @@ http://dx.doi.org/10.1186/s12967-015-0545-6,
 http://dx.doi.org/10.3205/17gmds146
 
 For more info visit https://mosaic-greifswald.de/werkzeuge-und-vorlagen/einwilligungsmanagement-gics.html
+
+
+
+![detail](https://user-images.githubusercontent.com/22166209/42631227-d0d2c688-85d9-11e8-9612-4f7994d4e49c.PNG)
+
+![tree](https://user-images.githubusercontent.com/22166209/42631235-da0df7b8-85d9-11e8-9069-a3d4ad62cd53.PNG)
