@@ -2,7 +2,7 @@
 	<meta>
 		<profile value="http://example.com/StructureDefinition/dontuse#ExchangeFormatDefinition"/>
 	</meta>
-	<supportedVersion value="2.8.5"/>
+	<supportedVersion value="2.8.6"/>
 	<domain>
 		<name value="dummy"/>
 		<label value="Dummy-Studie"/>

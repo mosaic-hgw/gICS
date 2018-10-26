@@ -498,7 +498,7 @@ CREATE TABLE `signer_id_type` (
 
 LOCK TABLES `signer_id_type` WRITE;
 /*!40000 ALTER TABLE `signer_id_type` DISABLE KEYS */;
-INSERT INTO `signer_id_type` VALUES ('studyPSN,sap.pat_id,sap.case_id','dummy');
+INSERT INTO `signer_id_type` VALUES ('studyPSN','dummy');
 /*!40000 ALTER TABLE `signer_id_type` ENABLE KEYS */;
 UNLOCK TABLES;
 
