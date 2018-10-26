@@ -1,6 +1,8 @@
-# gICS v.2.8.5
-A Generic Informed Consent Service
+![context](https://user-images.githubusercontent.com/22166209/47565115-a5001c80-d927-11e8-8591-9e7937a26faa.PNG)
 
+Current Version: 2.8.5
+
+# About #
 The Consent Management solution gICS supports the management of digital and paper-based informed consent documents. It facilitates checking for various policies and modules of a consent in real time.
 
 ![context](https://user-images.githubusercontent.com/22166209/42631209-c1a9e236-85d9-11e8-94e8-74b5022a2f43.PNG)
