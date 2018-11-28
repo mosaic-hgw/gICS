@@ -1,4 +1,4 @@
-![context](https://user-images.githubusercontent.com/22166209/47565115-a5001c80-d927-11e8-8591-9e7937a26faa.PNG)
+![gICS Logo](https://user-images.githubusercontent.com/12081369/49164555-a27e5180-f32f-11e8-8725-7b97e35134b5.png)
 
 Current Version: 2.8.5
 
