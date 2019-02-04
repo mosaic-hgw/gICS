@@ -16,6 +16,10 @@ To build gICS with maven use the goals "clean install".
 # Docker
 Use the Docker-Image to easily try out gICS. just visit https://hub.docker.com/r/tmfev/gics/
 
+
+# Web-based SOAP Interface
+All functionalities of the gICS are provided for external use via a SOAP-Interface. Use SOAP-UI to create sample requests. The WSDL URL is ``http://<YOUR IPADDRESS>:8080/gics/gicsService?wsdl``
+
 # More Information
 Concept and implementation: l.geidel, web client: a.blumentritt, m.bialke
 
