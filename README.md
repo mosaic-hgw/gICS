@@ -26,7 +26,7 @@ http://dx.doi.org/10.3414/ME14-01-0133,
 http://dx.doi.org/10.1186/s12967-015-0545-6, 
 http://dx.doi.org/10.3205/17gmds146
 
-For more info visit https://mosaic-greifswald.de/werkzeuge-und-vorlagen/einwilligungsmanagement-gics.html
+For more info visit https://www.ths-greifswald.de/forscher/gics/
 
 
 
