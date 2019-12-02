@@ -1,11 +1,16 @@
 ![gICS Logo](https://user-images.githubusercontent.com/12081369/49164555-a27e5180-f32f-11e8-8725-7b97e35134b5.png)
 
-Current Version: 2.8.5
+Current Source Code Version: 2.8.5
 
 # About #
 The Consent Management solution gICS supports the management of digital and paper-based informed consent documents. It facilitates checking for various policies and modules of a consent in real time.
 
 ![context](https://user-images.githubusercontent.com/22166209/42631209-c1a9e236-85d9-11e8-94e8-74b5022a2f43.PNG)
+
+# Docker and source code
+This repository does not provide the latest version of gpas. Please find the latest versions of gICS here:
+* docker-compose: https://github.com/mosaic-hgw/Dockerbank/tree/master/gICS
+* source code: https://www.ths-greifswald.de/kontakt/ 
 
 # License
 This Software was developed by the Institute for Community Medicine of the University Medicine Greifswald. It it licensed under AGPLv3 and initially provided by the DFG-funded MOSAIC-Project (grant number HO 1937/2-1).
@@ -13,14 +18,10 @@ This Software was developed by the Institute for Community Medicine of the Unive
 # Build
 To build gICS with maven use the goals "clean install".
 
-# Docker
-Use the Docker-Image to easily try out gICS. just visit https://hub.docker.com/r/tmfev/gics/
-
-
 # Web-based Interface
 All functionalities of the gICS are provided for external use via a SOAP-Interface.
 
-[gICSService Interface-Description (JavaDoc)](https://www.ths-greifswald.de/wp-content/uploads/tools/gics/doc/2-8-6/interfaceorg_1_1emau_1_1icmvc_1_1ganimed_1_1ttp_1_1cm2_1_1GICSService.html "gICS-Service Interface Description")
+[gICSService Interface-Description (JavaDoc)](https://www.ths-greifswald.de/spezifikationen/soap/gics "gICS-Service Interface Description")
 
 Use SOAP-UI to create sample requests. The WSDL URL is ``http://<YOUR IPADDRESS>:8080/gics/gicsService?wsdl`` (Please modify IP Address and Port accordingly).
 
