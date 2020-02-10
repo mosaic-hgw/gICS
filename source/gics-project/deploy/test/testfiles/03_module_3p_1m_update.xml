@@ -1,0 +1,43 @@
+<ExchangeFormatDefinition xmlns="http://hl7.org/fhir">
+	<meta>
+		<profile value="http://example.com/StructureDefinition/dontuse#ExchangeFormatDefinition"/>
+	</meta>
+	<supportedVersion value="${version}"/>
+	<domain>
+		<name value="${domainName}"/>
+		<label value="The ${domainName} Project"/>
+		<comment value="Sample domain to create informed consents"/>
+		<signerIdType value="Case_No."/>
+		<signerIdType value="StudyPsn"/>
+		<policyVersionConverter value="org.emau.icmvc.ganimed.ttp.cm2.version.MajorMinorVersionConverter"/>
+		<moduleVersionConverter value="org.emau.icmvc.ganimed.ttp.cm2.version.MajorMinorVersionConverter"/>
+		<consentTemplateVersionConverter value="org.emau.icmvc.ganimed.ttp.cm2.version.MajorMinorVersionConverter"/>
+	</domain>
+	<policiesConsentPolicy>
+		<domainName value="${domainName}"/>
+		<name value="${pol1Name}"/>
+		<version value="1.0"/>
+		<comment value="Policy to allow capturing  MDAT"/>
+	</policiesConsentPolicy>	
+		<policiesConsentPolicy>
+		<domainName value="${domainName}"/>
+		<name value="${pol2Name}"/>
+		<version value="1.0"/>
+		<comment value="Policy to allow store  MDAT"/>
+	</policiesConsentPolicy>	
+		<policiesConsentPolicy>
+		<domainName value="${domainName}"/>
+		<name value="${pol3Name}"/>
+		<version value="1.0"/>
+		<comment value="Policy to allow provision of  MDAT for scientif re-use"/>
+	</policiesConsentPolicy>	
+	<modulesConsentModule>
+		<domainName value="${domainName}"/>
+		<name value="${mod1Name}"/>
+		<version value="1.0"/>
+		<title value="${mod1Name}"/>
+		<text value="&lt;p> UPDATE Mit der Erhebung, Verarbeitung, Speicherung, Nutzung und Überlassung von Behandlungs-daten  bin  ich  zu  den  in  den  Teilabschnitten 1.1  und  1.2  dieser  Einverständniserklärung sowie in der zugehörigen Patienteninformation genannten Bedingungen einverstanden. &lt;/p>&lt;p>Pellentesque habitant morbi tristique senectus et netus et malesuada fames ac turpis egestas. Proin pharetra nonummy pede. Mauris et orci.&lt;/p"/>
+		<comment value="UPDATE Modul MDAT Verwalten: erheben, speichern und herausgeben"/>
+		<policyKey value="${domainName};${pol1Name};1.0"/>
+	</modulesConsentModule>
+</ExchangeFormatDefinition>

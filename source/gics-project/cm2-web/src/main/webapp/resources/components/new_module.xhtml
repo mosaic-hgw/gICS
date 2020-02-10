@@ -1,0 +1,179 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+        "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<!--
+  ###license-information-start###
+  gICS - a Generic Informed Consent Service
+  __
+  Copyright (C) 2014 - 2018 The MOSAIC Project - Institut fuer Community
+  							Medicine of the University Medicine Greifswald -
+  							mosaic-projekt@uni-greifswald.de
+  
+  							concept and implementation
+  							l.geidel
+  							web client
+  							a.blumentritt, m.bialke
+  
+  							Selected functionalities of gICS were developed as part of the MAGIC Project (funded by the DFG HO 1937/5-1).
+  
+  							please cite our publications
+  							http://dx.doi.org/10.3414/ME14-01-0133
+  							http://dx.doi.org/10.1186/s12967-015-0545-6
+  							http://dx.doi.org/10.3205/17gmds146
+  __
+  This program is free software: you can redistribute it and/or modify
+  it under the terms of the GNU Affero General Public License as published by
+  the Free Software Foundation, either version 3 of the License, or
+  (at your option) any later version.
+  
+  This program is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  GNU General Public License for more details.
+  
+  You should have received a copy of the GNU Affero General Public License
+  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+  ###license-information-end###
+  -->
+
+<!-- author: Arne Blumentritt -->
+
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:h="http://java.sun.com/jsf/html"
+	xmlns:f="http://java.sun.com/jsf/core" xmlns:ui="http://java.sun.com/jsf/facelets"
+	xmlns:p="http://primefaces.org/ui" xmlns:composite="http://java.sun.com/jsf/composite"
+	xmlns:components="http://java.sun.com/jsf/composite/components">
+
+<!-- INTERFACE -->
+<composite:interface>
+	<composite:attribute name="moduleController"
+		type="org.emau.icmvc.ganimed.ttp.cm2.frontend.controller.ModuleController" required="true" />
+	<composite:attribute name="policyController"
+		type="org.emau.icmvc.ganimed.ttp.cm2.frontend.controller.PolicyController" required="true" />
+	<composite:attribute name="update" type="java.lang.String" required="false" default="" />
+	<composite:attribute name="onSubmit" type="java.lang.String" required="false" default="" />
+	<composite:attribute name="onCancel" type="java.lang.String" required="false" default="" />
+	<composite:attribute name="bonusAction" type="java.lang.String" required="false" default="" />
+	<composite:attribute name="nested" type="java.lang.Boolean" required="false" default="false" />
+</composite:interface>
+
+<!-- IMPLEMENTATION -->
+<composite:implementation>
+	<h:form>
+		<p:panel>
+			<h4>
+				<h:outputText value="#{msg['module.label.description']}" />
+			</h4>
+
+			<p:focus for="module_name" />
+			<p:panelGrid columns="2" columnClasses="ui-grid-col-3,ui-grid-col-9" layout="grid">
+				<p:outputLabel for="module_name" value="#{msg['module.name']}" />
+				<p:inputTextarea id="module_name" value="#{cc.attrs.moduleController.editModule.key.name}"
+					required="true" disabled="#{not empty cc.attrs.moduleController.editModule.key.name}"
+					counter="module_name_counter" counterTemplate="#{msg['common.characters.remaining']}"
+					maxlength="100" rows="1" />
+				<p:column rendered="#{empty cc.attrs.moduleController.editModule.key.name}" />
+				<h:outputText id="module_name_counter" styleClass="textCounter"
+					rendered="#{empty cc.attrs.moduleController.editModule.key.name}" />
+				<!-- ************************************************************** -->
+				<p:outputLabel for="module_version" value="#{msg['module.version']}" />
+				<p:column>
+					<p:inputText id="module_version" value="#{cc.attrs.moduleController.editModule.key.version}"
+						required="true" />
+					<p:watermark for="module_version"
+						value="#{ClassPathProvider.convertClassPath(domainSelector.selectedDomain.moduleVersionConverter)}" />
+				</p:column>
+				<!-- ************************************************************** -->
+				<p:column style="vertical-align: top;">
+					<p:outputLabel for="module_title" value="#{msg['module.moduleTitle']}" />
+				</p:column>
+				<components:text_editor id="module_title" value="#{cc.attrs.moduleController.editModule.title}"
+					small="true" maxlength="255" />
+				<!-- ************************************************************** -->
+				<p:column style="vertical-align: top;">
+					<p:outputLabel for="module_text" value="#{msg['module.text']}" />
+				</p:column>
+				<components:text_editor id="module_text" value="#{cc.attrs.moduleController.editModule.text}"
+					label="#{msg['module.text']}" />
+			</p:panelGrid>
+		</p:panel>
+
+		<p:panel id="editPolicies">
+			<h4>
+				<h:outputText value="#{msg['module.label.policies']}" />
+			</h4>
+			<p:pickList id="policyPicker" widgetVar="policyPicker"
+				value="#{cc.attrs.moduleController.policies}" var="_policy" itemLabel="#{_policy.key}"
+				itemValue="#{_policy}" converter="policyConverter" showTargetControls="true"
+				addLabel="#{msg['module.policy.add']}" addAllLabel="#{msg['module.policy.addAll']}"
+				removeLabel="#{msg['module.policy.remove']}" removeAllLabel="#{msg['module.policy.removeAll']}"
+				moveUpLabel="#{msg['common.moveUp']}" moveDownLabel="#{msg['common.moveDown']}"
+				moveTopLabel="#{msg['common.moveTop']}" moveBottomLabel="#{msg['common.moveBottom']}"
+				responsive="true" showSourceFilter="true" showTargetFilter="true" filterMatchMode="contains">
+				<p:ajax event="transfer" update="@this" partialSubmit="true" ignoreAutoUpdate="true" />
+				<f:facet name="sourceCaption">#{msg['module.label.policies.available']} (#{cc.attrs.moduleController.policies.source.size()})</f:facet>
+				<f:facet name="targetCaption">#{msg['module.label.policies.selected']} (#{cc.attrs.moduleController.policies.target.size()})</f:facet>
+				<p:column>#{_policy.key.name}</p:column>
+				<p:column style="text-align: right;" styleClass="lightgrey">#{msg['policy.version.short']} #{_policy.key.version}</p:column>
+			</p:pickList>
+
+			<div class="space"></div>
+			<p:commandButton actionListener="#{cc.attrs.policyController.onNewPolicy}"
+				update="#{cc.id}:newPolicy" onclick="PF('newPolicy').show();"
+				value="#{msg['module.policy.create']}" immediate="true" styleClass="grey" />
+		</p:panel>
+
+		<p:accordionPanel multiple="true" activeIndex="-1">
+			<p:tab title="#{msg['module.label.misc']}">
+				<p:panelGrid columns="2" columnClasses="ui-grid-col-3,ui-grid-col-9" layout="grid">
+					<p:outputLabel for="module_comment" value="#{msg['module.comment']}"
+						style="vertical-align: top;" />
+					<p:inputTextarea id="module_comment" value="#{cc.attrs.moduleController.editModule.comment}"
+						maxlength="255" counter="module_comment_counter"
+						counterTemplate="#{msg['common.characters.remaining']}" style="width: 100%" />
+					<p:column />
+					<h:outputText id="module_comment_counter" styleClass="textCounter" />
+					<!-- ************************************************************** -->
+					<p:outputLabel for="module_externProperties" value="#{msg['module.externProperties']}"
+						style="vertical-align: top;" />
+					<p:inputTextarea id="module_externProperties"
+						value="#{cc.attrs.moduleController.editModule.externProperties}" maxlength="255"
+						counter="module_externProperties_counter"
+						counterTemplate="#{msg['common.characters.remaining']}" style="width: 100%" />
+					<p:column />
+					<h:outputText id="module_externProperties_counter" styleClass="textCounter" />
+				</p:panelGrid>
+			</p:tab>
+		</p:accordionPanel>
+		<p:panel>
+			<p:commandButton id="add" value="#{msg['common.button.add']}"
+				actionListener="#{cc.attrs.moduleController.onAddModule(!cc.attrs.nested)}"
+				update="#{cc.attrs.update}" process="#{cc.id}" oncomplete="#{cc.attrs.onSubmit}"
+				rendered="#{empty cc.attrs.moduleController.editModule.key.name}">
+				<f:actionListener binding="#{cc.attrs.bonusAction}" />
+			</p:commandButton>
+			<p:commandButton id="update" value="#{msg['common.button.save']}"
+				actionListener="#{cc.attrs.moduleController.onUpdateModule}" update="#{cc.attrs.update}"
+				process="#{cc.id}" oncomplete="#{cc.attrs.onSubmit}"
+				rendered="#{not empty cc.attrs.moduleController.editModule.key.name}" />
+			<p:commandButton id="cancel" value="#{msg['common.button.cancel']}"
+				actionListener="#{cc.attrs.moduleController.onCancelEdit}" update="#{cc.attrs.update}"
+				onclick="#{cc.attrs.onCancel}" immediate="true" styleClass="grey" />
+		</p:panel>
+	</h:form>
+
+	<p:dialog widgetVar="newPolicy" modal="#{!cc.attrs.nested}" closeOnEscape="true"
+		header="#{msg['module.policy.create']}">
+		<p:ajax event="close" listener="#{cc.attrs.policyController.onCancelEdit()}"></p:ajax>
+		<h:panelGroup layout="block" id="newPolicy" styleClass="newPolicyComponent">
+			<p:messages rendered="#{cc.attrs.policyController.editMode}" />
+			<components:new_policy policyController="#{cc.attrs.policyController}"
+				update="#{cc.id}:newPolicy, :#{p:component('policyPicker')}"
+				bonusAction="#{cc.attrs.moduleController.refreshAvailablePolicies()}"
+				onSubmit="if (args &amp;&amp; !args.validationFailed) PF('newPolicy').hide();"
+				onCancel="PF('newPolicy').hide();" nested="true"
+				rendered="#{cc.attrs.policyController.editMode}" />
+		</h:panelGroup>
+
+	</p:dialog>
+</composite:implementation>
+
+</html>

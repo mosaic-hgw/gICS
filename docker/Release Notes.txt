@@ -1,0 +1,35 @@
+----------------------------
+Release Notes gICS v.2.11.0
+----------------------------
+
+Date: 2020-02-03
+
+New Features
+
+    - Wasserzeichen auf Ausdrucken von Entwurfsvorlagen
+    - Neuer Parameter zum Abruf nur finalisierter Policies, Module und Vorlagen
+    - Seitenweise Abfrage von Einwilligungen über die Schnittstelle
+
+Improvements
+
+    - Aufteilung der Datenbanktabelle text in scan und text
+    - Schließen von Dialogen mit ESC Taste
+    - Dateinamen von Exports aller Tools vereinheitlichen
+    - Automatischer Fokus auf erstem Eingabefeld in Dialogen und Formularen
+    - Mehr Informationen im Dateinamen von Einwilligungsausdrucken
+    - Allgemeine Verbesserungen der Statistikübersicht
+    - Allgemeine Verbesserungen im Frontend
+    - Verwendung der Bezeichnung "Entwurf" für nicht finale Objekte
+    - Keine Rückgabe von Entwürfen bei listCurrentConsentTemplates und getCurrentConsentTemplate
+
+Bug Fixes
+
+    - Nicht finale Vorlagen/Module werden im Modulbaum als final angezeigt
+    - Unterschrift wird auf Ausdruck von Einwilligungen nicht angezeigt
+	
+Docker
+
+	- Update von Wildfly 13 auf Wildfly 18
+	- Basic Authentication der WepApp mit Nutzer/Admin-Privilegien, Details siehe Anwenderhandbuch
+	- gICS Default User Passwort angepasst
+	- View-Basis für RoleQuery angepasst, so dass nur aktive Nutzer berücksichtigt werden

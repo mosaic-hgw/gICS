@@ -1,5 +1,0 @@
-ALTER TABLE `consent_template`
-	ADD COLUMN `TYPE` VARCHAR(20) NOT NULL AFTER `DOMAIN_NAME`;
-	
-UPDATE `consent_template`
-	SET `TYPE` = 'CONSENT' WHERE `TYPE` IS NULL OR `TYPE` = '';

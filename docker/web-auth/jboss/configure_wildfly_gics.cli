@@ -1,0 +1,34 @@
+# Add datasource
+data-source add \
+	--name=CM12SqlDS \
+	--driver-name=mysql \
+	--jndi-name=java:jboss/datasources/gicsDS \	
+	--connection-url=jdbc:mysql://mysqldb:3306/gics?useSSL=false&allowPublicKeyRetrieval=true&useJDBCCompliantTimezoneShift=true&useLegacyDatetimeCode=false&serverTimezone=Europe/Berlin \
+	--user-name=gics_user \
+	--password=gics_password \
+	--use-ccm=true \
+	--min-pool-size=0 \
+	--max-pool-size=20 \
+	--flush-strategy=FailingConnectionOnly \
+	--use-java-context=true \
+	--jta=false \
+	--enabled=true
+
+# Add logger
+/subsystem=logging/console-handler=CONSOLE:write-attribute(name=level,value=TRACE)
+/subsystem=logging/logger=org.emau.icmvc.ganimed.ttp.cm2:add(use-parent-handlers=false,handlers=["CONSOLE"])
+/subsystem=logging/logger=org.emau.icmvc.ganimed.ttp.cm2:write-attribute(name=level,value=TRACE)
+/subsystem=logging/logger=org.emau.icmvc.ganimed.ttp.gstats:add(use-parent-handlers=false,handlers=["CONSOLE"])
+/subsystem=logging/logger=org.emau.icmvc.ganimed.ttp.gstats:write-attribute(name=level,value=TRACE)
+
+# Set WSDL address to use incoming request address
+/subsystem=webservices:write-attribute(name=wsdl-host, value=jbossws.undefined.host)
+
+# Set WSDL scheme to HTTPS (optional)
+# /subsystem=webservices:write-attribute(name=wsdl-uri-scheme, value=https)
+
+# Set port for WSDL HTTP scheme (optional)
+# /subsystem=webservices:write-attribute(name=wsdl-port, value=8080)
+
+# Set port for WSDL HTTPS scheme (optional)
+# /subsystem=webservices:write-attribute(name=wsdl-secure-port, value=8443)

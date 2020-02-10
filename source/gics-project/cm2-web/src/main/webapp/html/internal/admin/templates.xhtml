@@ -1,0 +1,468 @@
+<!--
+  ###license-information-start###
+  gICS - a Generic Informed Consent Service
+  __
+  Copyright (C) 2014 - 2018 The MOSAIC Project - Institut fuer Community
+  							Medicine of the University Medicine Greifswald -
+  							mosaic-projekt@uni-greifswald.de
+  
+  							concept and implementation
+  							l.geidel
+  							web client
+  							a.blumentritt, m.bialke
+  
+  							Selected functionalities of gICS were developed as part of the MAGIC Project (funded by the DFG HO 1937/5-1).
+  
+  							please cite our publications
+  							http://dx.doi.org/10.3414/ME14-01-0133
+  							http://dx.doi.org/10.1186/s12967-015-0545-6
+  							http://dx.doi.org/10.3205/17gmds146
+  __
+  This program is free software: you can redistribute it and/or modify
+  it under the terms of the GNU Affero General Public License as published by
+  the Free Software Foundation, either version 3 of the License, or
+  (at your option) any later version.
+  
+  This program is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  GNU General Public License for more details.
+  
+  You should have received a copy of the GNU Affero General Public License
+  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+  ###license-information-end###
+  -->
+
+<!-- author: Arne Blumentritt -->
+
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:h="http://java.sun.com/jsf/html"
+	xmlns:f="http://java.sun.com/jsf/core" xmlns:ui="http://java.sun.com/jsf/facelets"
+	xmlns:jstl="http://java.sun.com/jsp/jstl/functions" xmlns:p="http://primefaces.org/ui"
+	xmlns:components="http://java.sun.com/jsf/composite/components">
+
+<body>
+	<ui:composition template="/resources/templates/gics.xhtml">
+
+		<ui:define name="header_title">
+			<h:outputFormat value="#{msg['template.titleHeader']}" />
+		</ui:define>
+
+		<ui:define name="title">
+			<h:outputFormat value="#{msg['template.title']}" />
+		</ui:define>
+
+		<ui:define name="help">
+			<h:outputText value="#{msg['template.help']}" escape="false" />
+		</ui:define>
+		<ui:define name="content">
+
+			<h:panelGroup layout="block" id="listTemplates">
+				<h:form onkeypress="if (event.keyCode == 13) { return false; }"
+					rendered="#{!templateController.editMode}">
+					<p:panel>
+						<h4>
+							<h:outputText value="#{msg['template.label.new']}" />
+						</h4>
+						<p:commandButton actionListener="#{templateController.onNewTemplate}"
+							update="listTemplates, newTemplate, selectModule, title" value="#{msg['common.button.add']}" />
+					</p:panel>
+
+					<p:panel>
+						<h4>
+							<h:outputFormat value="#{msg['template.label.found']}">
+								<f:param value="#{templateController.templates.size()}" />
+							</h:outputFormat>
+						</h4>
+
+						<p:dataTable id="templates" widgetVar="templates" value="#{templateController.templates}"
+							var="_template" rowKey="#{_template.key}" paginator="true" paginatorPosition="bottom"
+							paginatorTemplate="{CurrentPageReport} {FirstPageLink} {PreviousPageLink} {PageLinks} {NextPageLink} {LastPageLink}"
+							currentPageReportTemplate="{startRecord}-{endRecord} #{cmsg['ui.table.of']} {totalRecords}"
+							rows="10" pageLinks="1" sortBy="#{_template.key.name}" selectionMode="single"
+							selection="#{templateController.selectedTemplate}">
+
+							<f:facet name="header">
+								<p:inputText id="globalFilter" onkeyup="PF('templates').filter()"
+									placeholder="#{cmsg['ui.table.search']}" />
+							</f:facet>
+
+							<p:column headerText="#{msg['template.name']}" sortBy="#{_template.key.name}"
+								filterBy="#{_template.key.name}" filterable="false" width="33%">
+								<h:outputText value="#{_template.key.name}" />
+							</p:column>
+							<p:column headerText="#{msg['template.version']}" sortBy="#{_template.key.version}"
+								filterBy="#{_template.key.version}" filterable="false">
+								<h:outputText value="#{_template.key.version}" />
+							</p:column>
+							<p:column headerText="#{msg['template.type']}"
+								sortBy="#{msg['template.type.'.concat(_template.type.name())]}"
+								filterBy="#{msg['template.type.'.concat(_template.type.name())]}" filterable="false">
+								<h:outputText value="#{msg['template.type.'.concat(_template.type.name())]}" />
+							</p:column>
+							<p:column headerText="#{msg['template.label.title']}" sortBy="#{_template.title}"
+								filterBy="#{_template.title}" filterable="false" width="33%" style="min-width: 150px;">
+								<h:outputText value="#{templateController.cleanStringForTable(_template.title)}"
+									styleClass="ellipsis" />
+							</p:column>
+							<p:column headerText="#{msg['template.header']}" sortBy="#{_template.header}"
+								filterBy="#{_template.header}" filterable="false" width="33%" style="min-width: 150px;">
+								<h:outputText value="#{templateController.cleanStringForTable(_template.header)}"
+									styleClass="ellipsis" />
+							</p:column>
+
+							<p:column headerText="#{msg['common.button.actions']}" styleClass="icons">
+								<p:commandButton action="#{templateController.onEditTemplate(_template)}"
+									update="listTemplates, newTemplate, selectModule, title" icon="mdi mdi-pencil"
+									alt="#{msg['common.button.edit']}" title="#{msg['common.button.edit']}" />
+								<p:commandButton action="#{templateController.onDeleteTemplate(_template)}" update="@form"
+									icon="mdi mdi-delete-empty" alt="#{msg['common.button.delete']}"
+									title="#{msg['common.button.delete']}">
+									<p:confirm header="#{msg['common.confirmation']}"
+										message="#{msg['template.label.confirmDelete']}" icon="mdi mdi-alert-outline" />
+								</p:commandButton>
+								<p:confirmDialog global="true">
+									<p:commandButton value="#{msg['common.button.yes']}" type="button"
+										styleClass="ui-confirmdialog-yes" />
+									<p:commandButton value="#{msg['common.button.no']}" type="button"
+										styleClass="ui-confirmdialog-no" />
+								</p:confirmDialog>
+								<p:commandButton icon="mdi mdi-printer" alt="#{msg['common.button.print']}"
+									title="#{msg['common.button.print']}"
+									action="#{templateController.setSelectedTemplate(_template)}" update="templates"
+									onclick="PF('printOptions').show()" />
+							</p:column>
+						</p:dataTable>
+						<components:rightclick />
+
+						<p:contextMenu for="templates" event="contextmenu touchend">
+							<p:menuitem value="#{msg['common.button.edit']}" icon="mdi mdi-pencil"
+								actionListener="#{templateController.onEditTemplate(templateController.selectedTemplate)}"
+								update="listTemplates, newTemplate, selectModule, title" />
+							<p:separator />
+							<p:menuitem value="#{msg['common.button.delete']}" icon="mdi mdi-delete-empty"
+								actionListener="#{templateController.onDeleteTemplate(templateController.selectedTemplate)}"
+								update="@form">
+								<p:confirm header="#{msg['common.confirmation']}"
+									message="#{msg['template.label.confirmDelete']}" icon="mdi mdi-alert-outline" />
+							</p:menuitem>
+							<p:separator />
+							<p:menuitem value="#{msg['common.button.tree']}" icon="mdi mdi-file-tree"
+								oncomplete="PF('templateTree').show()"
+								actionListener="#{templateController.onShowTree(templateController.selectedTemplate)}"
+								update="templateTree" />
+							<p:separator />
+							<p:menuitem value="#{msg['common.button.print']}" icon="mdi mdi-printer"
+								onclick="PF('printOptions').show()" />
+						</p:contextMenu>
+					</p:panel>
+				</h:form>
+
+				<p:dialog id="printOptions" widgetVar="printOptions" modal="true"
+					header="#{msg['template.print']}">
+					<h:form>
+						<h:outputText value="#{msg['template.print.options']}" escape="false" />
+						<br />
+						<br />
+						<p:commandButton action="#{templateController.onPrintTemplate}"
+							value="#{msg['template.print.options.empty']}"
+							onclick="form.target='_blank';PF('printOptions').hide()" ajax="false" />
+						<h:outputText value="#{msg['common.or']}" styleClass="or" />
+						<p:commandButton action="#{templateController.onPrintTemplateWithSignerIds}"
+							value="#{msg['template.print.options.signerIds']}" ajax="false" onclick="form.target='_self'" />
+					</h:form>
+				</p:dialog>
+
+				<p:dialog id="templateTree" widgetVar="templateTree" modal="true"
+					header="#{msg['common.button.tree']}">
+
+					<p:commandButton value="Print" type="button" icon="fa fa-fw fa-print"
+						style="display:block;margin-bottom: 20px">
+						<p:printer target="templateTreeForm" />
+					</p:commandButton>
+
+					<h:form id="templateTreeForm">
+						<p:tree value="#{templateController.templateTree}" var="_node" dynamic="true"
+							orientation="horizontal" rendered="#{not empty templateController.templateTree}"
+							escape="false" styleClass="noToggler small-icons">
+							<p:treeNode>
+								<p:outputLabel rendered="#{_node.type == 'TEMPLATE'}" style="display:block; white-space: nowrap">
+									<i class="mdi mdi-file-outline" style="margin-left: -18px;"></i>
+									#{_node.key.name}
+								</p:outputLabel>
+								<p:outputLabel rendered="#{_node.type == 'MODULE'}" style="display:block; white-space: nowrap">
+									<i class="#{_node.mandatory ? 'mdi mdi-checkbox-marked' : 'mdi mdi-checkbox-marked-outline'}"
+										style="margin-left: -19px;"></i>
+									#{_node.key.name}
+								</p:outputLabel>
+								<p:outputLabel rendered="#{_node.type == 'POLICY'}" style="display:block; white-space: nowrap">
+									<i class="mdi mdi-shield-half-full" style="margin-left: -16px;"></i>
+									#{_node.key.name}
+								</p:outputLabel>
+
+								<p:outputLabel style="display:block; margin-top: 2px; margin-bottom: 3px;"
+									styleClass="lightgrey">
+									V #{_node.key.version}
+								</p:outputLabel>
+							</p:treeNode>
+						</p:tree>
+
+						<i class="mdi mdi-file-outline"></i> #{msg['template']}<br />
+						<i class="mdi mdi-checkbox-marked"></i> #{msg['module.mandatoryModule']}
+						<i class="mdi mdi-checkbox-marked-outline" style="margin-left: 10px;"></i> #{msg['module.optionalModule']}<br />
+						<i class="mdi mdi-shield-half-full"></i> #{msg['policy']}		
+					</h:form>
+				</p:dialog>
+
+			</h:panelGroup>
+
+			<h:panelGroup layout="block" id="newTemplate">
+				<h:form rendered="#{templateController.editMode}" id="newTemplateForm">
+					<p:panel>
+						<h4>
+							<h:outputText value="#{msg['template.label.description']}" />
+						</h4>
+
+						<p:focus for="template_name" />
+						<p:panelGrid columns="2" columnClasses="ui-grid-col-3,ui-grid-col-9" layout="grid">
+							<p:outputLabel for="template_type" value="#{msg['template.type']}" />
+							<p:selectOneMenu id="template_type" value="#{templateController.editTemplate.type}"
+								disabled="#{not empty templateController.editTemplate.key.name}" required="true">
+								<f:selectItem noSelectionOption="true" itemLabel="#{msg['common.pleaseSelect']}"
+									itemDisabled="true" />
+								<f:selectItems value="#{templateController.templateTypes}" var="_type"
+									itemLabel="#{msg['template.type.'.concat(_type.name())]}" itemValue="#{_type}" />
+								<!-- empty ajax to save type in backing bean for use in assignedModuleTable -->
+								<p:ajax event="change" />
+							</p:selectOneMenu>
+							<!-- ************************************************************** -->
+							<p:outputLabel for="template_name" value="#{msg['template.name']}" />
+							<p:inputTextarea id="template_name" value="#{templateController.editTemplate.key.name}"
+								required="true" disabled="#{not empty templateController.editTemplate.key.name}"
+								counter="template_name_counter" counterTemplate="#{msg['common.characters.remaining']}"
+								maxlength="100" rows="1" />
+							<p:column rendered="#{empty templateController.editTemplate.key.name}" />
+							<h:outputText id="template_name_counter" styleClass="textCounter"
+								rendered="#{empty templateController.editTemplate.key.name}" />
+							<!-- ************************************************************** -->
+							<p:outputLabel for="template_version" value="#{msg['template.version']}" />
+							<p:column>
+								<p:inputText id="template_version" value="#{templateController.editTemplate.key.version}"
+									required="true" />
+								<p:watermark for="template_version"
+									value="#{ClassPathProvider.convertClassPath(domainSelector.selectedDomain.ctVersionConverter)}" />
+							</p:column>
+							<!-- ************************************************************** -->
+							<p:column style="vertical-align: top;">
+								<p:outputLabel for="template_title" value="#{msg['template.label.title']}" />
+							</p:column>
+							<components:text_editor id="template_title" value="#{templateController.editTemplate.title}"
+								small="true" maxlength="255" />
+							<!-- ************************************************************** -->
+							<p:column style="vertical-align: top;">
+								<p:outputLabel for="template_header" value="#{msg['template.header']}" />
+							</p:column>
+							<components:text_editor id="template_header"
+								value="#{templateController.editTemplate.header}" small="true" />
+							<!-- ************************************************************** -->
+							<p:column style="vertical-align: top;">
+								<p:outputLabel for="template_footer" value="#{msg['template.footer']}" />
+							</p:column>
+							<components:text_editor id="template_footer"
+								value="#{templateController.editTemplate.footer}" small="true" />
+						</p:panelGrid>
+					</p:panel>
+
+					<p:panel>
+						<h4>
+							<h:outputText value="#{msg['template.label.modules']}" />
+						</h4>
+						<p:dataTable id="moduleOptions" value="#{templateController.editTemplate.assignedModules}"
+							var="_assignedModule" rowIndexVar="_i"
+							emptyMessage="#{msg['template.label.modules.noneSelected']}">
+							<p:column headerText="#{msg['module.name']}">
+								#{_assignedModule.module.key.name}<h:outputText styleClass="lightgrey"
+									value=", #{msg['module.version']} #{_assignedModule.module.key.version}" />
+							</p:column>
+							<p:column headerText="#{msg['module.mandatory']}" style="width: 55px; text-align:center;">
+								<p:selectBooleanCheckbox value="#{_assignedModule.mandatory}">
+									<p:ajax event="change" process="moduleOptions" update="moduleOptions"></p:ajax>
+								</p:selectBooleanCheckbox>
+							</p:column>
+							<p:column styleClass="dynamicStates" headerText="#{msg['template.module.choices']}"
+								style="width:560px; min-width: 180px;">
+								<p:selectManyCheckbox value="#{_assignedModule.displayCheckboxes}"
+									converter="consentStatusConverter" layout="responsive" columns="3"
+									style="border-bottom: 1px solid #E4E4E4; margin-bottom: 8px;">
+									<f:selectItems
+										value="#{templateController.getMandatoryConsentStates(_assignedModule.mandatory)}"
+										var="_status" itemLabel="#{msg['consent.status.'.concat(_status)]}" itemValue="#{_status}"></f:selectItems>
+								</p:selectManyCheckbox>
+								<h:outputText value="#{msg['template.module.choices.preselection']}: "
+									style="font-weight: bold; margin: 5px 10px 0 5px; display: block; float: left;" />
+								<p:selectOneMenu value="#{_assignedModule.defaultConsentStatus}" style="margin-bottom: 8px;">
+									<f:selectItem noSelectionOption="true"
+										itemLabel="#{msg['template.label.module.default.none']}" itemValue="" />
+									<f:selectItems
+										value="#{templateController.getMandatoryConsentStates(_assignedModule.mandatory)}"
+										var="_status" itemLabel="#{msg['consent.status.'.concat(_status)]}" itemValue="#{_status}"></f:selectItems>
+								</p:selectOneMenu>
+							</p:column>
+							<p:column headerText="#{msg['template.module.options']}" styleClass="icons">
+								<p:commandButton type="button" onclick="PF('extern_properties_dialog_#{_i}').show();"
+									icon="mdi mdi-settings-outline" title="#{msg['consent.externProperties']}" />
+								<p:dialog widgetVar="extern_properties_dialog_#{_i}" modal="true"
+									header="#{msg['consent.externProperties']}" style="text-align:left;">
+									<p:inputTextarea id="extern_properties" value="#{_assignedModule.externProperties}"
+										counter="extern_properties_counter"
+										counterTemplate="#{msg['common.characters.remaining']}" maxlength="255" rows="3" />
+									<h:outputText id="extern_properties_counter" styleClass="textCounter" />
+									<br />
+									<br />
+									<p:commandButton type="button" value="#{msg['common.button.ok']}"
+										onclick="PF('extern_properties_dialog_#{_i}').hide();" />
+								</p:dialog>
+							</p:column>
+						</p:dataTable>
+						<div class="space"></div>
+						<p:commandButton type="button" onclick="PF('selectModule').show();"
+							value="#{msg['template.label.modules.search']}" />
+					</p:panel>
+
+					<p:accordionPanel multiple="true" activeIndex="-1">
+						<p:tab title="#{msg['template.label.freeText']}">
+							<p:dataTable id="free_text_table" value="#{templateController.editTemplate.freeTextDefs}"
+								var="_freeText" emptyMessage="#{msg['template.label.freetext.empty']}">
+								<p:column headerText="#{msg['template.freetext.header.name']}" style="min-width: 150px;">
+									<p:inputText required="true" value="#{_freeText.name}" />
+								</p:column>
+								<p:column headerText="#{msg['template.freetext.header.required']}">
+									<p:selectBooleanCheckbox value="#{_freeText.required}" />
+								</p:column>
+								<p:column id="type_column" headerText="#{msg['template.freetext.header.type']}">
+									<p:selectOneMenu value="#{_freeText.type}">
+										<p:ajax update="converterStringInput" process="@this" event="change"></p:ajax>
+										<f:selectItems value="#{templateController.freeTextTypes}" var="_freeTextType"
+											itemValue="#{_freeTextType}"
+											itemLabel="#{msg['template.label.freeText.type.'.concat(_freeTextType)]}" />
+									</p:selectOneMenu>
+									<p:outputPanel layout="inline" id="converterStringInput"
+										style="vertical-align: top;margin-left:4px;">
+										<p:outputLabel value="Date Pattern" rendered="#{_freeText.type=='Date'}"></p:outputLabel>
+										<p:inputText id="pattern_input" value="#{_freeText.converterString}" required="true"
+											rendered="#{_freeText.type=='Date'}"></p:inputText>
+									</p:outputPanel>
+								</p:column>
+								<p:column>
+									<p:commandButton actionListener="#{templateController.removeFreeText(_freeText)}"
+										icon="mdi mdi-delete-empty" immediate="true" update="free_text_table" />
+								</p:column>
+							</p:dataTable>
+							<div class="space"></div>
+							<p:commandButton value="#{msg['template.addFreeText']}"
+								actionListener="#{templateController.onNewFreeText}" update="free_text_table"
+								process="@this, free_text_table"></p:commandButton>
+						</p:tab>
+
+						<p:tab title="#{msg['template.label.misc']}">
+							<p:panelGrid columns="2" columnClasses="ui-grid-col-3,ui-grid-col-9" layout="grid">
+								<p:outputLabel for="template_comment" value="#{msg['template.comment']}"
+									style="vertical-align: top;" />
+								<p:inputTextarea id="template_comment" value="#{templateController.editTemplate.comment}"
+									maxlength="255" counter="template_comment_counter"
+									counterTemplate="#{msg['common.characters.remaining']}" style="width: 100%" />
+								<p:column />
+								<h:outputText id="template_comment_counter" styleClass="textCounter" />
+								<!-- ************************************************************** -->
+								<!-- TODO: Textarea mit counter in komponente auslagern -->
+								<p:outputLabel for="template_properties" value="#{msg['template.properties']}"
+									style="vertical-align: top;" />
+								<p:inputTextarea id="template_properties"
+									value="#{templateController.editTemplate.propertiesString}" maxlength="255"
+									counter="template_properties_counter"
+									counterTemplate="#{msg['common.characters.remaining']}" style="width: 100%" />
+								<p:column />
+								<h:outputText id="template_properties_counter" styleClass="textCounter" />
+								<!-- ************************************************************** -->
+								<p:outputLabel for="template_externProperties" value="#{msg['template.externProperties']}"
+									style="vertical-align: top;" />
+								<p:inputTextarea id="template_externProperties"
+									value="#{templateController.editTemplate.externProperties}" maxlength="255"
+									counter="template_externProperties_counter"
+									counterTemplate="#{msg['common.characters.remaining']}" style="width: 100%" />
+								<p:column />
+								<h:outputText id="template_externProperties_counter" styleClass="textCounter" />
+							</p:panelGrid>
+						</p:tab>
+					</p:accordionPanel>
+
+					<p:panel>
+						<p:commandButton id="add" value="#{msg['common.button.add']}"
+							actionListener="#{templateController.onAddTemplate}"
+							update="listTemplates, newTemplate, title"
+							rendered="#{empty templateController.editTemplate.key.name}" />
+						<p:commandButton id="update" value="#{msg['common.button.save']}"
+							actionListener="#{templateController.onUpdateTemplate}"
+							update="listTemplates, newTemplate, title"
+							rendered="#{not empty templateController.editTemplate.key.name}" />
+						<p:commandButton id="cancel" value="#{msg['common.button.cancel']}"
+							actionListener="#{templateController.onCancelEdit}"
+							update="listTemplates, newTemplate, title" immediate="true" styleClass="grey" />
+					</p:panel>
+				</h:form>
+
+				<p:dialog widgetVar="newModule" modal="false" closeOnEscape="true"
+					onHide="PF('newModule').toggleMaximize();" header="#{msg['template.module.create']}"
+					rendered="#{templateController.editMode}">
+					<p:ajax event="close" listener="#{moduleController.onCancelEdit()}"></p:ajax>
+					<h:panelGroup layout="block" id="newModule">
+						<p:messages rendered="#{moduleController.editMode}" />
+						<components:new_module moduleController="#{moduleController}"
+							policyController="#{policyController}" update="newModule, :#{p:component('modulePicker')}"
+							bonusAction="#{templateController.refreshAvailableModules()}"
+							onSubmit="if (args &amp;&amp; !args.validationFailed) PF('newModule').hide();"
+							onCancel="PF('newModule').hide();" nested="true" rendered="#{moduleController.editMode}" />
+					</h:panelGroup>
+				</p:dialog>
+			</h:panelGroup>
+
+			<!-- TODO: musste erstmal aus der newTemplate-panelGroup raus, damit messages nicht immer mit geupdated wird -->
+			<p:dialog widgetVar="selectModule" modal="true" responsive="true" closeOnEscape="true"
+				header="#{msg['template.label.modules.select']}">
+				<h:panelGroup layout="block" id="selectModule">
+					<p:messages closable="true" rendered="#{templateController.editMode}" />
+					<h:form rendered="#{templateController.editMode}">
+						<p:pickList id="modulePicker" widgetVar="modulePicker" value="#{templateController.modules}"
+							var="_module" itemLabel="#{_module.module.key}" itemValue="#{_module}"
+							converter="seriazableConverter" showTargetControls="true"
+							addLabel="#{msg['template.module.add']}" addAllLabel="#{msg['template.module.addAll']}"
+							removeLabel="#{msg['template.module.remove']}"
+							removeAllLabel="#{msg['template.module.removeAll']}" moveUpLabel="#{msg['common.moveUp']}"
+							moveDownLabel="#{msg['common.moveDown']}" moveTopLabel="#{msg['common.moveTop']}"
+							moveBottomLabel="#{msg['common.moveBottom']}" responsive="true" showSourceFilter="true"
+							showTargetFilter="true" filterMatchMode="contains">
+							<p:ajax partialSubmit="true" event="transfer" update="selectModule" ignoreAutoUpdate="true" />
+							<f:facet name="sourceCaption">#{msg['template.label.modules.available']} (#{templateController.modules.source.size()})</f:facet>
+							<f:facet name="targetCaption">#{msg['template.label.modules.selected']} (#{templateController.modules.target.size()})</f:facet>
+							<p:column>
+									#{_module.module.key.name}
+								</p:column>
+							<p:column style="text-align: right;" styleClass="lightgrey">
+								#{msg['module.version.short']} #{_module.module.key.version}
+							</p:column>
+						</p:pickList>
+						<br />
+						<br />
+						<p:commandButton update="newTemplateForm:moduleOptions"
+							actionListener="#{templateController.onModulesSubmit}"
+							oncomplete="PF('selectModule').hide();" value="#{msg['template.module.applySelected']}" />
+						<p:commandButton actionListener="#{moduleController.onNewModule}"
+							onclick="PF('newModule').show();PF('newModule').toggleMaximize();" update="newModule"
+							value="#{msg['template.module.create']}" immediate="true" styleClass="grey" />
+					</h:form>
+				</h:panelGroup>
+			</p:dialog>
+
+		</ui:define>
+	</ui:composition>
+</body>
+</html>

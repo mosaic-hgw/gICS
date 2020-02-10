@@ -1,0 +1,187 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+        "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<!--
+  ###license-information-start###
+  gICS - a Generic Informed Consent Service
+  __
+  Copyright (C) 2014 - 2018 The MOSAIC Project - Institut fuer Community
+  							Medicine of the University Medicine Greifswald -
+  							mosaic-projekt@uni-greifswald.de
+  
+  							concept and implementation
+  							l.geidel
+  							web client
+  							a.blumentritt, m.bialke
+  
+  							Selected functionalities of gICS were developed as part of the MAGIC Project (funded by the DFG HO 1937/5-1).
+  
+  							please cite our publications
+  							http://dx.doi.org/10.3414/ME14-01-0133
+  							http://dx.doi.org/10.1186/s12967-015-0545-6
+  							http://dx.doi.org/10.3205/17gmds146
+  __
+  This program is free software: you can redistribute it and/or modify
+  it under the terms of the GNU Affero General Public License as published by
+  the Free Software Foundation, either version 3 of the License, or
+  (at your option) any later version.
+  
+  This program is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  GNU General Public License for more details.
+  
+  You should have received a copy of the GNU Affero General Public License
+  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+  ###license-information-end###
+  -->
+
+<!-- author: Arne Blumentritt -->
+
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:h="http://java.sun.com/jsf/html"
+	xmlns:f="http://java.sun.com/jsf/core" xmlns:ui="http://java.sun.com/jsf/facelets"
+	xmlns:p="http://primefaces.org/ui" xmlns:composite="http://java.sun.com/jsf/composite"
+	xmlns:components="http://java.sun.com/jsf/composite/components">
+
+<!-- INTERFACE -->
+<composite:interface>
+	<composite:attribute name="consentController"
+		type="org.emau.icmvc.ganimed.ttp.cm2.frontend.controller.ConsentController" required="true" />
+	<composite:attribute name="consent" type="org.emau.icmvc.ganimed.ttp.cm2.frontend.model.WebConsent"
+		required="true" />
+</composite:interface>
+
+<!-- IMPLEMENTATION -->
+<composite:implementation>
+	<p:panel>
+		<div style="overflow: hidden;">
+			<h:graphicImage rendered="#{not empty domainSelector.selectedDomainLogo}"
+				value="#{domainSelector.selectedDomainLogo}" styleClass="consentLogo" />
+			<p:barcode styleClass="consentQRCode" value="#{consentController.getQrCode(cc.attrs.consent)}"
+				type="qr" style="display:none;" />
+		</div>
+		<h:outputText value="#{cc.attrs.consent.template.title} " styleClass="consentTitle ql-editor"
+			escape="false" />
+		<h:outputText value="#{msg['template.version']} #{cc.attrs.consent.template.key.version}"
+			styleClass="consentVersion" escape="false" />
+		<br />
+		<br />
+		<h:outputText value="#{cc.attrs.consent.template.header}" escape="false" styleClass="ql-editor" />
+		<p:separator />
+
+		<ui:repeat value="#{cc.attrs.consent.modules.entrySet().toArray()}" var="_module">
+			<div class="module">
+				<h:outputText value="#{_module.key.module.title}" escape="false" />
+				<h:outputText value="#{_module.key.module.text}" escape="false" styleClass="ql-editor" />
+				<p:selectOneRadio value="#{_module.value.consentState}"
+					required="#{not empty _module.key.displayCheckboxes}"
+					requiredMessage="#{msg['consent.message.error.noModulStatusSelected']} #{_module.key.module.title}"
+					styleClass="moduleStates" disabled="#{consentController.mode == 'PRINT'}"
+					rendered="#{not empty _module.key.displayCheckboxes}">
+					<f:selectItems value="#{_module.key.displayCheckboxes}" var="_state"
+						itemLabel="#{msg['consent.status.dau.'.concat(_state)]}" />
+				</p:selectOneRadio>
+				<p:separator />
+			</div>
+		</ui:repeat>
+
+		<p:panel rendered="#{not empty (cc.attrs.consent.freeTexts)}">
+			<h:dataTable value="#{cc.attrs.consent.freeTexts.entrySet().toArray()}" var="_freeText"
+				styleClass="no-header freeTexts">
+				<h:column>
+					<p:outputLabel for="string" value="#{_freeText.key.name}"
+						rendered="#{_freeText.key.type eq 'String'}" />
+					<p:outputLabel for="date" value="#{_freeText.key.name}"
+						rendered="#{_freeText.key.type eq 'Date'}" />
+					<p:outputLabel for="integer" value="#{_freeText.key.name}"
+						rendered="#{_freeText.key.type eq 'Integer'}" />
+					<p:outputLabel for="double" value="#{_freeText.key.name}"
+						rendered="#{_freeText.key.type eq 'Double'}" />
+					<p:outputLabel for="boolean" value="#{_freeText.key.name}"
+						rendered="#{_freeText.key.type eq 'Boolean'}" />
+				</h:column>
+				<h:column>
+					<p:inputText value="#{cc.attrs.consent.freeTexts[_freeText.key]}" id="string"
+						required="#{_freeText.key.required}" rendered="#{_freeText.key.type eq 'String'}"
+						disabled="#{consentController.mode == 'PRINT'}" />
+					<p:calendar value="#{cc.attrs.consent.freeTexts[_freeText.key]}" id="date"
+						required="#{_freeText.key.required}" pattern="#{_freeText.key.converterString}"
+						showOn="button" rendered="#{_freeText.key.type eq 'Date'}"
+						disabled="#{consentController.mode == 'PRINT'}" />
+					<p:watermark for="date" value="#{_freeText.key.converterString}" />
+					<p:inputNumber value="#{cc.attrs.consent.freeTexts[_freeText.key]}" id="integer"
+						required="#{_freeText.key.required}" minValue="-2147483647" maxValue="2147483647"
+						decimalPlaces="0" thousandSeparator="" rendered="#{_freeText.key.type eq 'Integer'}"
+						disabled="#{consentController.mode == 'PRINT'}" />
+					<p:watermark for="integer" value="0" />
+					<p:inputText value="#{cc.attrs.consent.freeTexts[_freeText.key]}" id="double"
+						required="#{_freeText.key.required}" rendered="#{_freeText.key.type eq 'Double'}"
+						disabled="#{consentController.mode == 'PRINT'}" />
+					<p:watermark for="double" value="0.0" />
+					<p:selectBooleanCheckbox value="#{cc.attrs.consent.freeTexts[_freeText.key]}" id="boolean"
+						required="#{_freeText.key.required}" rendered="#{_freeText.key.type eq 'Boolean'}"
+						disabled="#{consentController.mode == 'PRINT'}" />
+				</h:column>
+			</h:dataTable>
+		</p:panel>
+		<br />
+		<h:outputText value="#{cc.attrs.consent.template.footer}" escape="false" styleClass="ql-editor" />
+	</p:panel>
+
+	<div class="noNewPage">
+		<p:panel>
+			<h4>
+				<h:outputText value="#{msg['consent.signature.patient']}" />
+			</h4>
+			<components:signature_form signFields="#{cc.attrs.consent.key.signerIds}"
+				signDate="#{cc.attrs.consent.patientSigningDate}"
+				signImageListener="#{consentController.handlePatientSignatureUpload}"
+				signImageContent="#{mediaProvider.newPatientSignatureStream}"
+				readOnly="#{consentController.mode == 'PRINT'}"
+				hasScan="#{not empty cc.attrs.consent.scanBase64}"
+				hasSignature="#{not empty cc.attrs.consent.patientSignatureBase64}" />
+		</p:panel>
+
+		<p:panel>
+			<h4>
+				<h:outputText value="#{msg['consent.signature.physician']}" />
+			</h4>
+			<components:signature_form signField="#{cc.attrs.consent.physicanId}"
+				signFieldLabel="#{msg['consent.physicianID']}"
+				signDate="#{cc.attrs.consent.physicanSigningDate}"
+				signImageListener="#{consentController.handlePhysicianSignatureUpload}"
+				signImageContent="#{mediaProvider.newPhysicianSignatureStream}"
+				readOnly="#{consentController.mode == 'PRINT'}"
+				hasScan="#{not empty cc.attrs.consent.scanBase64}"
+				hasSignature="#{not empty cc.attrs.consent.physicanSignatureBase64}" />
+		</p:panel>
+	</div>
+
+	<p:panel id="scan" styleClass="scan">
+		<h4>
+			<h:outputText value="#{msg['consent.scan']}" />
+		</h4>
+		<ui:fragment rendered="#{empty cc.attrs.consent.scanBase64}">
+			<p:fileUpload fileUploadListener="#{consentController.onUploadScan}"
+				sizeLimit="#{consentController.selectedDomain.getProperty('SCANS_SIZE_LIMIT')}" fileLimit="1"
+				label="#{msg['consent.scan.upload']}" uploadLabel="#{msg['common.button.upload']}"
+				cancelLabel="#{msg['common.button.cancel']}" allowTypes="/(\.|\/)(pdf)$/" update="scan"
+				auto="true" disabled="#{consentController.mode == 'PRINT'}"
+				invalidSizeMessage="#{msg['consent.message.warn.scan.size']} #{consentController.selectedDomain.getProperty('SCANS_SIZE_LIMIT')} bytes." />
+		</ui:fragment>
+		<ui:fragment rendered="#{not empty cc.attrs.consent.scanBase64}">
+			<i class="fa fa-fw fa-check"></i> #{msg['consent.scan.exists']}<br />
+			<br />
+			<p:commandButton actionListener="#{consentController.onDownloadScan(cc.attrs.consent)}"
+				ajax="false" icon="fa fa-fw fa-download" value="#{msg['consent.scan.download']}"
+				immediate="true" onclick="PrimeFaces.monitorDownload(start, stop)">
+				<p:fileDownload value="#{mediaProvider.consentPDFStream}" />
+			</p:commandButton>
+			<p:commandButton actionListener="#{consentController.onDeleteScan(cc.attrs.consent)}"
+				immediate="true" update="scan" icon="mdi mdi-delete-empty" title="#{msg['consent.scan.delete']}"
+				alt="#{msg['consent.scan.delete']}" disabled="#{consentController.mode == 'PRINT'}">
+			</p:commandButton>
+		</ui:fragment>
+	</p:panel>
+</composite:implementation>
+
+</html>
