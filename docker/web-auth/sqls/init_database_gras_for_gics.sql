@@ -47,8 +47,8 @@ INSERT INTO `gras`.`group_role_mapping` (`group_id`, `role_id`) VALUES ('2', '2'
 -- default user
 
 -- default user 
-call createUser("admin","miracum2020","user for admin privileges");
-call createUser("employee","miracum2020","user for standard privileges");
+call createUser("admin","ttp-tools","user for admin privileges");
+call createUser("employee","ttp-tools","user for standard privileges");
 
 -- grant privileges for gics
 call grantAdminRights("gics","admin");
