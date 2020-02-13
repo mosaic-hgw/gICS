@@ -1,15 +1,13 @@
 
 ![context](https://user-images.githubusercontent.com/12081369/49164555-a27e5180-f32f-11e8-8725-7b97e35134b5.png)
 
-Current Docker-Version of gICS: 2.11.0 (Feb 2020)
+# gICS 2.11.0 (Feb 2020) Docker #
 
-# Docker versions and documentation #
+### [Standard-Version](https://github.com/mosaic-hgw/gICS/tree/master/docker/standard)
 
-### [Standard-Version](https://github.com/mosaic-hgw/gICS/docker/standard "")
+### [Web-Auth-Version](https://github.com/mosaic-hgw/gICS/tree/master/docker/web-auth)
 
-### [Web-Auth-Version](https://github.com/mosaic-hgw/gICS/docker/web-auth "")
-
-# Additional Information #
+## Additional Information #
 
 The gICS was developed by the University Medicine Greifswald  and published in 2014 as part of the [MOSAIC-Project](https://ths-greifswald.de/mosaic "")  (funded by the DFG HO 1937/2-1). Selected functionalities of gICS were developed as part of the MAGIC Project (funded by the DFG HO 1937/5-1).
 
