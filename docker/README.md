@@ -5,9 +5,9 @@ Current Docker-Version of gICS: 2.11.0 (Feb 2020)
 
 # Docker versions and documentation #
 
-[Standard-Version](https://github.com/mosaic-hgw/gICS/docker/standard "")
+### [Standard-Version](https://github.com/mosaic-hgw/gICS/docker/standard "")
 
-[Web-Auth-Version](https://github.com/mosaic-hgw/gICS/docker/web-auth "")
+### [Web-Auth-Version](https://github.com/mosaic-hgw/gICS/docker/web-auth "")
 
 # Additional Information #
 
