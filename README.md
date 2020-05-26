@@ -17,9 +17,9 @@ or visit https://ths-greifswald.de/gics for more information.
 
 [Source-Code](https://github.com/mosaic-hgw/gICS/source "")
 
-[Docker-compose version of gICS (Standard)](https://github.com/mosaic-hgw/gICS/docker/standard "")
+[Docker-compose version of gICS (Standard)](https://github.com/mosaic-hgw/gICS/tree/master/docker/standard "")
 
-[Docker-compose version of gICS (Web-Auth)](https://github.com/mosaic-hgw/gICS/docker/web-auth "")
+[Docker-compose version of gICS (Web-Auth)](https://github.com/mosaic-hgw/gICS/tree/master/docker/web-auth "")
 
 # Web-based interfaces
 All functionalities of the gICS are provided for external use via SOAP-interfaces. 
