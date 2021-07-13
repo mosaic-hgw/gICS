@@ -72,6 +72,9 @@ http://dx.doi.org/10.3414/ME14-01-0133
 
 http://dx.doi.org/10.1186/s12967-015-0545-6
 
+# Supported languages #
+German, English
+
 # Screenshots #
 
 ![detail](https://user-images.githubusercontent.com/22166209/42631227-d0d2c688-85d9-11e8-9612-4f7994d4e49c.PNG)
