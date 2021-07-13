@@ -1,6 +1,6 @@
 ![context](https://user-images.githubusercontent.com/12081369/49164555-a27e5180-f32f-11e8-8725-7b97e35134b5.png)
 
-Current Version: 2.13.0 (June 2021)
+[Current Docker-Compose Version: 2.13.0 (June 2021)](https://www.ths-greifswald.de/gics/#_download "")
 
 # About #
 The Consent Management solution gICS (generic Informed Consent Administration Service) supports the management of digital informed consent documents. It facilitates checking  for various policies and modules of a consent in real time. 
@@ -11,13 +11,20 @@ The Consent Management solution gICS (generic Informed Consent Administration Se
 
 [Latest Docker-compose version of gICS](https://www.ths-greifswald.de/gics/#_download "")
 
-## Live-Demo and more information ##
+# Source #
+
+https://github.com/mosaic-hgw/gICS/tree/master/source
+
+# Live-Demo and more information #
 
 Try out gICS from https://demo.ths-greifswald.de 
 
 or visit https://ths-greifswald.de/gics for more information.
 
 # API
+
+## SOAP
+
 All functionalities of the gICS are provided for external use via SOAP-interfaces. 
 
 [Consent Administration-Interface (JavaDoc)](https://www.ths-greifswald.de/gics/doc "")
@@ -25,6 +32,10 @@ All functionalities of the gICS are provided for external use via SOAP-interface
 The WSDL URL is <strong>http://<YOUR IPADDRESS>:8080/gics/gicsService?wsdl</strong>
 
 Use SOAP-UI to create sample requests.
+
+## FHIR
+
+More details from https://simplifier.net/guide/ttp-fhir-gateway-ig/Einwilligungsmanagement
 
 # IT-Security Recommendations #
 
