@@ -1,25 +1,21 @@
 ![context](https://user-images.githubusercontent.com/12081369/49164555-a27e5180-f32f-11e8-8725-7b97e35134b5.png)
 
-Current Version: 2.11.0 (February 2020)
+Current Version: 2.13.0 (June 2021)
 
 # About #
 The Consent Management solution gICS (generic Informed Consent Administration Service) supports the management of digital informed consent documents. It facilitates checking  for various policies and modules of a consent in real time. 
 
 ![context](https://user-images.githubusercontent.com/22166209/42631209-c1a9e236-85d9-11e8-94e8-74b5022a2f43.PNG)
 
+# Download #
+
+[Latest Docker-compose version of gICS](https://www.ths-greifswald.de/gics/#_download "")
+
 ## Live-Demo and more information ##
 
 Try out gICS from https://demo.ths-greifswald.de 
 
 or visit https://ths-greifswald.de/gics for more information.
-
-# Versions and documentation #
-
-[Source-Code](https://github.com/mosaic-hgw/gICS/source "")
-
-[Docker-compose version of gICS (Standard)](https://github.com/mosaic-hgw/gICS/tree/master/docker/standard "")
-
-[Docker-compose version of gICS (Web-Auth)](https://github.com/mosaic-hgw/gICS/tree/master/docker/web-auth "")
 
 # API
 All functionalities of the gICS are provided for external use via SOAP-interfaces. 
@@ -31,7 +27,9 @@ The WSDL URL is <strong>http://<YOUR IPADDRESS>:8080/gics/gicsService?wsdl</stro
 Use SOAP-UI to create sample requests.
 
 # IT-Security Recommendations #
+
 For the operation of gICS at least following IT-security measures are recommended:
+* use **integrated authentication and authorization mechanism (gRAS)** or **keycloak-support** to secure access and grant privileges to gics-web (see supplementary documentation for details)
 * operation in a separate network-zone
 * use of firewalls and IP-filters
 * access restriction to the gPAS-Servers with basic authentication (e.g. with nginx or apache)
@@ -45,9 +43,13 @@ Concept and implementation: L. Geidel
 
 Web-Client: A. Blumentritt, M. Bialke
 
+Docker: R. Schuldt
+
+FHIR-API for gICS: M. Bialke
+
 ## License ##
 License: AGPLv3, https://www.gnu.org/licenses/agpl-3.0.en.html
-Copyright: 2014 - 2020 University Medicine Greifswald
+Copyright: 2014 - 2021 University Medicine Greifswald
 Contact: https://www.ths-greifswald.de/kontakt/
 
 ## Publications ##
