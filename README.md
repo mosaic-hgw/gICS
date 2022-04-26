@@ -1,6 +1,6 @@
 ![context](https://user-images.githubusercontent.com/12081369/49164555-a27e5180-f32f-11e8-8725-7b97e35134b5.png)
 
-[Current Docker-Compose Version: 2.13.0 (June 2021)](https://www.ths-greifswald.de/gics/#_download "")
+[Latest Docker-Compose Version](https://www.ths-greifswald.de/gics/#_download "")
 
 # About #
 The Consent Management solution gICS (generic Informed Consent Administration Service) supports the management of digital informed consent documents. It facilitates checking  for various policies and modules of a consent in real time. 
