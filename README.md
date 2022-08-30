@@ -29,7 +29,7 @@ All functionalities of the gICS are provided for external use via SOAP-interface
 
 [Consent Administration-Interface (JavaDoc)](https://www.ths-greifswald.de/gics/doc "")
 
-The WSDL URL is <strong>http://<YOUR IPADDRESS>:8080/gics/gicsService?wsdl</strong>
+The WSDL URL is <strong>`http://<YOUR IPADDRESS>:8080/gics/gicsService?wsdl`</strong>
 
 Use SOAP-UI to create sample requests.
 
