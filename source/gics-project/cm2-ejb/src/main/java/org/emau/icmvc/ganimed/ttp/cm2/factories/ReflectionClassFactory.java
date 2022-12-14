@@ -1,21 +1,32 @@
 package org.emau.icmvc.ganimed.ttp.cm2.factories;
 
-/*
+/*-
  * ###license-information-start###
  * gICS - a Generic Informed Consent Service
  * __
- * Copyright (C) 2014 - 2018 The MOSAIC Project - Institut fuer Community
- * 							Medicine of the University Medicine Greifswald -
- * 							mosaic-projekt@uni-greifswald.de
+ * Copyright (C) 2014 - 2022 Trusted Third Party of the University Medicine Greifswald -
+ * 							kontakt-ths@uni-greifswald.de
  * 
  * 							concept and implementation
- * 							l.geidel
+ * 							l.geidel, c.hampf
  * 							web client
- * 							a.blumentritt, m.bialke
+ * 							a.blumentritt, m.bialke, f.m.moser
+ * 							fhir-api
+ * 							m.bialke
+ * 							docker
+ * 							r. schuldt
  * 
- * 							Selected functionalities of gICS were developed as part of the MAGIC Project (funded by the DFG HO 1937/5-1).
+ * 							The gICS was developed by the University Medicine Greifswald and published
+ *  							in 2014 as part of the research project "MOSAIC" (funded by the DFG HO 1937/2-1).
+ *  
+ * 							Selected functionalities of gICS were developed as
+ * 							part of the following research projects:
+ * 							- MAGIC (funded by the DFG HO 1937/5-1)
+ * 							- MIRACUM (funded by the German Federal Ministry of Education and Research 01ZZ1801M)
+ * 							- NUM-CODEX (funded by the German Federal Ministry of Education and Research 01KX2021)
  * 
  * 							please cite our publications
+ * 							https://doi.org/10.1186/s12967-020-02457-y
  * 							http://dx.doi.org/10.3414/ME14-01-0133
  * 							http://dx.doi.org/10.1186/s12967-015-0545-6
  * 							http://dx.doi.org/10.3205/17gmds146
@@ -38,45 +49,49 @@ package org.emau.icmvc.ganimed.ttp.cm2.factories;
 
 import java.util.HashMap;
 
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
 
-public class ReflectionClassFactory {
+public class ReflectionClassFactory
+{
+	private static final Logger LOGGER = LogManager.getLogger(ReflectionClassFactory.class);
+	private static final HashMap<String, Class<?>> CLASS_CACHE = new HashMap<String, Class<?>>();
 
-	private static final Logger logger = Logger.getLogger(ReflectionClassFactory.class);
-	private static final ReflectionClassFactory instance = new ReflectionClassFactory();
-	private static final HashMap<String, Class<?>> classCache = new HashMap<String, Class<?>>();
+	private ReflectionClassFactory()
+	{}
 
-	private ReflectionClassFactory() {
-	}
-
-	public static ReflectionClassFactory getInstance() {
-		return instance;
-	}
-
-	public <T> Class<? extends T> getSubClass(String className, Class<T> superClass) throws ClassNotFoundException, ClassCastException {
+	public static <T> Class<? extends T> getSubClass(String className, Class<T> superClass) throws ClassNotFoundException, ClassCastException
+	{
 		Class<?> temp = getClass(className);
-		if (logger.isDebugEnabled()) {
-			logger.debug("verifiing, that the result is a subclass of " + superClass.getName());
+		if (LOGGER.isDebugEnabled())
+		{
+			LOGGER.debug("verifiing, that the result is a subclass of " + superClass.getName());
 		}
 		Class<? extends T> result;
-		try {
+		try
+		{
 			result = temp.asSubclass(superClass);
-		} catch (ClassCastException e) {
+		}
+		catch (ClassCastException e)
+		{
 			String message = "class '" + className + "' is not a subclass of '" + superClass.getName() + "'";
-			logger.error(message, e);
+			LOGGER.error(message, e);
 			throw new ClassCastException(message);
 		}
 		return result;
 	}
 
-	public Class<?> getClass(String className) throws ClassNotFoundException {
-		if (logger.isDebugEnabled()) {
-			logger.debug("loading class '" + className + "'");
+	public static Class<?> getClass(String className) throws ClassNotFoundException
+	{
+		if (LOGGER.isDebugEnabled())
+		{
+			LOGGER.debug("loading class '" + className + "'");
 		}
-		Class<?> result = classCache.get(className);
-		if (result == null) {
+		Class<?> result = CLASS_CACHE.get(className);
+		if (result == null)
+		{
 			result = Class.forName(className);
-			classCache.put(className, result);
+			CLASS_CACHE.put(className, result);
 		}
 		return result;
 	}

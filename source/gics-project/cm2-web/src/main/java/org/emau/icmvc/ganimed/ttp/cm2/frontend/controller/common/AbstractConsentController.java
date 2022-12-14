@@ -1,25 +1,35 @@
 package org.emau.icmvc.ganimed.ttp.cm2.frontend.controller.common;
 
-/*
+/*-
  * ###license-information-start###
  * gICS - a Generic Informed Consent Service
  * __
- * Copyright (C) 2014 - 2018 The MOSAIC Project - Institut fuer Community
- * Medicine of the University Medicine Greifswald -
- * mosaic-projekt@uni-greifswald.de
+ * Copyright (C) 2014 - 2022 Trusted Third Party of the University Medicine Greifswald -
+ * 							kontakt-ths@uni-greifswald.de
  * 
- * concept and implementation
- * l.geidel
- * web client
- * a.blumentritt, m.bialke
+ * 							concept and implementation
+ * 							l.geidel, c.hampf
+ * 							web client
+ * 							a.blumentritt, m.bialke, f.m.moser
+ * 							fhir-api
+ * 							m.bialke
+ * 							docker
+ * 							r. schuldt
  * 
- * Selected functionalities of gICS were developed as part of the MAGIC Project (funded by the DFG
- * HO 1937/5-1).
+ * 							The gICS was developed by the University Medicine Greifswald and published
+ *  							in 2014 as part of the research project "MOSAIC" (funded by the DFG HO 1937/2-1).
+ *  
+ * 							Selected functionalities of gICS were developed as
+ * 							part of the following research projects:
+ * 							- MAGIC (funded by the DFG HO 1937/5-1)
+ * 							- MIRACUM (funded by the German Federal Ministry of Education and Research 01ZZ1801M)
+ * 							- NUM-CODEX (funded by the German Federal Ministry of Education and Research 01KX2021)
  * 
- * please cite our publications
- * http://dx.doi.org/10.3414/ME14-01-0133
- * http://dx.doi.org/10.1186/s12967-015-0545-6
- * http://dx.doi.org/10.3205/17gmds146
+ * 							please cite our publications
+ * 							https://doi.org/10.1186/s12967-020-02457-y
+ * 							http://dx.doi.org/10.3414/ME14-01-0133
+ * 							http://dx.doi.org/10.1186/s12967-015-0545-6
+ * 							http://dx.doi.org/10.3205/17gmds146
  * __
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -28,113 +38,48 @@ package org.emau.icmvc.ganimed.ttp.cm2.frontend.controller.common;
  * 
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  * 
  * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  * ###license-information-end###
  */
+
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
 import javax.faces.bean.ManagedBean;
-import org.emau.icmvc.ganimed.ttp.cm2.GICSService;
+
 import org.emau.icmvc.ganimed.ttp.cm2.dto.enums.ConsentStatus;
-import org.emau.icmvc.ganimed.ttp.cm2.dto.enums.ConsentStatusType;
 import org.emau.icmvc.ganimed.ttp.cm2.dto.enums.ConsentTemplateType;
-import org.jsoup.Jsoup;
 
 /**
  * Abstract class for consent related beans
- * 
+ *
  * @author Arne Blumentritt
- * 
+ *
  */
 @ManagedBean
 public abstract class AbstractConsentController extends AbstractGICSBean
 {
 	protected static final ConsentStatus[] mandatoryConsentStates = { ConsentStatus.ACCEPTED, ConsentStatus.DECLINED, ConsentStatus.INVALIDATED,
-			ConsentStatus.REVOKED };
-
-	/**
-	 * Method to pass ConsentStatus to Servlet
-	 * 
-	 * @return
-	 */
-	public ConsentStatus[] getConsentStates()
-	{
-		return ConsentStatus.values();
-	}
-
-	public Object[] getMandatoryConsentStates(boolean mandatory)
-	{
-		if (mandatory)
-		{
-			ArrayList<ConsentStatus> states = new ArrayList<ConsentStatus>();
-			for (ConsentStatus status : getConsentStates())
-			{
-				if (status.getConsentStatusType() != ConsentStatusType.UNKNOWN)
-				{
-					states.add(status);
-				}
-			}
-			return states.toArray();
-		}
-		// this is neccessary to order the unkown types behind the mandatory types
-		else
-		{
-			ArrayList<ConsentStatus> states = new ArrayList<ConsentStatus>();
-			for (ConsentStatus status : getConsentStates())
-			{
-				if (status.getConsentStatusType() != ConsentStatusType.UNKNOWN)
-				{
-					states.add(status);
-				}
-			}
-			for (ConsentStatus status : getConsentStates())
-			{
-				if (status.getConsentStatusType() == ConsentStatusType.UNKNOWN)
-				{
-					states.add(status);
-				}
-			}
-			return states.toArray();
-		}
-	}
+			ConsentStatus.WITHDRAWN };
 
 	public String cleanStringForTable(String string)
 	{
 		String result = sanitize(string);
 		if (result.length() > 100)
+		{
 			result = result.substring(0, 100);
+		}
 		return result;
-	}
-
-	public String sanitize(String string)
-	{
-		return Jsoup.parse(string).text();
-	}
-
-	public GICSService getCmManager()
-	{
-		return cmManager;
-	}
-
-	public void setCmManager(GICSService cmManager)
-	{
-		this.cmManager = cmManager;
-	}
-
-	public List<String> getSignerIdTypes()
-	{
-		return domainSelector.getSelectedDomain().getSignerIdTypes();
 	}
 
 	public List<ConsentTemplateType> getTemplateTypes()
 	{
-		return new ArrayList<ConsentTemplateType>(Arrays.asList(ConsentTemplateType.values()));
+		return new ArrayList<>(Arrays.asList(ConsentTemplateType.values()));
 	}
 }

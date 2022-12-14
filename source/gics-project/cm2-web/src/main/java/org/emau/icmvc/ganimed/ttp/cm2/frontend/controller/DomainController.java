@@ -1,31 +1,35 @@
 package org.emau.icmvc.ganimed.ttp.cm2.frontend.controller;
 
-import java.io.ByteArrayInputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.Serializable;
-import java.io.UnsupportedEncodingException;
-
-/*
+/*-
  * ###license-information-start###
  * gICS - a Generic Informed Consent Service
  * __
- * Copyright (C) 2014 - 2018 The MOSAIC Project - Institut fuer Community
- * Medicine of the University Medicine Greifswald -
- * mosaic-projekt@uni-greifswald.de
+ * Copyright (C) 2014 - 2022 Trusted Third Party of the University Medicine Greifswald -
+ * 							kontakt-ths@uni-greifswald.de
  * 
- * concept and implementation
- * l.geidel
- * web client
- * a.blumentritt, m.bialke
+ * 							concept and implementation
+ * 							l.geidel, c.hampf
+ * 							web client
+ * 							a.blumentritt, m.bialke, f.m.moser
+ * 							fhir-api
+ * 							m.bialke
+ * 							docker
+ * 							r. schuldt
  * 
- * Selected functionalities of gICS were developed as part of the MAGIC Project (funded by the DFG
- * HO 1937/5-1).
+ * 							The gICS was developed by the University Medicine Greifswald and published
+ *  							in 2014 as part of the research project "MOSAIC" (funded by the DFG HO 1937/2-1).
+ *  
+ * 							Selected functionalities of gICS were developed as
+ * 							part of the following research projects:
+ * 							- MAGIC (funded by the DFG HO 1937/5-1)
+ * 							- MIRACUM (funded by the German Federal Ministry of Education and Research 01ZZ1801M)
+ * 							- NUM-CODEX (funded by the German Federal Ministry of Education and Research 01KX2021)
  * 
- * please cite our publications
- * http://dx.doi.org/10.3414/ME14-01-0133
- * http://dx.doi.org/10.1186/s12967-015-0545-6
- * http://dx.doi.org/10.3205/17gmds146
+ * 							please cite our publications
+ * 							https://doi.org/10.1186/s12967-020-02457-y
+ * 							http://dx.doi.org/10.3414/ME14-01-0133
+ * 							http://dx.doi.org/10.1186/s12967-015-0545-6
+ * 							http://dx.doi.org/10.3205/17gmds146
  * __
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -34,409 +38,320 @@ import java.io.UnsupportedEncodingException;
  * 
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  * 
  * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  * ###license-information-end###
  */
 
+import java.io.Serializable;
 import java.text.MessageFormat;
 import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.Base64;
 import java.util.List;
-import javax.annotation.PostConstruct;
-import javax.ejb.EJB;
+
 import javax.faces.bean.ManagedBean;
 import javax.faces.bean.ViewScoped;
-import org.apache.commons.io.IOUtils;
-import org.emau.icmvc.ganimed.ttp.cm2.GICSFhirService;
+
+import org.apache.commons.lang3.StringUtils;
 import org.emau.icmvc.ganimed.ttp.cm2.config.DomainProperties;
-import org.emau.icmvc.ganimed.ttp.cm2.dto.ConsentTemplateDTO;
+import org.emau.icmvc.ganimed.ttp.cm2.config.PaginationConfig;
 import org.emau.icmvc.ganimed.ttp.cm2.dto.DomainDTO;
-import org.emau.icmvc.ganimed.ttp.cm2.dto.ModuleDTO;
-import org.emau.icmvc.ganimed.ttp.cm2.dto.PolicyDTO;
-import org.emau.icmvc.ganimed.ttp.cm2.dto.enums.ExportMode;
+import org.emau.icmvc.ganimed.ttp.cm2.dto.enums.ConsentTemplateType;
 import org.emau.icmvc.ganimed.ttp.cm2.exceptions.DuplicateEntryException;
-import org.emau.icmvc.ganimed.ttp.cm2.exceptions.InternalException;
-import org.emau.icmvc.ganimed.ttp.cm2.exceptions.InvalidExchangeFormatException;
+import org.emau.icmvc.ganimed.ttp.cm2.exceptions.InvalidParameterException;
 import org.emau.icmvc.ganimed.ttp.cm2.exceptions.InvalidVersionException;
 import org.emau.icmvc.ganimed.ttp.cm2.exceptions.ObjectInUseException;
 import org.emau.icmvc.ganimed.ttp.cm2.exceptions.UnknownDomainException;
 import org.emau.icmvc.ganimed.ttp.cm2.exceptions.VersionConverterClassException;
 import org.emau.icmvc.ganimed.ttp.cm2.frontend.controller.common.AbstractConsentController;
-import org.emau.icmvc.ganimed.ttp.cm2.frontend.converter.ModuleConverter;
-import org.emau.icmvc.ganimed.ttp.cm2.frontend.converter.PolicyConverter;
-import org.emau.icmvc.ganimed.ttp.cm2.frontend.converter.TemplateKeyConverter;
-import org.emau.icmvc.ganimed.ttp.cm2.frontend.util.Property;
+import org.emau.icmvc.ganimed.ttp.cm2.frontend.controller.component.WebExpiration;
+import org.emau.icmvc.ganimed.ttp.cm2.frontend.util.Versions;
 import org.primefaces.event.FileUploadEvent;
-import org.primefaces.event.SelectEvent;
-import org.primefaces.model.DefaultStreamedContent;
-import org.primefaces.model.DualListModel;
-import org.primefaces.model.StreamedContent;
-import org.primefaces.model.UploadedFile;
-import org.primefaces.util.Base64;
-import org.slf4j.LoggerFactory;
-
 
 /**
  * Backing Bean for Domains View
- * 
- * @author Arne Blumentritt, Martin Bialke
- * 
+ *
+ * @author Arne Blumentritt
  */
 @ManagedBean(name = "domainController")
 @ViewScoped
 public class DomainController extends AbstractConsentController implements Serializable
 {
-
 	private static final long serialVersionUID = 1285364203849974795L;
 	private DomainDTO selectedDomain;
-	private DomainDTO editDomain;
-	private Boolean editMode;
-	private Boolean importMode;
 
-	private List<Property> properties;
-	private String signerTypes;
+	// Versioning options
+	private Boolean versionLevelDetailed;
 
-	// Import / Export
-	private Boolean importAllowUpdates = false;
-	private Boolean exportMode;
-	private Boolean exportLogo;
-	private UploadedFile importFile;
-	private UploadedFile logoFile;
-	private String domainLogoBase64;
-	private String selectedExportMode;
-	private DualListModel<PolicyDTO> policiesPicklist;
-	private DualListModel<ModuleDTO> modulesPicklist;
-	private DualListModel<ConsentTemplateDTO> templatesPicklist;
+	// Additional properties
+	private Boolean scanMandatory;
+	private int scanSizeLimit;
+	private Boolean revokeIsPermanent;
+	private Boolean useLatestVersion;
+	private Boolean sendNotificationsWeb;
+	private boolean qualityControlOptional;
+	private String newSignerIdType;
+	private WebExpiration expiration;
+	private Boolean statisticDocumentDetails;
+	private Boolean statisticPolicyDetails;
 
-	@EJB(lookup = "java:global/gics/cm2-ejb/GICSFhirServiceImpl!org.emau.icmvc.ganimed.ttp.cm2.GICSFhirService")
-	protected GICSFhirService fhirService;
-
-	@PostConstruct
-	public void init()
+	public static String parseProperty(String properties, DomainProperties key)
 	{
-		logger = LoggerFactory.getLogger(getClass());
-		properties = new ArrayList<Property>();
-		editMode = false;
-		importMode = false;
-		exportMode = false;
+		// start
+		int start = properties.indexOf(key.name()) + key.name().length() + 3;
+		// end
+		int end = properties.indexOf(';', start) == -1 ? properties.length() : properties.indexOf(';', start);
+		return properties.substring(start, end);
 	}
 
-	public void onDomainSelect(SelectEvent event)
+	public void onShowDetails(DomainDTO domain)
 	{
-		selectedDomain = (DomainDTO) event.getObject();
+		selectedDomain = domain;
+
+		scanMandatory = !Boolean.parseBoolean(parseProperty(selectedDomain.getProperties(), DomainProperties.SCANS_ARE_NOT_MANDATORY_FOR_ACCEPTED_CONSENTS));
+		scanSizeLimit = Integer.parseInt(parseProperty(selectedDomain.getProperties(), DomainProperties.SCANS_SIZE_LIMIT)) / 1024 / 1024;
+		revokeIsPermanent = Boolean.valueOf(parseProperty(selectedDomain.getProperties(), DomainProperties.REVOKE_IS_PERMANENT));
+		useLatestVersion = Boolean.valueOf(parseProperty(selectedDomain.getProperties(), DomainProperties.TAKE_HIGHEST_VERSION_INSTEAD_OF_NEWEST));
+		sendNotificationsWeb = Boolean.valueOf(parseProperty(selectedDomain.getProperties(), DomainProperties.SEND_NOTIFICATIONS_WEB));
+		statisticDocumentDetails = Boolean.valueOf(parseProperty(selectedDomain.getProperties(), DomainProperties.STATISTIC_DOCUMENT_DETAILS));
+		statisticPolicyDetails = Boolean.valueOf(parseProperty(selectedDomain.getProperties(), DomainProperties.STATISTIC_POLICY_DETAILS));
+		qualityControlOptional = parseProperty(selectedDomain.getProperties(), DomainProperties.VALID_QC_TYPES).contains(NOT_CHECKED);
+		expiration = new WebExpiration();
+		expiration.getEditExpiration().setExpirationProperties(selectedDomain.getExpirationProperties());
+		
+		pageMode = PageMode.READ;
 	}
 
-	public void onNewDomain()
+	public void onNew()
 	{
-		editMode = true;
-		editDomain = new DomainDTO();
-		loadProperties(null);
-		loadSignerIdTypes(null);
-		loadLogo(null);
+		selectedDomain = new DomainDTO();
+		selectedDomain.setSignerIdTypes(new ArrayList<>());
+		selectedDomain.setCtVersionConverter(Versions.MAJOR_MINOR);
+		selectedDomain.setModuleVersionConverter(Versions.MAJOR_MINOR);
+		selectedDomain.setPolicyVersionConverter(Versions.MAJOR_MINOR);
+
+		scanMandatory = false;
+		scanSizeLimit = 10;
+		revokeIsPermanent = false;
+		useLatestVersion = false;
+		sendNotificationsWeb = false;
+		qualityControlOptional = true;
+		expiration = new WebExpiration();
+		statisticDocumentDetails = true;
+		statisticPolicyDetails = true;
+
+		versionLevelDetailed = false;
+		pageMode = PageMode.NEW;
 	}
 
-	public void onSaveDomain(Boolean isNew)
+	public void onEdit(DomainDTO domain)
 	{
+		onShowDetails(domain);
+		versionLevelDetailed = true;
+		pageMode = PageMode.EDIT;
+	}
+
+	public void onSave()
+	{
+		if (StringUtils.isNotEmpty(newSignerIdType))
+		{
+			selectedDomain.getSignerIdTypes().add(newSignerIdType);
+			newSignerIdType = null;
+		}
+
+		if (selectedDomain.getSignerIdTypes().isEmpty())
+		{
+			logMessage(getBundle().getString("page.domains.message.warn.signerIdTypeMissing"), Severity.WARN);
+			return;
+		}
+
+		selectedDomain.setExpirationProperties(expiration.getEditExpiration().getExpirationProperties());
+
 		try
 		{
-			// Set signerId types
-			String[] signerTypesArray = signerTypes.split(",", -1);
-			for (String type : signerTypesArray)
-			{
-				type = type.trim();
-			}
-			editDomain.setSignerIdTypes(Arrays.asList(signerTypesArray));
+			Object[] args = { selectedDomain.getLabel() };
 
-			// Set properties
-			StringBuilder sb = new StringBuilder();
-			for (Property p : properties)
+			if (pageMode == PageMode.EDIT)
 			{
-				if (!p.getValue().isEmpty())
+				if (selectedDomain.getFinalised())
 				{
-					sb.append(p.getLabel());
-					sb.append('=');
-					sb.append(p.getValue());
-					sb.append(';');
+					service.updateDomainInUse(selectedDomain.getName(), selectedDomain.getLabel(), selectedDomain.getLogo(), selectedDomain.getExternProperties(),
+							selectedDomain.getComment());
 				}
-			}
-			editDomain.setProperties(sb.toString());
-			Object[] args = { editDomain.getLabel() };
+				else
+				{
+					selectedDomain.setProperties(generatePropertiesString());
+					setVersioning();
 
-			// set domain logo
-			if (logoFile != null)
-			{
-				editDomain.setLogo(Base64.encodeToString(logoFile.getContents(), false));
-			}
-			else
-			{
-				// was removed
-				editDomain.setLogo(null);
-			}
-
-			if (isNew)
-			{
-				editDomain.setName(editDomain.getLabel());
-
-				cmManager.addDomain(editDomain);
-				logMessage(new MessageFormat(getBundle().getString("domain.message.info.added")).format(args), Severity.INFO);
+					service.updateDomain(selectedDomain);
+				}
+				logMessage(new MessageFormat(getBundle().getString("page.domains.message.info.updated")).format(args), Severity.INFO);
 			}
 			else
 			{
-				cmManager.updateDomain(editDomain.getName(),
-						editDomain.getLabel(), editDomain.getLogo(), editDomain.getExternProperties(),
-						editDomain.getComment());
+				selectedDomain.setName(selectedDomain.getLabel());
+				selectedDomain.setProperties(generatePropertiesString());
+				setVersioning();
 
-				logMessage(new MessageFormat(getBundle().getString("domain.message.info.updated")).format(args), Severity.INFO);
+				service.addDomain(selectedDomain);
+				logMessage(new MessageFormat(getBundle().getString("page.domains.message.info.added")).format(args), Severity.INFO);
 			}
 
 			domainSelector.loadDomains();
+			domainSelector.setSelectedDomain(selectedDomain.getName());
 			selectedDomain = null;
-			editMode = false;
 		}
 		catch (DuplicateEntryException e)
 		{
-			logMessage(getBundle().getString("domain.message.error.duplicate"), Severity.ERROR);
+			logMessage(getBundle().getString("page.domains.message.error.duplicate"), Severity.WARN);
 		}
-		catch (VersionConverterClassException e)
+		catch (VersionConverterClassException | UnknownDomainException | ObjectInUseException e)
 		{
-			logMessage(getBundle().getString("domain.message.error.versionFormat"), Severity.ERROR);
-		}
-		catch (UnknownDomainException e)
-		{
-			logMessage(getBundle().getString("domain.message.error.unknownDomain"), Severity.ERROR);
+			logMessage(e.getLocalizedMessage(), Severity.ERROR);
 		}
 	}
 
-	public void onEditDomain(DomainDTO domain)
-	{
-		editMode = true;
-		editDomain = domain;
-		loadProperties(domain);
-		loadSignerIdTypes(domain);
-		loadLogo(domain);
-	}
-
-	public void onCancel()
-	{
-		editMode = false;
-		importMode = false;
-		exportMode = false;
-	}
-
-	public void onDeleteDomain(DomainDTO domain) throws UnknownDomainException
+	public void onDelete() throws UnknownDomainException
 	{
 		try
 		{
-			cmManager.deleteDomain(domain.getName());
-			Object[] args = { domain.getName() };
-			logMessage(new MessageFormat(getBundle().getString("domain.message.info.deleted")).format(args), Severity.INFO);
+			service.deleteDomain(selectedDomain.getName());
+			Object[] args = { selectedDomain.getName() };
+			logMessage(new MessageFormat(getBundle().getString("page.domains.message.info.deleted")).format(args), Severity.INFO);
 			domainSelector.loadDomains();
 			selectedDomain = null;
 		}
 		catch (ObjectInUseException e)
 		{
-			logMessage(getBundle().getString("domain.message.error.deleteInUse"), Severity.ERROR);
+			logMessage(getBundle().getString("page.domains.message.error.deleteInUse"), Severity.WARN);
 		}
 	}
 
-	public void onImportDomain()
+	public String countConsents(String domainName, String templateType)
 	{
-		importMode = true;
-	}
-
-	public void onExportDomain()
-	{
-		initPickItems();
-		exportMode = true;
-	}
-
-	public void onExportModeChange()
-	{
-		logger.info("export mode changed: " + selectedExportMode);
-	}
-
-	public String getSelectedExportMode()
-	{
-		return selectedExportMode;
-	}
-
-	public void setSelectedExportMode(String mode)
-	{
-		this.selectedExportMode = mode;
-	}
-
-	public List<String> getExportModes()
-	{
-		List<String> modes = new ArrayList<String>();
-		for (ExportMode mode : ExportMode.values())
+		PaginationConfig paginationConfig = new PaginationConfig();
+		paginationConfig.setTemplateType(ConsentTemplateType.valueOf(templateType));
+		try
 		{
-			modes.add(mode.toString());
+			long size = service.countConsentsForDomainWithFilter(domainName, paginationConfig);
+			return size > 0 ? String.valueOf(size) : "-";
 		}
-		return modes;
-	}
-
-	public void onRemoveLogo()
-	{
-		removeLogo();
-	}
-
-	private void removeLogo()
-	{
-		logoFile = null;
-		domainLogoBase64 = null;
-	}
-
-	public void onUploadDomain(FileUploadEvent event)
-	{
-		if (event.getFile() != null)
+		catch (UnknownDomainException | InvalidVersionException | InvalidParameterException e)
 		{
-			setImportFile(event.getFile());
-
-			if (logger.isInfoEnabled())
-			{
-				logger.info("filename: " + importFile.getFileName()
-						+ ", filesize in bytes: " + importFile.getSize()
-						+ ", allowUpdates: " + importAllowUpdates);
-			}
-
-			try
-			{				
-				String fileContentString = new String(importFile.getContents(), "UTF-8");
-				fhirService.importDefinition(fileContentString, importAllowUpdates);
-				logMessage("The file has been successfully uploaded and processed.", Severity.INFO);
-				importMode = false;
-				domainSelector.loadDomains();
-			}
-			catch (InvalidExchangeFormatException | InternalException e)
-			{
-				logMessage(e.getLocalizedMessage(), Severity.ERROR);
-			}
-			catch (UnsupportedEncodingException e)
-			{
-				logMessage(e.getLocalizedMessage(), Severity.ERROR);
-			}
-		}
-		else
-		{
-			logMessage("file is null", Severity.ERROR);
+			return null;
 		}
 	}
 
-	public String getDomainLogo()
+	public String countTemplates(String domainName)
 	{
-		return this.domainLogoBase64;
+		try
+		{
+			int size = service.listConsentTemplates(domainName, false).size();
+			return size > 0 ? String.valueOf(size) : "-";
+		}
+		catch (UnknownDomainException | InvalidVersionException e)
+		{
+			return null;
+		}
+	}
+
+	public String countModules(String domainName)
+	{
+		try
+		{
+			int size = service.listModules(domainName, false).size();
+			return size > 0 ? String.valueOf(size) : "-";
+		}
+		catch (UnknownDomainException | InvalidVersionException e)
+		{
+			return null;
+		}
+	}
+
+	public String countPolicies(String domainName)
+	{
+		try
+		{
+			int size = service.listPolicies(domainName, false).size();
+			return size > 0 ? String.valueOf(size) : "-";
+		}
+		catch (UnknownDomainException | InvalidVersionException e)
+		{
+			return null;
+		}
+	}
+
+	public void onCancel()
+	{
+		selectedDomain = null;
 	}
 
 	public void onUploadLogo(FileUploadEvent event)
 	{
-		if (event.getFile() != null)
-		{
-			try
-			{
-				setLogoFile(event.getFile());
-				setLogoContent(event.getFile().getInputstream());
-			}
-			catch (IOException e)
-			{
-
-				logger.error("error occured during logo import: " + e.getMessage());
-				e.printStackTrace();
-			}
-
-			if (logger.isInfoEnabled())
-			{
-				logger.info("filename: " + logoFile.getFileName()
-						+ ", filesize in bytes: " + logoFile.getSize());
-			}
-		}
-		else
-		{
-			logMessage("file is null", Severity.ERROR);
-		}
+		selectedDomain.setLogo(Base64.getEncoder().encodeToString(event.getFile().getContent()));
 	}
 
-	public Boolean hasDomainLogo()
+	public void onDeleteLogo()
 	{
-		if (domainLogoBase64 != null)
-		{
-			return true;
-		}
-
-		return false;
+		selectedDomain.setLogo(null);
 	}
-	
-	public StreamedContent getExportFile() throws UnsupportedEncodingException
+
+	public void onNewSignerIdType()
 	{
-		String result = "";
-		String domainName = domainSelector.getSelectedDomainName();
-
-		if (domainName != null && !domainName.isEmpty())
+		if (StringUtils.isNotEmpty(newSignerIdType))
 		{
-			logger.debug("Export Mode: " + selectedExportMode);
-
-			try
-			{
-				switch (selectedExportMode)
-				{
-					case "ALL":
-					{
-						result = fhirService.exportDefinition(domainName, ExportMode.ALL, new ArrayList<String>(), exportLogo);
-						break;
-					}
-
-					case "DOMAIN":
-					{
-						result = fhirService.exportDefinition(domainName, ExportMode.DOMAIN, new ArrayList<String>(), exportLogo);
-						break;
-					}
-
-					case "POLICIES":
-					{
-						List<String> policyKeys = PolicyConverter.getAsStrings(policiesPicklist.getTarget(), ';');
-						result = fhirService.exportDefinition(domainName, ExportMode.POLICIES, policyKeys, exportLogo);
-						break;
-					}
-
-					case "MODULES":
-					{
-						List<String> moduleKeys = ModuleConverter.getAsStrings(modulesPicklist.getTarget(), ';');
-						result = fhirService.exportDefinition(domainName, ExportMode.MODULES, moduleKeys, exportLogo);
-						break;
-					}
-
-					case "TEMPLATES":
-					{
-						List<String> templateKeys = TemplateKeyConverter.getAsStrings(templatesPicklist.getTarget(), ';');
-						result = fhirService.exportDefinition(domainName, ExportMode.TEMPLATES, templateKeys, exportLogo);
-						break;
-					}
-
-					default:
-					{
-						break;
-					}
-				}
-			}
-			catch (UnknownDomainException e)
-			{
-
-				e.printStackTrace();
-			}
-			catch (InternalException e)
-			{
-				e.printStackTrace();
-			}
-
-			return new DefaultStreamedContent(new ByteArrayInputStream(result.getBytes("UTF-8")), "text/xml", domainName + "_MODE_" + selectedExportMode + "_export.xml", "UTF-8");
+			selectedDomain.getSignerIdTypes().add(newSignerIdType);
+			newSignerIdType = null;
 		}
-
-		return new DefaultStreamedContent(new ByteArrayInputStream("empty".getBytes("UTF-8")), "text/xml", domainName + "_export.xml", "UTF-8");
 	}
 
+	public void removeSignerIdType(String index)
+	{
+		selectedDomain.getSignerIdTypes().remove(Integer.parseInt(index));
+	}
+
+	public Boolean isDeletable(DomainDTO domain) throws UnknownDomainException, InvalidVersionException
+	{
+		if (domain.getName() != null)
+		{
+			return service.listConsentTemplates(domain.getName(), false).isEmpty();
+		}
+		return true;
+	}
+
+	private String generatePropertiesString()
+	{
+		StringBuilder sb = new StringBuilder();
+		appendPropertyString(sb, DomainProperties.SCANS_ARE_NOT_MANDATORY_FOR_ACCEPTED_CONSENTS, String.valueOf(!scanMandatory));
+		appendPropertyString(sb, DomainProperties.SCANS_SIZE_LIMIT, String.valueOf(scanSizeLimit * 1024 * 1024));
+		appendPropertyString(sb, DomainProperties.REVOKE_IS_PERMANENT, String.valueOf(revokeIsPermanent));
+		appendPropertyString(sb, DomainProperties.TAKE_HIGHEST_VERSION_INSTEAD_OF_NEWEST, String.valueOf(useLatestVersion));
+		appendPropertyString(sb, DomainProperties.SEND_NOTIFICATIONS_WEB, String.valueOf(sendNotificationsWeb));
+		appendPropertyString(sb, DomainProperties.STATISTIC_DOCUMENT_DETAILS, String.valueOf(statisticDocumentDetails));
+		appendPropertyString(sb, DomainProperties.STATISTIC_POLICY_DETAILS, String.valueOf(statisticPolicyDetails));
+
+		String validQcTypes = (qualityControlOptional ? NOT_CHECKED + "," : "") + CHECKED_NO_FAULTS + "," + CHECKED_MINOR_FAULTS;
+		String invalidQcTypes = (qualityControlOptional ? "" : NOT_CHECKED + ",") + CHECKED_MAJOR_FAULTS + "," + INVALIDATED;
+		appendPropertyString(sb, DomainProperties.VALID_QC_TYPES, validQcTypes);
+		appendPropertyString(sb, DomainProperties.INVALID_QC_TYPES, invalidQcTypes);
+		appendPropertyString(sb, DomainProperties.DEFAULT_QC_TYPE, NOT_CHECKED);
+
+		return sb.toString();
+	}
+
+	private void setVersioning()
+	{
+		if (!versionLevelDetailed)
+		{
+			selectedDomain.setModuleVersionConverter(selectedDomain.getCtVersionConverter());
+			selectedDomain.setPolicyVersionConverter(selectedDomain.getCtVersionConverter());
+		}
+	}
+
+	@Override
 	public DomainDTO getSelectedDomain()
 	{
 		return selectedDomain;
@@ -444,17 +359,7 @@ public class DomainController extends AbstractConsentController implements Seria
 
 	public void setSelectedDomain(DomainDTO selectedDomain)
 	{
-		this.selectedDomain = selectedDomain;
-	}
-
-	public DomainDTO getEditDomain()
-	{
-		return editDomain;
-	}
-
-	public Boolean getEditMode()
-	{
-		return editMode;
+		this.selectedDomain = selectedDomain != null ? selectedDomain : this.selectedDomain;
 	}
 
 	public List<DomainDTO> getDomains()
@@ -462,218 +367,121 @@ public class DomainController extends AbstractConsentController implements Seria
 		return domainSelector.getDomains();
 	}
 
-	public List<Property> getProperties()
+	private void appendPropertyString(StringBuilder sb, DomainProperties key, String value)
 	{
-		return properties;
+		sb.append(key.name());
+		sb.append('=');
+		sb.append(value);
+		sb.append(';');
 	}
 
-	// public void setProperties(List<Property> properties)
-	// {
-	// this.properties = properties;
-	// }
-
-	public String getSignerTypes()
+	public Boolean getVersionLevelDetailed()
 	{
-		return signerTypes;
+		return versionLevelDetailed;
 	}
 
-	public void setSignerTypes(String signerTypes)
+	public void setVersionLevelDetailed(Boolean versionLevelDetailed)
 	{
-		this.signerTypes = signerTypes;
+		this.versionLevelDetailed = versionLevelDetailed;
 	}
 
-	public Boolean getImportAllowUpdates()
+	public Boolean getScanMandatory()
 	{
-		return importAllowUpdates;
+		return scanMandatory;
 	}
 
-	public Boolean getImportMode()
+	public void setScanMandatory(Boolean scanMandatory)
 	{
-		return importMode;
+		this.scanMandatory = scanMandatory;
 	}
 
-	public Boolean getExportMode()
+	public Boolean getQualityControlOptional()
 	{
-		return exportMode;
+		return qualityControlOptional;
 	}
 
-	public Boolean getExportLogo()
+	public void setQualityControlOptional(Boolean qualityControlOptional)
 	{
-		return exportLogo;
+		this.qualityControlOptional = qualityControlOptional;
 	}
 
-	public UploadedFile getImportFile()
+	public int getScanSizeLimit()
 	{
-		return importFile;
+		return scanSizeLimit;
 	}
 
-	public void setImportFile(UploadedFile importFile)
+	public void setScanSizeLimit(int scanSizeLimit)
 	{
-		this.importFile = importFile;
+		this.scanSizeLimit = scanSizeLimit;
 	}
 
-	public UploadedFile getLogoFile()
+	public Boolean getRevokeIsPermanent()
 	{
-		return logoFile;
+		return revokeIsPermanent;
 	}
 
-	public void setLogoFile(UploadedFile logoFile)
+	public void setRevokeIsPermanent(Boolean revokeIsPermanent)
 	{
-		this.logoFile = logoFile;
+		this.revokeIsPermanent = revokeIsPermanent;
 	}
 
-	public void setExportLogo(Boolean exportLogo)
+	public Boolean getUseLatestVersion()
 	{
-		this.exportLogo = exportLogo;
+		return useLatestVersion;
 	}
 
-	public Boolean isImportAllowUpdates()
+	public void setUseLatestVersion(Boolean useLatestVersion)
 	{
-		return importAllowUpdates;
+		this.useLatestVersion = useLatestVersion;
 	}
 
-	public void setImportAllowUpdates(Boolean importAllowUpdates)
+	public Boolean getSendNotificationsWeb()
 	{
-		this.importAllowUpdates = importAllowUpdates;
-	}
-	
-	public DualListModel<PolicyDTO> getPolicyPickItems()
-	{
-		return policiesPicklist;
+		return sendNotificationsWeb;
 	}
 
-	public void setPolicyPickItems(DualListModel<PolicyDTO> pickItems)
+	public void setSendNotificationsWeb(Boolean sendNotificationsWeb)
 	{
-		this.policiesPicklist = pickItems;
+		this.sendNotificationsWeb = sendNotificationsWeb;
 	}
 
-	public DualListModel<ModuleDTO> getModulePickItems()
+	public String getNewSignerIdType()
 	{
-		return modulesPicklist;
+		return newSignerIdType;
 	}
 
-	public void setModulePickItems(DualListModel<ModuleDTO> pickItems)
+	public void setNewSignerIdType(String newSignerIdType)
 	{
-		this.modulesPicklist = pickItems;
+		this.newSignerIdType = newSignerIdType;
 	}
 
-	public DualListModel<ConsentTemplateDTO> getTemplatePickItems()
+	public WebExpiration getExpiration()
 	{
-		return templatesPicklist;
+		return expiration;
 	}
 
-	public void setTemplatePickItems(DualListModel<ConsentTemplateDTO> pickItems)
+	public void setExpiration(WebExpiration expiration)
 	{
-		this.templatesPicklist = pickItems;
-	}
-	
-	private void setLogoContent(InputStream logoStream)
-	{
-		if (logoStream != null)
-		{
-			String base64String;
-			try
-			{
-				base64String = Base64.encodeToString(IOUtils.toByteArray(logoStream), false);
-				// add base64 info for primefaces
-				this.domainLogoBase64 = "data:image/png;base64," + base64String;
-
-			}
-			catch (IOException e)
-			{
-				logger.error("an error occured during base64 conversion: " + e.getMessage());
-				e.printStackTrace();
-			}
-		}
-	}
-	
-	private void initPickItems()
-	{
-		try
-		{
-			List<PolicyDTO> policyPiSource = new ArrayList<PolicyDTO>();
-			for (PolicyDTO p : cmManager.listPolicies(domainSelector.getSelectedDomainName()))
-			{
-				policyPiSource.add(p);
-			}
-
-			List<ModuleDTO> modulePiSource = new ArrayList<ModuleDTO>();
-			for (ModuleDTO m : cmManager.listModules(domainSelector.getSelectedDomainName()))
-			{
-				modulePiSource.add(m);
-			}
-
-			List<ConsentTemplateDTO> templatePiSource = new ArrayList<ConsentTemplateDTO>();
-			for (ConsentTemplateDTO t : cmManager.listConsentTemplates(domainSelector.getSelectedDomainName()))
-			{
-				templatePiSource.add(t);
-			}
-
-			policiesPicklist = new DualListModel<PolicyDTO>(policyPiSource, new ArrayList<PolicyDTO>());
-			modulesPicklist = new DualListModel<ModuleDTO>(modulePiSource, new ArrayList<ModuleDTO>());
-			templatesPicklist = new DualListModel<ConsentTemplateDTO>(templatePiSource, new ArrayList<ConsentTemplateDTO>());
-		}
-		catch (UnknownDomainException | VersionConverterClassException | InvalidVersionException e)
-		{
-			logMessage(e.getLocalizedMessage(), Severity.ERROR);
-		}
-	}
-	
-	private void loadProperties(DomainDTO domain)
-	{
-		properties.clear();
-		for (DomainProperties property : DomainProperties.values())
-		{
-			properties.add(new Property(property.toString()));
-		}
-		if (domain != null)
-		{
-			for (String propertyString : domain.getProperties().split(";"))
-			{
-				String[] tmp = propertyString.split("=");
-				for (Property property : properties)
-				{
-					if (property.getLabel().equals(tmp[0]))
-					{
-						property.setValue(tmp[1]);
-					}
-				}
-			}
-		}
+		this.expiration = expiration;
 	}
 
-	private void loadLogo(DomainDTO domain)
+	public Boolean getStatisticDocumentDetails()
 	{
-		// load logo from db and store in logo file
-		if (domain != null)
-		{
-			String logoString = domain.getLogo();
-
-			if (logoString != null && !logoString.isEmpty())
-			{
-				byte[] logoBytes = Base64.decode(logoString);
-				setLogoContent(new ByteArrayInputStream(logoBytes));
-				return;
-			}
-			logger.debug("no logo for domain " + domain.getName() + " available");
-			domainLogoBase64 = null;
-		}
+		return statisticDocumentDetails;
 	}
-	
-	private void loadSignerIdTypes(DomainDTO domain)
+
+	public void setStatisticDocumentDetails(Boolean statisticDocumentDetails)
 	{
-		StringBuilder sb = new StringBuilder();
-		if (domain != null)
-		{
-			for (String type : domain.getSignerIdTypes())
-			{
-				if (sb.length() != 0)
-				{
-					sb.append(',');
-				}
-				sb.append(type);
-			}
-		}
-		signerTypes = sb.toString();
+		this.statisticDocumentDetails = statisticDocumentDetails;
+	}
+
+	public Boolean getStatisticPolicyDetails()
+	{
+		return statisticPolicyDetails;
+	}
+
+	public void setStatisticPolicyDetails(Boolean statisticPolicyDetails)
+	{
+		this.statisticPolicyDetails = statisticPolicyDetails;
 	}
 }

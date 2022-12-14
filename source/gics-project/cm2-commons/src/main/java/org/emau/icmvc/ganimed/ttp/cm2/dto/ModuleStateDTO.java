@@ -1,21 +1,32 @@
 package org.emau.icmvc.ganimed.ttp.cm2.dto;
 
-/*
+/*-
  * ###license-information-start###
  * gICS - a Generic Informed Consent Service
  * __
- * Copyright (C) 2014 - 2018 The MOSAIC Project - Institut fuer Community
- * 							Medicine of the University Medicine Greifswald -
- * 							mosaic-projekt@uni-greifswald.de
+ * Copyright (C) 2014 - 2022 Trusted Third Party of the University Medicine Greifswald -
+ * 							kontakt-ths@uni-greifswald.de
  * 
  * 							concept and implementation
- * 							l.geidel
+ * 							l.geidel, c.hampf
  * 							web client
- * 							a.blumentritt, m.bialke
+ * 							a.blumentritt, m.bialke, f.m.moser
+ * 							fhir-api
+ * 							m.bialke
+ * 							docker
+ * 							r. schuldt
  * 
- * 							Selected functionalities of gICS were developed as part of the MAGIC Project (funded by the DFG HO 1937/5-1).
+ * 							The gICS was developed by the University Medicine Greifswald and published
+ *  							in 2014 as part of the research project "MOSAIC" (funded by the DFG HO 1937/2-1).
+ *  
+ * 							Selected functionalities of gICS were developed as
+ * 							part of the following research projects:
+ * 							- MAGIC (funded by the DFG HO 1937/5-1)
+ * 							- MIRACUM (funded by the German Federal Ministry of Education and Research 01ZZ1801M)
+ * 							- NUM-CODEX (funded by the German Federal Ministry of Education and Research 01KX2021)
  * 
  * 							please cite our publications
+ * 							https://doi.org/10.1186/s12967-020-02457-y
  * 							http://dx.doi.org/10.3414/ME14-01-0133
  * 							http://dx.doi.org/10.1186/s12967-015-0545-6
  * 							http://dx.doi.org/10.3205/17gmds146
@@ -48,49 +59,57 @@ import org.emau.icmvc.ganimed.ttp.cm2.dto.enums.ConsentStatus;
  * @author geidell
  * 
  */
-public class ModuleStateDTO implements Serializable {
-
+public class ModuleStateDTO implements Serializable
+{
 	private static final long serialVersionUID = -104434893231372840L;
 	private ModuleKeyDTO key;
 	private ConsentStatus consentState;
 	private List<PolicyKeyDTO> policyKeys = new ArrayList<PolicyKeyDTO>();
 
-	public ModuleStateDTO() {
-	}
+	public ModuleStateDTO()
+	{}
 
-	public ModuleStateDTO(ModuleKeyDTO key, ConsentStatus consentState, List<PolicyKeyDTO> policyKeys) {
+	public ModuleStateDTO(ModuleKeyDTO key, ConsentStatus consentState, List<PolicyKeyDTO> policyKeys)
+	{
 		super();
 		this.key = key;
 		this.consentState = consentState;
 		this.policyKeys = policyKeys;
 	}
 
-	public ModuleKeyDTO getKey() {
+	public ModuleKeyDTO getKey()
+	{
 		return key;
 	}
 
-	public void setKey(ModuleKeyDTO key) {
+	public void setKey(ModuleKeyDTO key)
+	{
 		this.key = key;
 	}
 
-	public ConsentStatus getConsentState() {
+	public ConsentStatus getConsentState()
+	{
 		return consentState;
 	}
 
-	public void setConsentState(ConsentStatus consentState) {
+	public void setConsentState(ConsentStatus consentState)
+	{
 		this.consentState = consentState;
 	}
 
-	public List<PolicyKeyDTO> getPolicyKeys() {
+	public List<PolicyKeyDTO> getPolicyKeys()
+	{
 		return policyKeys;
 	}
 
-	public void setPolicyKeys(List<PolicyKeyDTO> policyKeys) {
+	public void setPolicyKeys(List<PolicyKeyDTO> policyKeys)
+	{
 		this.policyKeys = policyKeys;
 	}
 
 	@Override
-	public int hashCode() {
+	public int hashCode()
+	{
 		final int prime = 31;
 		int result = 1;
 		result = prime * result + ((key == null) ? 0 : key.hashCode());
@@ -98,7 +117,8 @@ public class ModuleStateDTO implements Serializable {
 	}
 
 	@Override
-	public boolean equals(Object obj) {
+	public boolean equals(Object obj)
+	{
 		if (this == obj)
 			return true;
 		if (obj == null)
@@ -106,16 +126,19 @@ public class ModuleStateDTO implements Serializable {
 		if (getClass() != obj.getClass())
 			return false;
 		ModuleStateDTO other = (ModuleStateDTO) obj;
-		if (key == null) {
+		if (key == null)
+		{
 			if (other.key != null)
 				return false;
-		} else if (!key.equals(other.key))
+		}
+		else if (!key.equals(other.key))
 			return false;
 		return true;
 	}
 
 	@Override
-	public String toString() {
+	public String toString()
+	{
 		StringBuilder sb = new StringBuilder();
 		sb.append("ModuleStateDTO for ");
 		sb.append(key);

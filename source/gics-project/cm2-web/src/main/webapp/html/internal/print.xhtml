@@ -2,18 +2,29 @@
   ###license-information-start###
   gICS - a Generic Informed Consent Service
   __
-  Copyright (C) 2014 - 2018 The MOSAIC Project - Institut fuer Community
-  							Medicine of the University Medicine Greifswald -
-  							mosaic-projekt@uni-greifswald.de
+  Copyright (C) 2014 - 2022 Trusted Third Party of the University Medicine Greifswald -
+  							kontakt-ths@uni-greifswald.de
   
   							concept and implementation
-  							l.geidel
+  							l.geidel, c.hampf
   							web client
-  							a.blumentritt, m.bialke
+  							a.blumentritt, m.bialke, f.m.moser
+  							fhir-api
+  							m.bialke
+  							docker
+  							r. schuldt
   
-  							Selected functionalities of gICS were developed as part of the MAGIC Project (funded by the DFG HO 1937/5-1).
+  							The gICS was developed by the University Medicine Greifswald and published
+   							in 2014 as part of the research project "MOSAIC" (funded by the DFG HO 1937/2-1).
+   
+  							Selected functionalities of gICS were developed as
+  							part of the following research projects:
+  							- MAGIC (funded by the DFG HO 1937/5-1)
+  							- MIRACUM (funded by the German Federal Ministry of Education and Research 01ZZ1801M)
+  							- NUM-CODEX (funded by the German Federal Ministry of Education and Research 01KX2021)
   
   							please cite our publications
+  							https://doi.org/10.1186/s12967-020-02457-y
   							http://dx.doi.org/10.3414/ME14-01-0133
   							http://dx.doi.org/10.1186/s12967-015-0545-6
   							http://dx.doi.org/10.3205/17gmds146
@@ -33,141 +44,199 @@
   ###license-information-end###
   -->
 
-<!-- author: Arne Blumentritt -->
-
-<html xmlns="http://www.w3.org/1999/xhtml" xmlns:h="http://java.sun.com/jsf/html"
-	xmlns:f="http://java.sun.com/jsf/core" xmlns:ui="http://java.sun.com/jsf/facelets"
-	xmlns:jstl="http://java.sun.com/jsp/jstl/functions" xmlns:p="http://primefaces.org/ui"
-	xmlns:c="http://java.sun.com/jsp/jstl/core"
-	xmlns:components="http://java.sun.com/jsf/composite/components">
-
+<html xmlns="http://www.w3.org/1999/xhtml"
+	  xmlns:h="http://java.sun.com/jsf/html"
+	  xmlns:f="http://java.sun.com/jsf/core"
+	  xmlns:ui="http://java.sun.com/jsf/facelets"
+	  xmlns:p="http://primefaces.org/ui"
+	  xmlns:file="http://java.sun.com/jsf/composite/components/file"
+	  xmlns:c="http://java.sun.com/jsp/jstl/core">
 <body>
-	<ui:composition template="/resources/templates/gics.xhtml">
-		<ui:define name="header_title">
-			<h:outputText value="#{msg['template.print.title']}" />
-		</ui:define>
+<ui:composition template="/resources/templates/gics.xhtml">
+	<ui:define name="header_title">
+		<h:outputText value="#{msg['template.print.title']}" />
+	</ui:define>
 
-		<ui:define name="title">
-			<h:outputText value="#{msg['template.print.title']}" />
-		</ui:define>
+	<ui:define name="title">
+		<h:outputText value="#{msg['template.print.title']}: " />
+		<h:outputFormat escape="false" rendered="#{not empty consentPrintController.template}" value="#{msg['template.print.template']}">
+			<f:param value="#{consentPrintController.template.label}" />
+			<f:param value="#{consentPrintController.template.versionLabelAndVersion}" />
+		</h:outputFormat>
+	</ui:define>
 
-		<ui:define name="content">
+	<ui:define name="content">
 
-			<p:panel rendered="#{empty consentPrintController.template}">
-				<h:outputText value="#{msg['template.print.noTemplateSelected']}" escape="false" />
+		<p:panel rendered="#{empty consentPrintController.template}">
+			<h:outputText value="#{msg['template.print.noTemplateSelected']}" escape="false" />
+		</p:panel>
+
+		<h:form id="main" rendered="#{not empty consentPrintController.template}">
+			<p:panel>
+				<h4>
+					<h:outputText value="#{msg['template.print.add.import.title']}" />
+				</h4>
+
+				<!-- FILE -->
+				<h:outputText value="#{msg['template.print.add.import']}" />
+				<br /><br />
+				<file:upload onComplete="processUpload();"
+							 rendered="#{empty consentPrintController.webFile.uploadFile}"
+							 webFile="#{consentPrintController.webFile}" />
+				<file:details webFile="#{consentPrintController.webFile}" onNewUpload="#{consentPrintController.onNewUpload}"
+							  rendered="#{not empty consentPrintController.webFile.uploadFile}" />
+				<!-- Process -->
+				<p:remoteCommand name="processUpload" update="@form" action="#{consentPrintController.onDoAction}" />
 			</p:panel>
+			<p:panel style="margin-top: 15px;">
+				<h4>
+					<h:outputFormat value="#{msg['template.print.signerIds']}" escape="false">
+						<f:param value="#{consentPrintController.printPrefillEntries.size()}" update="@form" />
+					</h:outputFormat>
+				</h4>
+				<p:dataTable id="signerIdMatrix" widgetVar="signerIdMatrix" value="#{consentPrintController.printPrefillEntries}" var="_prefillEntries" rowIndexVar="_i"
+							 emptyMessage="#{msg['template.print.add.empty']}" selectionMode="single" selection="#{consentPrintController.selectedPrefillEntry}"
+							 rowKey="#{_prefillEntries.internalKey}" paginator="true" paginatorPosition="bottom"
+							 paginatorTemplate="{CurrentPageReport} {FirstPageLink} {PreviousPageLink} {PageLinks} {NextPageLink} {LastPageLink}"
+							 currentPageReportTemplate="{startRecord}-{endRecord} #{cmsg['ui.table.of']} {totalRecords}" rows="10" pageLinks="3">
 
-			<h:form id="main" rendered="#{not empty consentPrintController.template}">
-				<p:panel>
-					<h4>
-						<h:outputFormat value="#{msg['template.print.template']}" escape="false">
-							<f:param value="#{consentPrintController.template.key.name}" />
-							<f:param value="#{consentPrintController.template.key.version}" />
-						</h:outputFormat>
-					</h4>
-					<h:outputText value="#{msg['template.print.add.import']}" />
-					<br />
-					<p:fileUpload id="signerIdUpload" label="#{msg['common.chooseFile']}" mode="advanced"
-						allowTypes="/(\.|\/)(csv|txt)$/" auto="true" multiple="false" fileLimit="1"
-						fileUploadListener="#{consentPrintController.onUploadSignerIds}" update="@form"
-						style="margin-bottom: -29px;">
-					</p:fileUpload>
-				</p:panel>
-				<p:panel>
-					<h4>
-						<h:outputFormat value="#{msg['template.print.signerIds']}" escape="false">
-							<f:param value="#{consentPrintController.signerIdMatrix.size()}" />
-						</h:outputFormat>
-					</h4>
-					<p:dataTable id="signerIdMatrix" widgetVar="signerIdMatrix"
-						value="#{consentPrintController.signerIdMatrix}" var="_signerIds" rowIndexVar="_i"
-						emptyMessage="#{msg['template.print.add.empty']}" selectionMode="single"
-						selection="#{consentPrintController.selectedSignerIds}" rowKey="#{_signerIds.toString()}"
-						paginator="true" paginatorPosition="bottom"
-						paginatorTemplate="{CurrentPageReport} {FirstPageLink} {PreviousPageLink} {PageLinks} {NextPageLink} {LastPageLink}"
-						currentPageReportTemplate="{startRecord}-{endRecord} #{cmsg['ui.table.of']} {totalRecords}"
-						rows="10" pageLinks="1">
+					<p:columns value="#{domainSelector.selectedDomain.signerIdTypes}" var="_type">
+						<f:facet name="header">
+							<h:outputText value="#{_type}" />
+						</f:facet>
+						<h:outputText value="#{_prefillEntries.getSignerIdValueFromDtosByType(_type)}" />
+					</p:columns>
 
-						<p:columns value="#{domainSelector.selectedDomain.signerIdTypes}" var="_type">
-							<f:facet name="header">
-								<h:outputText value="#{_type}" />
-							</f:facet>
-							<h:outputText value="#{_signerIds.get(_type)}" />
-						</p:columns>
+					<!-- BEGINN date+place columns -->
+					<p:column headerText="#{msg['template.print.signerIds.signerdate']}">
+						<h:outputText converter="date" value="#{_prefillEntries.signerDate}" />
+					</p:column>
+					<p:column headerText="#{msg['template.print.signerIds.signerplace']}">
+						<h:outputText value="#{_prefillEntries.signerPlace}" />
+					</p:column>
+					<p:column headerText="#{msg['template.print.signerIds.physiciandate']}">
+						<h:outputText converter="date" value="#{_prefillEntries.physicianDate}" />
+					</p:column>
+					<p:column headerText="#{msg['template.print.signerIds.physicianplace']}">
+						<h:outputText value="#{_prefillEntries.physicianPlace}" />
+					</p:column>
+					<!-- ENDE date+place columns -->
 
-						<p:column headerText="#{msg['common.button.actions']}" styleClass="icons">
-							<p:commandButton action="#{consentPrintController.onEditSignerIds(_signerIds)}"
-								oncomplete="PF('newSignerIds').show();" process="@this"
-								update="signerIdMatrix, newSignerIds" icon="fa fa-fw fa-pencil"
-								alt="#{msg['common.button.edit']}" title="#{msg['common.button.edit']}" />
-							<p:commandButton action="#{consentPrintController.onDeleteSignerIds(_signerIds)}"
-								process="@this" update="signerIdMatrix" icon="mdi mdi-delete-empty"
-								alt="#{msg['common.button.delete']}" title="#{msg['common.button.delete']}">
-								<p:confirm header="#{msg['common.confirmation']}"
-									message="#{msg['template.print.signerIds.delete']}" icon="mdi mdi-alert-outline" />
-							</p:commandButton>
-							<p:confirmDialog global="true">
-								<p:commandButton value="#{msg['common.button.yes']}" type="button"
-									styleClass="ui-confirmdialog-yes" />
-								<p:commandButton value="#{msg['common.button.no']}" type="button"
-									styleClass="ui-confirmdialog-no" />
-							</p:confirmDialog>
-						</p:column>
-					</p:dataTable>
-					<p:contextMenu for="signerIdMatrix" event="contextmenu touchend">
-						<p:menuitem value="#{msg['common.button.edit']}" icon="fa fa-fw fa-pencil"
-							actionListener="#{consentPrintController.onEditSignerIds(consentPrintController.selectedSignerIds)}"
-							oncomplete="PF('newSignerIds').show();" update="newSignerIds" />
-						<p:separator />
-						<p:menuitem value="#{msg['common.button.delete']}" icon="mdi mdi-delete-empty"
-							actionListener="#{consentPrintController.onDeleteSignerIds(consentPrintController.selectedSignerIds)}"
-							update="signerIdMatrix">
-							<p:confirm header="#{msg['common.confirmation']}"
-								message="#{msg['template.print.signerIds.delete']}" icon="mdi mdi-alert-outline" />
-						</p:menuitem>
-					</p:contextMenu>
+					<p:column headerText="#{msg['common.button.actions']}" styleClass="icons">
+						<p:commandButton action="#{consentPrintController.onEditPrefillEntry(_prefillEntries)}" oncomplete="PF('newSignerIds').show();" process="@this"
+										 update="signerIdMatrix, newSignerIds" icon="mdi mdi-pencil" alt="#{msg['common.button.edit']}" title="#{msg['common.button.edit']}" />
+						<p:commandButton action="#{consentPrintController.onDeletePrefillEntry(_prefillEntries)}" process="@this" update="signerIdMatrix"
+										 icon="mdi mdi-delete-empty" alt="#{cmsg['ui.button.delete']}" title="#{cmsg['ui.button.delete']}">
+							<p:confirm header="#{msg['common.confirmation']}" message="#{msg['template.print.signerIds.delete']}" icon="mdi mdi-alert-outline" />
+						</p:commandButton>
+						<p:confirmDialog global="true" closeOnEscape="true">
+							<p:commandButton value="#{cmsg['ui.button.yes']}" type="button" styleClass="ui-confirmdialog-yes" />
+							<p:commandButton value="#{cmsg['ui.button.no']}" type="button" styleClass="ui-confirmdialog-no" />
+						</p:confirmDialog>
+					</p:column>
+				</p:dataTable>
+				<p:contextMenu for="signerIdMatrix" event="contextmenu click">
+					<p:menuitem value="#{msg['common.button.edit']}" icon="mdi mdi-pencil-outline"
+								actionListener="#{consentPrintController.onEditPrefillEntry(consentPrintController.selectedPrefillEntry)}" oncomplete="PF('newSignerIds').show();"
+								update="newSignerIds" />
+					<p:separator />
+					<p:menuitem value="#{cmsg['ui.button.delete']}" icon="mdi mdi-delete-empty"
+								actionListener="#{consentPrintController.onDeletePrefillEntry(consentPrintController.selectedPrefillEntry)}" update="signerIdMatrix">
+						<p:confirm header="#{msg['common.confirmation']}" message="#{msg['template.print.signerIds.delete']}" icon="mdi mdi-alert-outline" />
+					</p:menuitem>
+				</p:contextMenu>
 
-					<br />
-					<p:commandButton id="newSignerIdsButtons" icon="fa fa-fw fa-plus"
-						title="#{msg['template.print.signerIds.new']}" alt="#{msg['template.print.signerIds.new']}"
-						actionListener="#{consentPrintController.onNewSignerIds}" process="@this"
-						update="newSignerIds" oncomplete="PF('newSignerIds').show();">
-						<p:resetInput target="newSignerIds" />
-					</p:commandButton>
+				<br />
+				<p:commandButton id="newSignerIdsButtons" icon="mdi mdi-plus" title="#{msg['template.print.signerIds.new']}"
+								 alt="#{msg['template.print.signerIds.new']}" actionListener="#{consentPrintController.onNewSignerIds}" process="@this" update="newSignerIds"
+								 oncomplete="PF('newSignerIds').show();">
+					<p:resetInput target="newSignerIds" />
+				</p:commandButton>
 
-					<br />
-					<p:commandButton id="clearSignerIds" value="#{msg['template.print.signerIds.clear']}"
-						icon="mdi mdi-delete-empty" actionListener="#{consentPrintController.onClearSignerIds}"
-						process="@this" update="signerIdMatrix" styleClass="grey" style="float:right; margin: 0;" />
+				<br />
+				<p:commandButton id="clearSignerIds" value="#{msg['template.print.signerIds.clear']}" icon="mdi mdi-delete-empty"
+								 actionListener="#{consentPrintController.onClearSignerIds}" process="@this" update="signerIdMatrix" styleClass="secondary"
+								 style="float:right; margin: 0;" />
 
-					<br />
-					<p:commandButton action="#{consentPrintController.onPrint}" icon="fa fa-fw fa-print"
-						value="#{msg['template.print.start']}" onclick="form.target='_blank'" ajax="false" />
-				</p:panel>
+				<br />
+				<p:commandButton action="#{consentPrintController.onPrint}" icon="mdi mdi-printer" value="#{msg['template.print.start']}"
+								 onclick="form.target='_blank'" ajax="false" />
+			</p:panel>
+		</h:form>
+
+		<p:dialog id="newSignerIds" widgetVar="newSignerIds" modal="true" blockScroll="true" closeOnEscape="true"
+				  header="#{consentPrintController.edit ? msg['template.print.signerIds.edit'] : msg['template.print.signerIds.new']}">
+			<h:form>
+				<p:messages escape="false" />
+
+				<!-- BEGINN ERweiterung prefilled entries -->
+
+				<p:panelGrid columns="2" columnClasses="ui-grid-col-6,ui-grid-col-6" layout="grid">
+					<c:forEach items="#{consentPrintController.editPrefillEntry.signerIdDtos}" var="_signerId">
+						<p:outputLabel value="#{_signerId.idType}" />
+						<p:inputText value="#{_signerId.id}" />
+					</c:forEach>
+
+					<h:outputText value="#{msg['consent.signature.patient']}" style="font-weight: bold" />
+					<h:panelGroup layout="block" />
+
+					<p:outputLabel value="#{msg['consent.details.signer.signatureDate']}" />
+					<h:panelGroup class="ui-inputgroup" layout="block">
+						<p:datePicker id="patient_signDate"
+									  mask="#{cmsg['ui.date.mask.date']}"
+									  pattern="#{cmsg['ui.date.pattern.date']}"
+									  style="width: 360px;"
+									  value="#{consentPrintController.editPrefillEntry.signerDate}"
+									  widgetVar="patient_signDate">
+							<p:ajax process="@this" update="@this" partialSubmit="true" />
+						</p:datePicker>
+						<p:watermark for="patient_signDate" value="#{cmsg['ui.date.pattern.date']}" />
+						<!-- Sign Date Today Button -->
+						<p:commandButton value="#{cmsg['ui.date.today']}" icon="mdi mdi-calendar"
+										 styleClass="secondary" style="min-width: fit-content"
+										 onclick="PF('patient_signDate').setDate(new Date()); PF('patient_signDate').hide(); return false;" />
+					</h:panelGroup>
+
+					<p:outputLabel value="#{msg['consent.details.signer.signaturePlace']}" />
+					<p:inputText
+							value="#{consentPrintController.editPrefillEntry.signerPlace}" />
+
+					<h:outputText value="#{msg['consent.signature.physician']}" style="font-weight: bold" />
+					<h:panelGroup layout="block" />
+
+					<p:outputLabel value="#{msg['consent.details.physician.signatureDate']})" />
+					<h:panelGroup class="ui-inputgroup" layout="block">
+						<p:datePicker id="physician_signDate"
+									  mask="#{cmsg['ui.date.mask.date']}"
+									  pattern="#{cmsg['ui.date.pattern.date']}"
+									  style="width: 360px;"
+									  value="#{consentPrintController.editPrefillEntry.physicianDate}"
+									  widgetVar="physician_signDate">
+							<p:ajax process="@this" update="@this" partialSubmit="true" />
+						</p:datePicker>
+						<p:watermark for="physician_signDate" value="#{cmsg['ui.date.pattern.date']}" />
+						<!-- Sign Date Today Button -->
+						<p:commandButton value="#{cmsg['ui.date.today']}" icon="mdi mdi-calendar"
+										 styleClass="secondary" style="min-width: fit-content"
+										 onclick="PF('physician_signDate').setDate(new Date()); PF('physician_signDate').hide(); return false;" />
+					</h:panelGroup>
+
+					<p:outputLabel value="#{msg['consent.details.physician.signaturePlace']})" />
+					<p:inputText
+							value="#{consentPrintController.editPrefillEntry.physicianPlace}" />
+				</p:panelGrid>
+
+				<!-- ENDE ERweiterung prefilled entries -->
+
+				<p:commandButton id="addIdentifierButton" rendered="#{!consentPrintController.edit}" value="#{cmsg['ui.button.add']}"
+								 actionListener="#{consentPrintController.onAddSignerIds}" oncomplete="if (args &amp;&amp; !args.validationFailed) PF('newSignerIds').hide()"
+								 update="@form, main:signerIdMatrix" />
+				<p:commandButton id="editIdentifierButton" rendered="#{consentPrintController.edit}" value="#{cmsg['ui.button.save']}"
+								 actionListener="#{consentPrintController.onUpdatePrefillEntries}" oncomplete="if (args &amp;&amp; !args.validationFailed) PF('newSignerIds').hide()"
+								 update="@form, main:signerIdMatrix" />
 			</h:form>
-
-			<p:dialog id="newSignerIds" widgetVar="newSignerIds" modal="true" closeOnEscape="true"
-				header="#{consentPrintController.edit ? msg['template.print.signerIds.edit'] : msg['template.print.signerIds.new']}">
-				<h:form>
-					<p:messages />
-					<p:panelGrid columns="2" columnClasses="ui-grid-col-6,ui-grid-col-6" layout="grid">
-						<c:forEach items="#{consentPrintController.editSignerIds}" var="_signerId">
-							<p:outputLabel value="#{_signerId.idType}" />
-							<p:inputText value="#{_signerId.id}" />
-						</c:forEach>
-					</p:panelGrid>
-					<p:commandButton id="addIdentifierButton" rendered="#{!consentPrintController.edit}"
-						value="#{msg['common.button.add']}" actionListener="#{consentPrintController.onAddSignerIds}"
-						oncomplete="if (args &amp;&amp; !args.validationFailed) PF('newSignerIds').hide()"
-						update="@form, main:signerIdMatrix" />
-					<p:commandButton id="editIdentifierButton" rendered="#{consentPrintController.edit}"
-						value="#{msg['common.button.save']}"
-						actionListener="#{consentPrintController.onUpdateSignerIds}"
-						oncomplete="if (args &amp;&amp; !args.validationFailed) PF('newSignerIds').hide()"
-						update="@form, main:signerIdMatrix" />
-				</h:form>
-			</p:dialog>
-		</ui:define>
-	</ui:composition>
+		</p:dialog>
+	</ui:define>
+</ui:composition>
 </body>
 </html>

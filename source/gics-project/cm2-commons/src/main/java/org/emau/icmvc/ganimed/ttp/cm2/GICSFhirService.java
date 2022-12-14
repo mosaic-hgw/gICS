@@ -1,23 +1,32 @@
 package org.emau.icmvc.ganimed.ttp.cm2;
 
-import java.util.List;
-
-/*
+/*-
  * ###license-information-start###
  * gICS - a Generic Informed Consent Service
  * __
- * Copyright (C) 2014 - 2018 The MOSAIC Project - Institut fuer Community
- * 							Medicine of the University Medicine Greifswald -
- * 							mosaic-projekt@uni-greifswald.de
+ * Copyright (C) 2014 - 2022 Trusted Third Party of the University Medicine Greifswald -
+ * 							kontakt-ths@uni-greifswald.de
  * 
  * 							concept and implementation
- * 							l.geidel
+ * 							l.geidel, c.hampf
  * 							web client
- * 							a.blumentritt, m.bialke
+ * 							a.blumentritt, m.bialke, f.m.moser
+ * 							fhir-api
+ * 							m.bialke
+ * 							docker
+ * 							r. schuldt
  * 
- * 							Selected functionalities of gICS were developed as part of the MAGIC Project (funded by the DFG HO 1937/5-1).
+ * 							The gICS was developed by the University Medicine Greifswald and published
+ *  							in 2014 as part of the research project "MOSAIC" (funded by the DFG HO 1937/2-1).
+ *  
+ * 							Selected functionalities of gICS were developed as
+ * 							part of the following research projects:
+ * 							- MAGIC (funded by the DFG HO 1937/5-1)
+ * 							- MIRACUM (funded by the German Federal Ministry of Education and Research 01ZZ1801M)
+ * 							- NUM-CODEX (funded by the German Federal Ministry of Education and Research 01KX2021)
  * 
  * 							please cite our publications
+ * 							https://doi.org/10.1186/s12967-020-02457-y
  * 							http://dx.doi.org/10.3414/ME14-01-0133
  * 							http://dx.doi.org/10.1186/s12967-015-0545-6
  * 							http://dx.doi.org/10.3205/17gmds146
@@ -38,50 +47,82 @@ import java.util.List;
  */
 
 
+import java.util.List;
+
 import javax.jws.WebParam;
 import javax.jws.WebService;
 import javax.xml.bind.annotation.XmlElement;
 
-import org.emau.icmvc.ganimed.ttp.cm2.dto.enums.ExportMode;
+import org.emau.icmvc.ganimed.ttp.cm2.dto.ImportResultDTO;
+import org.emau.icmvc.ganimed.ttp.cm2.dto.enums.FhirExportMode;
 import org.emau.icmvc.ganimed.ttp.cm2.exceptions.InternalException;
 import org.emau.icmvc.ganimed.ttp.cm2.exceptions.InvalidExchangeFormatException;
 import org.emau.icmvc.ganimed.ttp.cm2.exceptions.UnknownDomainException;
-import org.emau.icmvc.ganimed.ttp.gstats.CommonStatisticBean;
+
 
 @WebService
-public interface GICSFhirService {
-
+public interface GICSFhirService
+{
 	/**
-	 * import domain-, policy-, module- and template definitions 
-	 * 
-	 * @param xmlFhirFormat
-	 *            importformatdefinition in fhir xmlformat
+	 * Import domain-, policy-, module- and template definitions
+	 *
+	 * @param definition
+	 *            content of definition to import
+	 * @param fileFormat
+	 *            format of definition (e.g. xml or json)
 	 * @param allowUpdates
-	 *            true if existing definitions shall be updates if possible
+	 *            true if existing definitions are allowed to be updated
+	 * @return Map with Lists of add, updated and ignored items.
 	 * @throws InvalidExchangeFormatException
 	 * @throws InternalException
 	 */
-	public void importDefinition(@XmlElement(required = true) @WebParam(name = "xmlFhirFormat") String xmlFhirFormat,
-			@XmlElement(required = true) @WebParam(name = "allowUpdates") boolean allowUpdates)
+	ImportResultDTO importDefinition(@XmlElement(required = true) @WebParam(name = "definition") String definition,
+			@XmlElement(required = true) @WebParam(name = "allowUpdates") boolean allowUpdates,
+			@XmlElement(required = true) @WebParam(name = "fileFormat") String fileFormat)
+			throws InvalidExchangeFormatException, InternalException;
+
+	/**
+	 * Import domain-, policy-, module- and template definitions
+	 *
+	 * @param definition
+	 *            content of definition to import
+	 * @param fileFormat
+	 *            format of definition (e.g. xml or json)
+	 * @param allowUpdates
+	 *            true if existing definitions are allowed to be updated
+	 * @return Map with Lists of add, updated and ignored items.
+	 * @throws InvalidExchangeFormatException
+	 * @throws InternalException
+	 */
+
+	ImportResultDTO previewImportDefinition(@XmlElement(required = true) @WebParam(name = "definition") String definition,
+			@XmlElement(required = true) @WebParam(name = "allowUpdates") boolean allowUpdates,
+			@XmlElement(required = true) @WebParam(name = "fileFormat") String fileFormat)
 			throws InvalidExchangeFormatException, InternalException;
 
 	/**
 	 * export domain-, policy-, module- and template definitions for selected domain
+	 *
 	 * @param domainName
-	 * 	Name of selected domain
+	 *            Name of selected domain
 	 * @param exportMode
-	 * 	mode of export: all, domain, policies, modules, templates, specify
+	 *            mode of export: all, domain, policies, modules, templates, specify
 	 * @param itemList
-	 * 	specify items by key (domain, name, version) to be exported, processed only when ExportMode.SPECIFY is used
+	 *            specify items by key (domain, name, version) to be exported, processed only when
+	 *            ExportMode.SPECIFY is used
 	 * @param exportLogo
-	 * 	true, if export should contain base64 encoded domain logo if available
-	 * @return xmlFhirFormat with export information
+	 *            true, if export should contain base64 encoded domain logo if available
+	 * @param fileFormat
+	 *            format of definition (e.g. xml or json)
+	 * @return definition with export information
 	 * @throws UnknownDomainException
-	 * @throws InternalException 
+	 * @throws InternalException
+	 * @throws InvalidExchangeFormatException
 	 */
-	public String exportDefinition(@XmlElement(required = true) @WebParam(name = "domainName") String domainName,
-			@XmlElement(required = true) @WebParam(name = "exportMode") ExportMode exportMode,
+	String exportDefinition(@XmlElement(required = true) @WebParam(name = "domainName") String domainName,
+			@XmlElement(required = true) @WebParam(name = "exportMode") FhirExportMode exportMode,
 			@XmlElement(required = true) @WebParam(name = "itemList") List<String> itemList,
-			@XmlElement(required = true) @WebParam(name = "exportLogo") Boolean exportLogo) 
-					throws UnknownDomainException, InternalException;
+			@XmlElement(required = true) @WebParam(name = "exportLogo") boolean exportLogo,
+			@XmlElement(required = true) @WebParam(name = "fileFormat") String fileFormat)
+			throws InternalException, InvalidExchangeFormatException;
 }

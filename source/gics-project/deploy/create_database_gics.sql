@@ -1,53 +1,66 @@
 DROP SCHEMA IF EXISTS `gics` ;
-CREATE SCHEMA IF NOT EXISTS `gics` DEFAULT CHARACTER SET utf8 ;
+CREATE SCHEMA IF NOT EXISTS `gics` DEFAULT CHARACTER SET utf8 collate utf8_bin;
 
 USE gics;
 
 CREATE TABLE consent
 (
    PATIENTSIGNATURE_IS_FROM_GUARDIAN bit DEFAULT 0,
-   PHYSICANID varchar(255),
-   SCANFILETYPE varchar(255),
+   PHYSICIANID varchar(255),
    CONSENT_DATE timestamp(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
    VIRTUAL_PERSON_ID bigint NOT NULL,
    CT_DOMAIN_NAME varchar(50) NOT NULL,
    CT_NAME varchar(100) NOT NULL,
    CT_VERSION int NOT NULL,
    COMMENT varchar(255),
-   EXTERN_PROPERTIES varchar(255),
-   SCAN_BASE64 varchar(255),
+   EXTERN_PROPERTIES varchar(4095),
+   EXPIRATION_PROPERTIES varchar(255),
+   CREATE_TIMESTAMP timestamp(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+   UPDATE_TIMESTAMP timestamp(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+   VALID_FROM datetime(3),
+   FHIR_ID VARCHAR(41) NOT NULL DEFAULT "",
    CONSTRAINT C_PRIMARY PRIMARY KEY (CONSENT_DATE,VIRTUAL_PERSON_ID,CT_DOMAIN_NAME,CT_NAME,CT_VERSION)
-)
+) collate utf8_bin
 ;
 CREATE TABLE consent_template
 (
    TITLE varchar(255),
    COMMENT varchar(255),
-   EXTERN_PROPERTIES varchar(255),
-   PROPERTIES varchar(255),
-   SCANFILETYPE varchar(255),
+   EXTERN_PROPERTIES varchar(4095),
+   EXPIRATION_PROPERTIES varchar(255),
    NAME varchar(100) NOT NULL,
    VERSION int NOT NULL,
    DOMAIN_NAME varchar(50) NOT NULL,
    `TYPE` varchar(20) NOT NULL,
    FOOTER varchar(255),
    HEADER varchar(255),
-   SCAN_BASE64 varchar(255),
+   SCAN varchar(255),
+   CREATE_TIMESTAMP timestamp(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+   UPDATE_TIMESTAMP timestamp(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+   LABEL varchar(255),
+   VERSION_LABEL varchar(255),
+   FINALISED TINYINT(1),
+   FHIR_ID VARCHAR(41) NOT NULL DEFAULT "",
    CONSTRAINT C_PRIMARY PRIMARY KEY (NAME,VERSION,DOMAIN_NAME)
-)
+) collate utf8_bin
 ;
 CREATE TABLE domain
 (
    NAME varchar(50) PRIMARY KEY NOT NULL,
    COMMENT varchar(255),
    CT_VERSION_CONVERTER varchar(255),
-   EXTERN_PROPERTIES varchar(255),
+   EXTERN_PROPERTIES varchar(4095),
+   EXPIRATION_PROPERTIES varchar(255),
    LABEL varchar(255),
    MODULE_VERSION_CONVERTER varchar(255),
    POLICY_VERSION_CONVERTER varchar(255),
-   PROPERTIES varchar(255),
-   LOGO longtext
-)
+   PROPERTIES varchar(4095),
+   LOGO longtext,
+   FINALISED TINYINT(1),
+   CREATE_TIMESTAMP timestamp(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+   UPDATE_TIMESTAMP timestamp(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+   FHIR_ID VARCHAR(41) NOT NULL DEFAULT ""
+) collate utf8_bin
 ;
 CREATE TABLE free_text_def
 (
@@ -60,8 +73,14 @@ CREATE TABLE free_text_def
    DOMAIN_NAME varchar(50) NOT NULL,
    CT_NAME varchar(100) NOT NULL,
    CT_VERSION int NOT NULL,
+   EXTERN_PROPERTIES varchar(4095),
+   LABEL varchar(255),
+   FINALISED TINYINT(1),
+   CREATE_TIMESTAMP timestamp(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+   UPDATE_TIMESTAMP timestamp(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+   FHIR_ID VARCHAR(41) NOT NULL DEFAULT "",
    CONSTRAINT C_PRIMARY PRIMARY KEY (FREETEXT_NAME,DOMAIN_NAME,CT_NAME,CT_VERSION)
-)
+) collate utf8_bin
 ;
 CREATE TABLE free_text_val
 (
@@ -72,27 +91,34 @@ CREATE TABLE free_text_val
    CT_DOMAIN_NAME varchar(50) NOT NULL,
    CT_NAME varchar(100) NOT NULL,
    CT_VERSION int NOT NULL,
+   FHIR_ID VARCHAR(41) NOT NULL DEFAULT "",
    CONSTRAINT C_PRIMARY PRIMARY KEY (FREETEXTDEV_NAME,CONSENT_DATE,CONSENT_VIRTUAL_PERSON_ID,CT_DOMAIN_NAME,CT_NAME,CT_VERSION)
-)
+) collate utf8_bin
 ;
 CREATE TABLE module
 (
    COMMENT varchar(255),
-   EXTERN_PROPERTIES varchar(255),
+   EXTERN_PROPERTIES varchar(4095),
    TITLE varchar(255),
    NAME varchar(100) NOT NULL,
    VERSION int NOT NULL,
    DOMAIN_NAME varchar(50) NOT NULL,
    TEXT varchar(255),
+   SHORT_TEXT varchar(5000) NULL,
+   CREATE_TIMESTAMP timestamp(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+   UPDATE_TIMESTAMP timestamp(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+   LABEL varchar(255),
+   FINALISED TINYINT(1),
+   FHIR_ID VARCHAR(41) NOT NULL DEFAULT "",
    CONSTRAINT C_PRIMARY PRIMARY KEY (NAME,VERSION,DOMAIN_NAME)
-)
+) collate utf8_bin
 ;
 CREATE TABLE module_consent_template
 (
    COMMENT varchar(255),
    DEFAULTCONSENTSTATUS int,
    DISPLAYCHECKBOXES bigint,
-   EXTERN_PROPERTIES varchar(255),
+   EXTERN_PROPERTIES varchar(4095),
    MANDATORY bit DEFAULT 0,
    ORDER_NUMBER int,
    CT_DOMAIN varchar(50) NOT NULL,
@@ -104,8 +130,10 @@ CREATE TABLE module_consent_template
    PARENT_M_DOMAIN varchar(50),
    PARENT_M_NAME varchar(100),
    PARENT_M_VERSION int,
+   EXPIRATION_PROPERTIES varchar(255),
+   FHIR_ID VARCHAR(41) NOT NULL DEFAULT "",
    CONSTRAINT C_PRIMARY PRIMARY KEY (CT_DOMAIN,CT_NAME,CT_VERSION,M_DOMAIN,M_NAME,M_VERSION)
-)
+) collate utf8_bin
 ;
 CREATE TABLE module_policy
 (
@@ -115,8 +143,12 @@ CREATE TABLE module_policy
    M_NAME varchar(100) NOT NULL,
    M_DOMAIN_NAME varchar(50) NOT NULL,
    M_VERSION int NOT NULL,
+   COMMENT varchar(255),
+   EXTERN_PROPERTIES varchar(4095),
+   EXPIRATION_PROPERTIES varchar(255),
+   FHIR_ID VARCHAR(41) NOT NULL DEFAULT "",
    CONSTRAINT C_PRIMARY PRIMARY KEY (P_NAME,P_DOMAIN_NAME,P_VERSION,M_NAME,M_DOMAIN_NAME,M_VERSION)
-)
+) collate utf8_bin
 ;
 CREATE TABLE policy
 (
@@ -125,18 +157,24 @@ CREATE TABLE policy
    NAME varchar(100) NOT NULL,
    VERSION int NOT NULL,
    DOMAIN_NAME varchar(50) NOT NULL,
+   CREATE_TIMESTAMP timestamp(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+   UPDATE_TIMESTAMP timestamp(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+   LABEL varchar(255),
+   FINALISED TINYINT(1),
+   FHIR_ID VARCHAR(41) NOT NULL DEFAULT "",
    CONSTRAINT C_PRIMARY PRIMARY KEY (NAME,VERSION,DOMAIN_NAME)
-)
+) collate utf8_bin
 ;
 CREATE TABLE sequence
 (
    SEQ_NAME varchar(50) PRIMARY KEY NOT NULL,
    SEQ_COUNT decimal(38,0)
-)
+) collate utf8_bin
 ;
 CREATE TABLE signature
 (
    SIGNATUREDATE timestamp(3),
+   SIGNATUREPLACE varchar(255),
    SIGNATURESCANBASE64 longtext,
    TYPE int NOT NULL,
    CONSENT_DATE timestamp(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
@@ -144,8 +182,9 @@ CREATE TABLE signature
    CT_DOMAIN_NAME varchar(50) NOT NULL,
    CT_NAME varchar(100) NOT NULL,
    CT_VERSION int NOT NULL,
+   FHIR_ID VARCHAR(41) NOT NULL DEFAULT "",
    CONSTRAINT C_PRIMARY PRIMARY KEY (TYPE,CONSENT_DATE,CONSENT_VIRTUAL_PERSON_ID,CT_DOMAIN_NAME,CT_NAME,CT_VERSION)
-)
+) collate utf8_bin
 ;
 CREATE TABLE signed_policy
 (
@@ -158,34 +197,67 @@ CREATE TABLE signed_policy
    POLICY_DOMAIN_NAME varchar(50) NOT NULL,
    POLICY_NAME varchar(100) NOT NULL,
    POLICY_VERSION int NOT NULL,
+   FHIR_ID VARCHAR(41) NOT NULL DEFAULT "",
    CONSTRAINT C_PRIMARY PRIMARY KEY (CONSENT_DATE,CONSENT_VIRTUAL_PERSON_ID,CT_DOMAIN_NAME,CT_NAME,CT_VERSION,POLICY_DOMAIN_NAME,POLICY_NAME,POLICY_VERSION)
-)
+) collate utf8_bin
 ;
 CREATE TABLE signer_id
 (
    VALUE varchar(255) NOT NULL,
    SIT_DOMAIN_NAME varchar(50) NOT NULL,
    SIT_NAME varchar(100) NOT NULL,
+   CREATE_TIMESTAMP timestamp(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+   FHIR_ID VARCHAR(41) NOT NULL DEFAULT "",
    CONSTRAINT C_PRIMARY PRIMARY KEY (VALUE,SIT_DOMAIN_NAME,SIT_NAME)
-)
+) collate utf8_bin
 ;
 CREATE TABLE signer_id_type
 (
    NAME varchar(100) NOT NULL,
    DOMAIN_NAME varchar(50) NOT NULL,
+   CREATE_TIMESTAMP timestamp(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+   UPDATE_TIMESTAMP timestamp(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+   LABEL varchar(255),
+   COMMENT varchar(255),
+   ORDER_NUMBER int NOT NULL DEFAULT 0,
+   FHIR_ID VARCHAR(41) NOT NULL DEFAULT "",
    CONSTRAINT C_PRIMARY PRIMARY KEY (NAME,DOMAIN_NAME)
-)
+) collate utf8_bin
 ;
 CREATE TABLE text
 (
    ID varchar(255) PRIMARY KEY NOT NULL,
    TEXT longtext
-)
+) collate utf8_bin
 ;
+CREATE TABLE consent_scan
+(
+   SCANBASE64 longtext,
+   FILETYPE varchar(255),
+   FHIR_ID VARCHAR(41) NOT NULL PRIMARY KEY DEFAULT "",
+   CONSENT_DATE timestamp(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+   VIRTUAL_PERSON_ID bigint NOT NULL,
+   CT_DOMAIN_NAME varchar(50) NOT NULL,
+   CT_NAME varchar(100) NOT NULL,
+   CT_VERSION int NOT NULL,
+   FILENAME varchar(255) NOT NULL DEFAULT "",
+   UPLOAD_DATE timestamp(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3)
+) collate utf8_bin
+;
+CREATE TABLE consent_template_scan
+(
+    ID varchar(255) PRIMARY KEY NOT NULL,
+    SCANBASE64 longtext,
+    FILETYPE varchar(255)
+) collate utf8_bin
+;
+
+
 CREATE TABLE virtual_person
 (
-   ID bigint PRIMARY KEY NOT NULL
-)
+   ID bigint PRIMARY KEY NOT NULL,
+   CREATE_TIMESTAMP timestamp(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3)
+) collate utf8_bin
 ;
 CREATE TABLE virtual_person_signer_id
 (
@@ -194,7 +266,7 @@ CREATE TABLE virtual_person_signer_id
    SI_VALUE varchar(255) NOT NULL,
    VP_ID bigint NOT NULL,
    CONSTRAINT C_PRIMARY PRIMARY KEY (SIT_NAME,SIT_DOMAIN_NAME,SI_VALUE,VP_ID)
-)
+) collate utf8_bin
 ;
 ALTER TABLE consent
 ADD CONSTRAINT FK_consent_CT_NAME
@@ -216,11 +288,27 @@ ADD CONSTRAINT FK_consent_VIRTUAL_PERSON_ID
 FOREIGN KEY (VIRTUAL_PERSON_ID)
 REFERENCES virtual_person(ID)
 ;
-ALTER TABLE consent
-ADD CONSTRAINT FK_consent_SCAN_BASE64
-FOREIGN KEY (SCAN_BASE64)
-REFERENCES text(ID)
+
+ALTER TABLE consent_scan
+ADD CONSTRAINT FK_scan_CONSENT
+FOREIGN KEY
+(
+  CONSENT_DATE,
+  VIRTUAL_PERSON_ID,
+  CT_DOMAIN_NAME,
+  CT_NAME,
+  CT_VERSION
+)
+REFERENCES consent
+(
+  CONSENT_DATE,
+  VIRTUAL_PERSON_ID,
+  CT_DOMAIN_NAME,
+  CT_NAME,
+  CT_VERSION
+)
 ;
+
 CREATE INDEX I_FK_consent_CT_NAME ON consent
 (
   CT_NAME,
@@ -237,8 +325,6 @@ CREATE UNIQUE INDEX I_PRIMARY ON consent
   CT_VERSION
 )
 ;
-CREATE INDEX I_FK_consent_SCAN_BASE64 ON consent(SCAN_BASE64)
-;
 CREATE INDEX I_FK_consent_VIRTUAL_PERSON_ID ON consent(VIRTUAL_PERSON_ID)
 ;
 ALTER TABLE consent_template
@@ -253,12 +339,17 @@ REFERENCES domain(NAME)
 ;
 ALTER TABLE consent_template
 ADD CONSTRAINT FK_consent_template_SCAN_BASE64
-FOREIGN KEY (SCAN_BASE64)
-REFERENCES text(ID)
+FOREIGN KEY (SCAN)
+REFERENCES consent_template_scan(ID)
 ;
 ALTER TABLE consent_template
 ADD CONSTRAINT FK_consent_template_HEADER
 FOREIGN KEY (HEADER)
+REFERENCES text(ID)
+;
+ALTER TABLE consent_template
+ADD CONSTRAINT FK_consent_template_TITLE
+FOREIGN KEY (TITLE)
 REFERENCES text(ID)
 ;
 CREATE UNIQUE INDEX I_PRIMARY ON consent_template
@@ -268,7 +359,9 @@ CREATE UNIQUE INDEX I_PRIMARY ON consent_template
   DOMAIN_NAME
 )
 ;
-CREATE INDEX I_FK_consent_template_SCAN_BASE64 ON consent_template(SCAN_BASE64)
+CREATE INDEX I_FK_consent_template_TITLE ON consent_template(TITLE)
+;
+CREATE INDEX I_FK_module_TITLE ON consent_template(TITLE)
 ;
 CREATE INDEX I_FK_consent_template_HEADER ON consent_template(HEADER)
 ;
@@ -349,6 +442,11 @@ CREATE INDEX I_FK_free_text_val_CONSENT_DATE ON free_text_val
 ALTER TABLE module
 ADD CONSTRAINT FK_module_TEXT
 FOREIGN KEY (TEXT)
+REFERENCES text(ID)
+;
+ALTER TABLE module
+ADD CONSTRAINT FK_module_TITLE
+FOREIGN KEY (TITLE)
 REFERENCES text(ID)
 ;
 ALTER TABLE module
@@ -685,8 +783,124 @@ CREATE INDEX I_FK_VIRTUAL_PERSON_SIGNER_ID_SI_VALUE ON virtual_person_signer_id
 CREATE INDEX I_FK_VIRTUAL_PERSON_SIGNER_ID_VP_ID ON virtual_person_signer_id(VP_ID)
 ;
 
+CREATE TABLE `qc` (
+	`COMMENT` VARCHAR(4095) NULL DEFAULT NULL,
+	`TIMESTAMP` TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+	`EXTERN_PROPERTIES` VARCHAR(4095) NULL DEFAULT NULL,
+	`INSPECTOR` VARCHAR(100) NULL DEFAULT NULL,
+	`VIRTUAL_PERSON_ID` BIGINT(20) NOT NULL,
+	`TYPE` VARCHAR(100) NOT NULL,
+	`CT_VERSION` INT(11) NOT NULL,
+	`CT_DOMAIN_NAME` VARCHAR(50) NOT NULL,
+	`CONSENT_DATE` TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+	`CT_NAME` VARCHAR(100) NOT NULL,
+	`FHIR_ID` VARCHAR(41) NOT NULL DEFAULT "",
+	PRIMARY KEY (`CONSENT_DATE`, `VIRTUAL_PERSON_ID`, `CT_DOMAIN_NAME`, `CT_NAME`, `CT_VERSION`) USING BTREE,
+	INDEX `I_qc_CONSENT_DATE` (`CONSENT_DATE`, `VIRTUAL_PERSON_ID`, `CT_DOMAIN_NAME`, `CT_NAME`, `CT_VERSION`) USING BTREE
+) collate utf8_bin
+;
 
+ALTER TABLE qc
+ADD CONSTRAINT FK_qc_CONSENT_DATE
+FOREIGN KEY
+(
+  CONSENT_DATE,
+  VIRTUAL_PERSON_ID,
+  CT_DOMAIN_NAME,
+  CT_NAME,
+  CT_VERSION
+)
+REFERENCES consent
+(
+  CONSENT_DATE,
+  VIRTUAL_PERSON_ID,
+  CT_DOMAIN_NAME,
+  CT_NAME,
+  CT_VERSION
+)  ON UPDATE CASCADE ON DELETE CASCADE
+;
 
+CREATE TABLE `qc_hist` (
+	`COMMENT` VARCHAR(4095) NULL DEFAULT NULL,
+	`TIMESTAMP` TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+	`EXTERN_PROPERTIES` VARCHAR(4095) NULL DEFAULT NULL,
+	`INSPECTOR` VARCHAR(100) NULL DEFAULT NULL,
+	`VIRTUAL_PERSON_ID` BIGINT(20) NOT NULL,
+	`TYPE` VARCHAR(100) NOT NULL,
+	`CT_VERSION` INT(11) NOT NULL,
+	`CT_DOMAIN_NAME` VARCHAR(50) NOT NULL,
+	`CONSENT_DATE` TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+	`CT_NAME` VARCHAR(100) NOT NULL,
+	`START_DATE` TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+	`END_DATE` TIMESTAMP(3) NULL DEFAULT NULL,
+	`FHIR_ID` VARCHAR(41) NOT NULL DEFAULT "",
+	PRIMARY KEY (`CONSENT_DATE`, `VIRTUAL_PERSON_ID`, `CT_DOMAIN_NAME`, `CT_NAME`, `CT_VERSION`, `START_DATE`) USING BTREE,
+	INDEX `I_qc_CONSENT_DATE` (`CONSENT_DATE`, `VIRTUAL_PERSON_ID`, `CT_DOMAIN_NAME`, `CT_NAME`, `CT_VERSION`) USING BTREE
+) collate utf8_bin
+;
+
+ALTER TABLE qc_hist
+ADD CONSTRAINT FK_qc_hist_CONSENT_DATE
+FOREIGN KEY
+(
+  CONSENT_DATE,
+  VIRTUAL_PERSON_ID,
+  CT_DOMAIN_NAME,
+  CT_NAME,
+  CT_VERSION
+)
+REFERENCES consent
+(
+  CONSENT_DATE,
+  VIRTUAL_PERSON_ID,
+  CT_DOMAIN_NAME,
+  CT_NAME,
+  CT_VERSION
+)  ON UPDATE CASCADE ON DELETE CASCADE
+;
+
+CREATE TABLE `alias` (
+  `CREATE_TIMESTAMP` timestamp(3) NOT NULL,
+  `ORIG_SI_VALUE` varchar(255) NOT NULL,
+  `ORIG_SIT_DOMAIN_NAME` varchar(50) NOT NULL,
+  `ORIG_SIT_NAME` varchar(100) NOT NULL,
+  `ALIAS_SI_VALUE` varchar(255) NOT NULL,
+  `ALIAS_SIT_DOMAIN_NAME` varchar(50) NOT NULL,
+  `ALIAS_SIT_NAME` varchar(100) NOT NULL,
+  `DEACTIVATE_TIMESTAMP` timestamp(3) NULL DEFAULT NULL,
+  PRIMARY KEY (`CREATE_TIMESTAMP`,`ALIAS_SI_VALUE`,`ORIG_SI_VALUE`,`ALIAS_SIT_NAME`,`ALIAS_SIT_DOMAIN_NAME`,`ORIG_SIT_DOMAIN_NAME`,`ORIG_SIT_NAME`)
+) collate utf8_bin;
+
+ALTER TABLE alias
+ADD CONSTRAINT FK_ALIAS_SIGNER_ID
+FOREIGN KEY
+(
+  ALIAS_SI_VALUE,
+  ALIAS_SIT_DOMAIN_NAME,
+  ALIAS_SIT_NAME
+)
+REFERENCES signer_id
+(
+  VALUE,
+  SIT_DOMAIN_NAME,
+  SIT_NAME
+)
+;
+ALTER TABLE alias
+ADD CONSTRAINT FK_ORIG_SIGNER_ID
+FOREIGN KEY
+(
+  ORIG_SI_VALUE,
+  ORIG_SIT_DOMAIN_NAME,
+  ORIG_SIT_NAME
+)
+REFERENCES signer_id
+(
+  VALUE,
+  SIT_DOMAIN_NAME,
+  SIT_NAME
+)
+;
 
 -- -----------------------------------------------------
 -- Table `stat_entry`
@@ -695,7 +909,7 @@ DROP TABLE IF EXISTS `stat_entry` ;
 
 CREATE  TABLE IF NOT EXISTS `stat_entry` (
   `STAT_ENTRY_ID` BIGINT(20) NOT NULL AUTO_INCREMENT,
-  `ENTRYDATE` VARCHAR(255) NULL DEFAULT NULL ,
+  `ENTRYDATE` TIMESTAMP(3) DEFAULT CURRENT_TIMESTAMP(3) NOT NULL,
   PRIMARY KEY (`STAT_ENTRY_ID`) )
 ENGINE = InnoDB
 DEFAULT CHARACTER SET = utf8;
@@ -708,8 +922,8 @@ DROP TABLE IF EXISTS `stat_value` ;
 
 CREATE  TABLE IF NOT EXISTS `stat_value` (
   `stat_value_id` BIGINT(20) NULL DEFAULT NULL ,
-  `stat_value` VARCHAR(255) NULL DEFAULT NULL ,
-  `stat_attr` VARCHAR(50) NULL DEFAULT NULL ,
+  `stat_value` BIGINT(20) NULL DEFAULT NULL ,
+  `stat_attr` VARCHAR(255) NULL DEFAULT NULL ,
   INDEX `FK_stat_value_stat_value_id` (`stat_value_id` ASC) ,
   CONSTRAINT `FK_stat_value_stat_value_id`
     FOREIGN KEY (`stat_value_id` )
@@ -717,44 +931,5 @@ CREATE  TABLE IF NOT EXISTS `stat_value` (
 ENGINE = InnoDB
 DEFAULT CHARACTER SET = utf8;
 
-
--- -----------------------------------------------------
--- procedure updateStats
--- -----------------------------------------------------
-
-DROP procedure IF EXISTS `updateStats`;
-
-DELIMITER $$
-CREATE PROCEDURE `updateStats`()
-begin
-
-	--  add new entry with current timestamp
-	INSERT INTO 
-		stat_entry (entrydate) values (NOW());
-
-	--  get current count of entries in table stat_entry
-	SET @id = (select max(stat_entry_id) from stat_entry);
-	--  the tool specific logic follows, inserting entries in table stat_value using the same id
-    --  BEGIN OF TOOL SPECIFIC LOGIC ------------
-	INSERT INTO stat_value (stat_value_id,stat_attr,stat_value) values (@id, 'policies',(SELECT count(name) FROM policy));
-	INSERT INTO stat_value (stat_value_id,stat_attr,stat_value) values (@id, 'templates',(SELECT count(name) FROM consent_template));
-	INSERT INTO stat_value (stat_value_id,stat_attr,stat_value) values (@id, 'modules_without_versions',(SELECT count(name) FROM module));
-	INSERT INTO stat_value (stat_value_id,stat_attr,stat_value) values (@id, 'modules_with_versions',(SELECT count(distinct name) FROM module));
-	INSERT INTO stat_value (stat_value_id,stat_attr,stat_value) values (@id, 'informed_consents',(SELECT count(*) FROM consent));
-	INSERT INTO stat_value (stat_value_id,stat_attr,stat_value) values (@id, 'signed_policies',(SELECT count(*) FROM signed_policy));
-	INSERT INTO stat_value (stat_value_id,stat_attr,stat_value) values (@id, 'withdrawals',(SELECT count(*) as num_withdrawals FROM (select CONSENT_VIRTUAL_PERSON_ID, CONSENT_DATE, CT_NAME from signed_policy where status=5 group by CONSENT_VIRTUAL_PERSON_ID, CONSENT_DATE, CT_NAME) as withdrawals));        
-
-	--  END OF TOOL SPECIFIC LOGIC ------------
-	--  show and return data sets
-	SELECT t1.stat_entry_id as id, t1.entrydate as timestamp, t2.stat_attr as attribut, t2.stat_value as value 
-		FROM stat_entry AS t1, stat_value AS t2
-		WHERE t1.stat_entry_id = t2.stat_value_id;
-end$$
-
-DELIMITER ;
-
-
-
-create user 'gics_user'@'localhost' identified by 'gics_2014';
--- change database name if needed!!!
-grant all on gics.* to 'gics_user'@'localhost' identified by 'gics_2014';
+create user 'gics_user'@'%' identified by 'gics_password';
+grant all on gics.* to 'gics_user'@'%';

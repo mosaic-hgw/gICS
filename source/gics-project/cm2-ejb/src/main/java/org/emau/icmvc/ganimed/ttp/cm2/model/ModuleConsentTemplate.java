@@ -1,21 +1,32 @@
 package org.emau.icmvc.ganimed.ttp.cm2.model;
 
-/*
+/*-
  * ###license-information-start###
  * gICS - a Generic Informed Consent Service
  * __
- * Copyright (C) 2014 - 2018 The MOSAIC Project - Institut fuer Community
- * 							Medicine of the University Medicine Greifswald -
- * 							mosaic-projekt@uni-greifswald.de
+ * Copyright (C) 2014 - 2022 Trusted Third Party of the University Medicine Greifswald -
+ * 							kontakt-ths@uni-greifswald.de
  * 
  * 							concept and implementation
- * 							l.geidel
+ * 							l.geidel, c.hampf
  * 							web client
- * 							a.blumentritt, m.bialke
+ * 							a.blumentritt, m.bialke, f.m.moser
+ * 							fhir-api
+ * 							m.bialke
+ * 							docker
+ * 							r. schuldt
  * 
- * 							Selected functionalities of gICS were developed as part of the MAGIC Project (funded by the DFG HO 1937/5-1).
+ * 							The gICS was developed by the University Medicine Greifswald and published
+ *  							in 2014 as part of the research project "MOSAIC" (funded by the DFG HO 1937/2-1).
+ *  
+ * 							Selected functionalities of gICS were developed as
+ * 							part of the following research projects:
+ * 							- MAGIC (funded by the DFG HO 1937/5-1)
+ * 							- MIRACUM (funded by the German Federal Ministry of Education and Research 01ZZ1801M)
+ * 							- NUM-CODEX (funded by the German Federal Ministry of Education and Research 01KX2021)
  * 
  * 							please cite our publications
+ * 							https://doi.org/10.1186/s12967-020-02457-y
  * 							http://dx.doi.org/10.3414/ME14-01-0133
  * 							http://dx.doi.org/10.1186/s12967-015-0545-6
  * 							http://dx.doi.org/10.3205/17gmds146
@@ -36,6 +47,8 @@ package org.emau.icmvc.ganimed.ttp.cm2.model;
  */
 
 import java.io.Serializable;
+import java.text.ParseException;
+import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -44,35 +57,44 @@ import javax.persistence.EmbeddedId;
 import javax.persistence.Entity;
 import javax.persistence.Enumerated;
 import javax.persistence.FetchType;
+import javax.persistence.GeneratedValue;
 import javax.persistence.JoinColumn;
 import javax.persistence.JoinColumns;
 import javax.persistence.ManyToOne;
 import javax.persistence.MapsId;
 import javax.persistence.OneToOne;
+import javax.persistence.PostLoad;
+import javax.persistence.PrePersist;
 import javax.persistence.Table;
+import javax.persistence.Transient;
 
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
 import org.eclipse.persistence.annotations.Cache;
+import org.eclipse.persistence.annotations.UuidGenerator;
 import org.eclipse.persistence.config.CacheIsolationType;
 import org.emau.icmvc.ganimed.ttp.cm2.dto.AssignedModuleDTO;
 import org.emau.icmvc.ganimed.ttp.cm2.dto.ModuleKeyDTO;
 import org.emau.icmvc.ganimed.ttp.cm2.dto.enums.ConsentStatus;
 import org.emau.icmvc.ganimed.ttp.cm2.exceptions.InvalidVersionException;
 import org.emau.icmvc.ganimed.ttp.cm2.exceptions.UnknownDomainException;
-import org.emau.icmvc.ganimed.ttp.cm2.exceptions.VersionConverterClassException;
+import org.emau.icmvc.ganimed.ttp.cm2.internal.ExpirationPropertiesObject;
 import org.emau.icmvc.ganimed.ttp.cm2.internal.VersionConverterCache;
 
 /**
  * objekt fuer die m-n tabelle consent template <-> module
- * 
+ *
  * @author geidell
- * 
+ *
  */
 @Entity
 @Table(name = "module_consent_template")
 @Cache(isolation = CacheIsolationType.PROTECTED)
-public class ModuleConsentTemplate implements Serializable, Comparable<ModuleConsentTemplate> {
-
-	private static final long serialVersionUID = 4745965045976636993L;
+@UuidGenerator(name = "FHIR_ID_MCT")
+public class ModuleConsentTemplate implements Serializable, Comparable<ModuleConsentTemplate>, FhirDTOExporter<AssignedModuleDTO>
+{
+	private static final long serialVersionUID = 6553014887944179555L;
+	private static final Logger logger = LogManager.getLogger(ModuleConsentTemplate.class);
 	@EmbeddedId
 	private ModuleConsentTemplateKey key;
 	private boolean mandatory;
@@ -100,16 +122,25 @@ public class ModuleConsentTemplate implements Serializable, Comparable<ModuleCon
 			@JoinColumn(name = "PARENT_M_VERSION", referencedColumnName = "VERSION") })
 	private Module parent;
 	private String comment;
-	@Column(name = "EXTERN_PROPERTIES")
+	@Column(name = "EXTERN_PROPERTIES", length = 4095)
 	private String externProperties;
+	@Column(name = "EXPIRATION_PROPERTIES")
+	private String expirationProperties;
+	@Transient
+	private ExpirationPropertiesObject expirationPropertiesObject = null;
+	@Column(name = "FHIR_ID", length = 41)
+	@GeneratedValue(generator = "FHIR_ID_MCT")
+	private String fhirID;
 
-	public ModuleConsentTemplate() {
-	}
+	public ModuleConsentTemplate()
+	{}
 
-	public ModuleConsentTemplate(ConsentTemplate consentTemplate, Module module, AssignedModuleDTO assignedModuleDTO, Module parent) {
+	public ModuleConsentTemplate(ConsentTemplate consentTemplate, Module module, AssignedModuleDTO assignedModuleDTO, Module parent)
+	{
 		super();
 		this.module = module;
 		this.consentTemplate = consentTemplate;
+		this.key = new ModuleConsentTemplateKey(consentTemplate.getKey(), module.getKey());
 		this.mandatory = assignedModuleDTO.getMandatory();
 		this.displayCheckboxes = listToLong(assignedModuleDTO.getDisplayCheckboxes());
 		this.defaultConsentStatus = assignedModuleDTO.getDefaultConsentStatus();
@@ -117,28 +148,70 @@ public class ModuleConsentTemplate implements Serializable, Comparable<ModuleCon
 		this.parent = parent;
 		this.comment = assignedModuleDTO.getComment();
 		this.externProperties = assignedModuleDTO.getExternProperties();
+		this.expirationPropertiesObject = new ExpirationPropertiesObject(assignedModuleDTO.getExpirationProperties());
+		this.expirationProperties = expirationPropertiesObject.toPropertiesString();
 	}
 
-	public ModuleConsentTemplateKey getKey() {
+	/**
+	 * this method is called by jpa
+	 */
+	@PostLoad
+	public void loadPropertiesFromString()
+	{
+		try
+		{
+			expirationPropertiesObject = new ExpirationPropertiesObject(expirationProperties);
+		}
+		catch (ParseException | DateTimeParseException e)
+		{
+			logger.fatal("exception while parsing expirationProperties '" + expirationProperties + "'", e);
+		}
+	}
+
+	/**
+	 * this method is called by jpa
+	 */
+	@PrePersist
+	public void fhirIDToLowerCase()
+	{
+		fhirID = fhirID.toLowerCase();
+	}
+
+	public ExpirationPropertiesObject getExpirationPropertiesObject()
+	{
+		if (expirationPropertiesObject == null)
+		{
+			loadPropertiesFromString();
+		}
+		return expirationPropertiesObject;
+	}
+
+	public ModuleConsentTemplateKey getKey()
+	{
 		return key;
 	}
 
-	public boolean getMandatory() {
+	public boolean getMandatory()
+	{
 		return mandatory;
 	}
 
-	public long getDisplayCheckboxes() {
+	public long getDisplayCheckboxes()
+	{
 		return displayCheckboxes;
 	}
 
-	public List<ConsentStatus> getDisplayCheckboxesList() {
-		List<ConsentStatus> result = new ArrayList<ConsentStatus>();
+	public List<ConsentStatus> getDisplayCheckboxesList()
+	{
+		List<ConsentStatus> result = new ArrayList<>();
 		long temp = displayCheckboxes;
 		int i = 0;
 		ConsentStatus[] allStatus = ConsentStatus.values();
 		// i == allStatus.length muesste eigentlich eine exception werfen
-		while (temp > 0 && i < allStatus.length) {
-			if ((temp & 1l) == 1l) {
+		while (temp > 0 && i < allStatus.length)
+		{
+			if ((temp & 1l) == 1l)
+			{
 				result.add(allStatus[i]);
 			}
 			temp >>= 1;
@@ -147,104 +220,150 @@ public class ModuleConsentTemplate implements Serializable, Comparable<ModuleCon
 		return result;
 	}
 
-	public ConsentStatus getDefaultConsentStatus() {
+	public ConsentStatus getDefaultConsentStatus()
+	{
 		return defaultConsentStatus;
 	}
 
-	public Module getModule() {
+	public Module getModule()
+	{
 		return module;
 	}
 
-	public ConsentTemplate getConsentTemplate() {
+	public ConsentTemplate getConsentTemplate()
+	{
 		return consentTemplate;
 	}
 
-	public Integer getOrderNumber() {
+	public Integer getOrderNumber()
+	{
 		return orderNumber;
 	}
 
-	public Module getParent() {
+	public Module getParent()
+	{
 		return parent;
 	}
 
-	public String getComment() {
+	public String getComment()
+	{
 		return comment;
 	}
 
-	public void setComment(String comment) {
-		this.comment = comment;
-	}
-
-	public String getExternProperties() {
+	public String getExternProperties()
+	{
 		return externProperties;
 	}
 
-	public void setExternProperties(String externProperties) {
-		this.externProperties = externProperties;
+	public String getFhirID()
+	{
+		return fhirID;
 	}
 
-	private long listToLong(List<ConsentStatus> list) {
+	private long listToLong(List<ConsentStatus> list)
+	{
 		long result = 0;
-		for (ConsentStatus status : list) {
+		for (ConsentStatus status : list)
+		{
 			result += 1 << status.ordinal();
 		}
 		return result;
 	}
 
-	public AssignedModuleDTO toAssignedModuleDTO(VersionConverterCache vcc) throws VersionConverterClassException, InvalidVersionException {
-		ModuleKeyDTO parentKeyDTO = null;
-		if (parent != null) {
-			try {
-				parentKeyDTO = parent.getKey().toDTO(vcc.getModuleVersionConverter(module.getDomain().getName()));
-			} catch (UnknownDomainException impossible) {
-				throw new VersionConverterClassException("impossible UnknownDomainException", impossible);
-			}
-		}
-		return new AssignedModuleDTO(module.toDTO(vcc), mandatory, defaultConsentStatus, getDisplayCheckboxesList(), orderNumber, parentKeyDTO,
-				comment, externProperties);
+	public void updateInUse(String comment, String externProperties)
+	{
+		this.comment = comment;
+		this.externProperties = externProperties;
+	}
+
+	public void update(AssignedModuleDTO assignedModuleDTO, Module parent)
+	{
+		this.mandatory = assignedModuleDTO.getMandatory();
+		this.displayCheckboxes = listToLong(assignedModuleDTO.getDisplayCheckboxes());
+		this.defaultConsentStatus = assignedModuleDTO.getDefaultConsentStatus();
+		this.orderNumber = assignedModuleDTO.getOrderNumber();
+		this.parent = parent;
+		this.comment = assignedModuleDTO.getComment();
+		this.externProperties = assignedModuleDTO.getExternProperties();
+		this.expirationPropertiesObject = new ExpirationPropertiesObject(assignedModuleDTO.getExpirationProperties());
+		this.expirationProperties = expirationPropertiesObject.toPropertiesString();
 	}
 
 	@Override
-	public int hashCode() {
+	public AssignedModuleDTO toDTO() throws InvalidVersionException, UnknownDomainException
+	{
+		ModuleKeyDTO parentKeyDTO = null;
+		if (parent != null)
+		{
+			parentKeyDTO = parent.getKey().toDTO(VersionConverterCache.getModuleVersionConverter(module.getDomain().getName()));
+		}
+		return new AssignedModuleDTO(module.toDTO(), mandatory, defaultConsentStatus, getDisplayCheckboxesList(), orderNumber, parentKeyDTO, comment,
+				externProperties, expirationPropertiesObject.toDTO(), fhirID);
+	}
+
+	@Override
+	public int hashCode()
+	{
 		final int prime = 31;
 		int result = 1;
-		result = prime * result + ((key == null) ? 0 : key.hashCode());
+		result = prime * result + (key == null ? 0 : key.hashCode());
 		return result;
 	}
 
 	@Override
-	public boolean equals(Object obj) {
+	public boolean equals(Object obj)
+	{
 		if (this == obj)
+		{
 			return true;
+		}
 		if (obj == null)
+		{
 			return false;
+		}
 		if (getClass() != obj.getClass())
+		{
 			return false;
+		}
 		ModuleConsentTemplate other = (ModuleConsentTemplate) obj;
-		if (key == null) {
+		if (key == null)
+		{
 			if (other.key != null)
+			{
 				return false;
-		} else if (!key.equals(other.key))
+			}
+		}
+		else if (!key.equals(other.key))
+		{
 			return false;
+		}
 		return true;
 	}
 
 	@Override
-	public int compareTo(ModuleConsentTemplate o) {
+	public int compareTo(ModuleConsentTemplate o)
+	{
 		if (orderNumber < o.getOrderNumber())
+		{
 			return -1;
+		}
 		else if (orderNumber.equals(o.getOrderNumber()))
+		{
 			return 0;
+		}
 		else
+		{
 			return 1;
+		}
 	}
 
 	@Override
-	public String toString() {
-		StringBuffer sb = new StringBuffer();
+	public String toString()
+	{
+		StringBuilder sb = new StringBuilder();
 		sb.append(key);
 		sb.append(", default value: '");
-		sb.append((defaultConsentStatus == null) ? "null" : defaultConsentStatus.toString());
+		sb.append(defaultConsentStatus == null ? "null" : defaultConsentStatus.toString());
 		sb.append("' is mandatory: ");
 		sb.append(mandatory);
 		sb.append(", has order number ");
@@ -253,7 +372,8 @@ public class ModuleConsentTemplate implements Serializable, Comparable<ModuleCon
 		sb.append(parent);
 		sb.append("', should show checkboxes for ");
 		List<ConsentStatus> checkBoxList = getDisplayCheckboxesList();
-		for (ConsentStatus consentStatus : checkBoxList) {
+		for (ConsentStatus consentStatus : checkBoxList)
+		{
 			sb.append(" ");
 			sb.append(consentStatus.toString());
 		}
@@ -261,7 +381,11 @@ public class ModuleConsentTemplate implements Serializable, Comparable<ModuleCon
 		sb.append(comment);
 		sb.append("' and externProperties '");
 		sb.append(externProperties);
+		sb.append("' and expirationProperties '");
+		sb.append(expirationProperties);
 		sb.append("'");
+		sb.append(". FHIR-ID: ");
+		sb.append(fhirID);
 		return sb.toString();
 	}
 }

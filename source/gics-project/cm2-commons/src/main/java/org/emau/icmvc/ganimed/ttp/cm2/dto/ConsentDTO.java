@@ -1,21 +1,32 @@
 package org.emau.icmvc.ganimed.ttp.cm2.dto;
 
-/*
+/*-
  * ###license-information-start###
  * gICS - a Generic Informed Consent Service
  * __
- * Copyright (C) 2014 - 2018 The MOSAIC Project - Institut fuer Community
- * 							Medicine of the University Medicine Greifswald -
- * 							mosaic-projekt@uni-greifswald.de
+ * Copyright (C) 2014 - 2022 Trusted Third Party of the University Medicine Greifswald -
+ * 							kontakt-ths@uni-greifswald.de
  * 
  * 							concept and implementation
- * 							l.geidel
+ * 							l.geidel, c.hampf
  * 							web client
- * 							a.blumentritt, m.bialke
+ * 							a.blumentritt, m.bialke, f.m.moser
+ * 							fhir-api
+ * 							m.bialke
+ * 							docker
+ * 							r. schuldt
  * 
- * 							Selected functionalities of gICS were developed as part of the MAGIC Project (funded by the DFG HO 1937/5-1).
+ * 							The gICS was developed by the University Medicine Greifswald and published
+ *  							in 2014 as part of the research project "MOSAIC" (funded by the DFG HO 1937/2-1).
+ *  
+ * 							Selected functionalities of gICS were developed as
+ * 							part of the following research projects:
+ * 							- MAGIC (funded by the DFG HO 1937/5-1)
+ * 							- MIRACUM (funded by the German Federal Ministry of Education and Research 01ZZ1801M)
+ * 							- NUM-CODEX (funded by the German Federal Ministry of Education and Research 01KX2021)
  * 
  * 							please cite our publications
+ * 							https://doi.org/10.1186/s12967-020-02457-y
  * 							http://dx.doi.org/10.3414/ME14-01-0133
  * 							http://dx.doi.org/10.1186/s12967-015-0545-6
  * 							http://dx.doi.org/10.3205/17gmds146
@@ -36,135 +47,115 @@ package org.emau.icmvc.ganimed.ttp.cm2.dto;
  */
 
 import java.io.Serializable;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.ArrayList;
+import java.util.List;
+
+import org.emau.icmvc.ganimed.ttp.cm2.exceptions.NoValueException;
 
 /**
  * ein consent ist ein ausgefuelltes und unterschriebenes konsentdokument (consent template)
- * 
+ *
  * @author geidell
- * 
+ *
  */
-public class ConsentDTO extends ConsentLightDTO implements Serializable {
-
-	private static final long serialVersionUID = -4094005853140726190L;
+public class ConsentDTO extends ConsentLightDTO implements Serializable
+{
+	private static final long serialVersionUID = -2290621555368831972L;
 	private String patientSignatureBase64;
-	private String physicanSignatureBase64;
-	private String scanBase64;
-	private Map<String, String> freeTextVals = new HashMap<String, String>();
+	private String physicianSignatureBase64;
+	private List<ConsentScanDTO> scans = new ArrayList<>();
+	private final List<FreeTextValDTO> freeTextVals = new ArrayList<>();
 
-	public ConsentDTO() {
+	public ConsentDTO()
+	{
 		super();
 	}
 
-	public ConsentDTO(ConsentKeyDTO key) {
+	public ConsentDTO(ConsentKeyDTO key)
+	{
 		super(key);
 	}
 
-	public ConsentDTO(ConsentLightDTO lightDTO) {
+	public ConsentDTO(ConsentLightDTO lightDTO)
+	{
 		super(lightDTO);
 	}
 
-	public ConsentDTO(ConsentDTO dto, Date date) {
-		super(new ConsentKeyDTO(dto.getKey().getConsentTemplateKey(), dto.getKey().getSignerIds(), date));
-		super.setComment(dto.getComment());
-		super.setExternProperties(dto.getExternProperties());
-		Map<ModuleKeyDTO, ModuleStateDTO> moduleStates = new HashMap<ModuleKeyDTO, ModuleStateDTO>(dto.getModuleStates());
-		super.setModuleStates(moduleStates);
-		super.setPatientSignatureIsFromGuardian(dto.getPatientSignatureIsFromGuardian());
-		super.setPatientSigningDate(dto.getPatientSigningDate());
-		super.setPhysicanId(dto.getPhysicanId());
-		super.setPhysicanSigningDate(dto.getPhysicanSigningDate());
-		super.setScanFileType(dto.getScanFileType());
+	public ConsentDTO(ConsentDTO dto)
+	{
+		super(dto);
 		setPatientSignatureBase64(dto.getPatientSignatureBase64());
-		setPhysicanSignatureBase64(dto.getPhysicanSignatureBase64());
-		setScanBase64(dto.getScanBase64());
-		Map<String, String> freeTextVals = new HashMap<String, String>(dto.getFreeTextVals());
-		setFreeTextVals(freeTextVals);
+		setPhysicianSignatureBase64(dto.getPhysicianSignatureBase64());
+		setScans(dto.getScans());
+		setFreeTextVals(dto.getFreeTextVals());
 	}
 
-	public String getPatientSignatureBase64() {
+	public String getPatientSignatureBase64()
+	{
 		return patientSignatureBase64;
 	}
 
-	public void setPatientSignatureBase64(String patientSignatureBase64) {
+	public void setPatientSignatureBase64(String patientSignatureBase64)
+	{
 		this.patientSignatureBase64 = patientSignatureBase64;
 	}
 
-	public String getPhysicanSignatureBase64() {
-		return physicanSignatureBase64;
+	public String getPhysicianSignatureBase64()
+	{
+		return physicianSignatureBase64;
 	}
 
-	public void setPhysicanSignatureBase64(String physicanSignatureBase64) {
-		this.physicanSignatureBase64 = physicanSignatureBase64;
+	public void setPhysicianSignatureBase64(String physicianSignatureBase64)
+	{
+		this.physicianSignatureBase64 = physicianSignatureBase64;
 	}
 
-	public String getScanBase64() {
-		return scanBase64;
+	public List<ConsentScanDTO> getScans()
+	{
+		return scans;
 	}
 
-	public void setScanBase64(String scanBase64) {
-		this.scanBase64 = scanBase64;
+	public void setScans(List<ConsentScanDTO> scans)
+	{
+		this.scans = scans;
 	}
 
-	public Map<String, String> getFreeTextVals() {
+	public void addScan(ConsentScanDTO consentScanDTO)
+	{
+		scans.add(consentScanDTO);
+	}
+
+	public List<FreeTextValDTO> getFreeTextVals()
+	{
 		return freeTextVals;
 	}
 
-	public void setFreeTextVals(Map<String, String> freeTextVals) {
-		if (freeTextVals != null) {
-			this.freeTextVals = freeTextVals;
+	public void setFreeTextVals(List<FreeTextValDTO> freeTextVals)
+	{
+		if (freeTextVals != null)
+		{
+			this.freeTextVals.clear();
+			this.freeTextVals.addAll(freeTextVals);
 		}
 	}
 
-	@Override
-	public int hashCode() {
-		final int prime = 31;
-		int result = super.hashCode();
-		result = prime * result + ((freeTextVals == null) ? 0 : freeTextVals.hashCode());
-		result = prime * result + ((patientSignatureBase64 == null) ? 0 : patientSignatureBase64.hashCode());
-		result = prime * result + ((physicanSignatureBase64 == null) ? 0 : physicanSignatureBase64.hashCode());
-		result = prime * result + ((scanBase64 == null) ? 0 : scanBase64.hashCode());
-		return result;
+	public FreeTextValDTO getFreeTextValForDef(String freeTextDefName) throws NoValueException
+	{
+		for (FreeTextValDTO freeTextValDTO : freeTextVals)
+		{
+			if (freeTextValDTO.getFreeTextDefName().equals(freeTextDefName))
+			{
+				return freeTextValDTO;
+			}
+		}
+		throw new NoValueException("no freeTextValue found for FreeTextDef " + freeTextDefName);
 	}
 
 	@Override
-	public boolean equals(Object obj) {
-		if (this == obj)
-			return true;
-		if (!super.equals(obj))
-			return false;
-		if (getClass() != obj.getClass())
-			return false;
-		ConsentDTO other = (ConsentDTO) obj;
-		if (freeTextVals == null) {
-			if (other.freeTextVals != null)
-				return false;
-		} else if (!freeTextVals.equals(other.freeTextVals))
-			return false;
-		if (patientSignatureBase64 == null) {
-			if (other.patientSignatureBase64 != null)
-				return false;
-		} else if (!patientSignatureBase64.equals(other.patientSignatureBase64))
-			return false;
-		if (physicanSignatureBase64 == null) {
-			if (other.physicanSignatureBase64 != null)
-				return false;
-		} else if (!physicanSignatureBase64.equals(other.physicanSignatureBase64))
-			return false;
-		if (scanBase64 == null) {
-			if (other.scanBase64 != null)
-				return false;
-		} else if (!scanBase64.equals(other.scanBase64))
-			return false;
-		return true;
-	}
-
-	@Override
-	public String toString() {
+	public String toString()
+	{
 		final StringBuilder sb = new StringBuilder(super.toString());
-		sb.append(" and ");
+		sb.append(", ");
 		sb.append(freeTextVals.size());
 		sb.append(" free text values");
 		return sb.toString();

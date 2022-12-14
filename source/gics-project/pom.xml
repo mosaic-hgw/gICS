@@ -1,42 +1,68 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+		 xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>org.emau.icmvc.ganimed.ttp</groupId>
 	<artifactId>gics-project</artifactId>
-	<version>2.8.5</version>
-	<name>Consentmanagement Service</name>
+	<version>2.14.1</version>
+	<name>gICS</name>
+	<url>https://www.ths-greifswald.de/gics</url>
 	<packaging>pom</packaging>
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-		<ttp-web-common.version>2.4.0</ttp-web-common.version>
+		<ttp-web-common.version>2.14.1</ttp-web-common.version>
+		<display_version>${project.version}</display_version>
+		<project.shortName>gics</project.shortName>
+		<project.upperName>GICS</project.upperName>
+		<log4j.version>2.17.2</log4j.version>
 	</properties>
 	<modules>
 		<module>cm2-commons</module>
 		<module>cm2-ejb</module>
 		<module>cm2-ear</module>
 		<module>cm2-web</module>
+		<module>cm2-docker</module>
 	</modules>
-	
+
 	<profiles>
 		<profile>
 			<id>secured</id>
 			<properties>
 				<login.enable.start>--&gt;</login.enable.start>
 				<login.enable.end>&lt;!--</login.enable.end>
+				<gras-login.enable.start>--&gt;</gras-login.enable.start>
+				<gras-login.enable.end>&lt;!--</gras-login.enable.end>
+			</properties>
+		</profile>
+		<profile>
+			<id>dev</id>
+			<properties>
+				<display_version>${project.version} - Build ${maven.build.timestamp}
+					UTC
+				</display_version>
+				<maven.build.timestamp.format>yyyy-MM-dd HH:mm</maven.build.timestamp.format>
+			</properties>
+		</profile>
+		<profile>
+			<id>demo</id>
+			<properties>
+				<disclaimer.enable.start>--&gt;</disclaimer.enable.start>
+				<disclaimer.enable.end>&lt;!--</disclaimer.enable.end>
+				<display_version>${project.version} - Demo</display_version>
 			</properties>
 		</profile>
 	</profiles>
 
 	<repositories>
 		<repository>
+			<id>ttp-releases</id>
+			<name>Trusted Third Party Maven Repository</name>
+			<url>https://nexus.icm.med.uni-greifswald.de/repository/maven-releases-extern</url>
+		</repository>
+		<!-- Required for barcode4j-light 2.1-->
+		<repository>
 			<id>prime-repo</id>
 			<name>PrimeFaces Maven Repository</name>
 			<url>http://repository.primefaces.org</url>
-		</repository>
-		<repository>
-			<id>project.local</id>
-			<name>project</name>
-			<url>file:${project.build.directory}/../../repo</url>
 		</repository>
 	</repositories>
 
@@ -53,18 +79,25 @@
 				<version>${project.version}</version>
 				<type>ejb</type>
 			</dependency>
+			<!-- fuer notificationservice -->
+			<dependency>
+				<groupId>org.emau.icmvc.ttp</groupId>
+				<artifactId>ths-utils</artifactId>
+				<version>1.2.0</version>
+				<type>jar</type>
+			</dependency>
 
 			<dependency>
-				<groupId>log4j</groupId>
-				<artifactId>log4j</artifactId>
-				<version>1.2.17</version>
+				<groupId>org.apache.logging.log4j</groupId>
+				<artifactId>log4j-api</artifactId>
+				<version>${log4j.version}</version>
 				<scope>provided</scope>
 			</dependency>
 			<dependency>
-				<groupId>junit</groupId>
-				<artifactId>junit</artifactId>
-				<version>4.12</version>
-				<scope>test</scope>
+				<groupId>org.slf4j</groupId>
+				<artifactId>slf4j-api</artifactId>
+				<version>1.7.36</version>
+				<scope>provided</scope>
 			</dependency>
 			<dependency>
 				<groupId>javax</groupId>
@@ -75,18 +108,24 @@
 			<dependency>
 				<groupId>commons-codec</groupId>
 				<artifactId>commons-codec</artifactId>
-				<version>1.11</version>
+				<version>1.15</version>
 			</dependency>
 			<dependency>
 				<groupId>ca.uhn.hapi.fhir</groupId>
-				<artifactId>hapi-fhir-structures-dstu3</artifactId>
-				<version>2.5</version>
+				<artifactId>hapi-fhir-structures-r4</artifactId>
+				<version>5.7.0</version>
 			</dependency>
 
 			<dependency>
 				<groupId>org.eclipse.persistence</groupId>
 				<artifactId>eclipselink</artifactId>
-				<version>2.7.0</version>
+				<version>2.7.10</version>
+				<scope>provided</scope>
+			</dependency>
+			<dependency>
+				<groupId>org.eclipse.persistence</groupId>
+				<artifactId>org.eclipse.persistence.jpa.modelgen.processor</artifactId>
+				<version>2.7.10</version>
 				<scope>provided</scope>
 			</dependency>
 			<dependency>
@@ -95,18 +134,13 @@
 				<version>1.21</version>
 				<scope>provided</scope>
 			</dependency>
+
+			<!-- Tests -->
 			<dependency>
-				<groupId>org.eclipse.persistence</groupId>
-				<artifactId>org.eclipse.persistence.jpa.modelgen.processor</artifactId>
-				<version>2.7.0</version>
-				<scope>provided</scope>
-			</dependency>
-			<!-- logging fuer eclipselink -->
-			<dependency>
-				<groupId>org.jboss.logging</groupId>
-				<artifactId>jboss-logging</artifactId>
-				<version>3.3.0.Final</version>
-				<scope>provided</scope>
+				<groupId>org.junit.jupiter</groupId>
+				<artifactId>junit-jupiter</artifactId>
+				<version>5.8.2</version>
+				<scope>test</scope>
 			</dependency>
 
 			<!-- web -->
@@ -125,42 +159,85 @@
 			<dependency>
 				<groupId>org.primefaces</groupId>
 				<artifactId>primefaces</artifactId>
-				<version>6.2</version>
-				<scope>provided</scope>
-			</dependency>
-			<dependency>
-				<groupId>org.slf4j</groupId>
-				<artifactId>slf4j-api</artifactId>
-				<version>1.7.7</version>
+				<version>11.0.0</version>
 				<scope>provided</scope>
 			</dependency>
 			<dependency>
 				<groupId>commons-fileupload</groupId>
 				<artifactId>commons-fileupload</artifactId>
 				<scope>compile</scope>
-				<version>1.3.3</version>
+				<version>1.4</version>
+			</dependency>
+
+			<!-- fuer Template Erkennung aus Scan -->
+			<dependency>
+				<groupId>com.google.zxing</groupId>
+				<artifactId>core</artifactId>
+				<version>3.4.1</version>
 			</dependency>
 			<dependency>
-				<groupId>org.jsoup</groupId>
-				<artifactId>jsoup</artifactId>
-				<scope>compile</scope>
-				<version>1.10.3</version>
+				<groupId>com.google.zxing</groupId>
+				<artifactId>javase</artifactId>
+				<version>3.4.1</version>
+			</dependency>
+			<dependency>
+				<groupId>org.apache.pdfbox</groupId>
+				<artifactId>pdfbox</artifactId>
+				<version>2.0.25</version>
 			</dependency>
 
 			<!-- fuer barcodes in primefaces -->
 			<dependency>
-				<groupId>net.glxn</groupId>
-				<artifactId>qrgen</artifactId>
-				<version>1.4</version>
+				<groupId>io.nayuki</groupId>
+				<artifactId>qrcodegen</artifactId>
+				<version>1.7.0</version>
 			</dependency>
 			<dependency>
 				<groupId>net.sf.barcode4j</groupId>
 				<artifactId>barcode4j-light</artifactId>
 				<version>2.1</version>
 			</dependency>
-		</dependencies>
 
+			<!-- Java 9+ Kompatibilität -->
+			<dependency>
+				<groupId>javax.xml.bind</groupId>
+				<artifactId>jaxb-api</artifactId>
+				<version>2.3.1</version>
+			</dependency>
+			<dependency>
+				<groupId>com.sun.xml.ws</groupId>
+				<artifactId>jaxws-rt</artifactId>
+				<version>2.3.5</version>
+				<type>pom</type>
+			</dependency>
+
+			<!-- test -->
+			<dependency>
+				<groupId>org.apache.cxf</groupId>
+				<artifactId>cxf-rt-frontend-jaxws</artifactId>
+				<scope>test</scope>
+				<version>3.5.1</version>
+			</dependency>
+			<dependency>
+				<groupId>org.apache.cxf</groupId>
+				<artifactId>cxf-rt-transports-http-jetty</artifactId>
+				<scope>test</scope>
+				<version>3.5.1</version>
+			</dependency>
+			<dependency>
+				<groupId>org.apache.logging.log4j</groupId>
+				<artifactId>log4j-core</artifactId>
+				<version>${log4j.version}</version>
+				<scope>test</scope>
+			</dependency>
+		</dependencies>
 	</dependencyManagement>
+	<dependencies>
+		<dependency>
+			<groupId>org.junit.jupiter</groupId>
+			<artifactId>junit-jupiter</artifactId>
+		</dependency>
+	</dependencies>
 
 	<build>
 		<pluginManagement>
@@ -168,12 +245,12 @@
 				<plugin>
 					<groupId>org.apache.maven.plugins</groupId>
 					<artifactId>maven-jar-plugin</artifactId>
-					<version>3.0.2</version>
+					<version>3.2.2</version>
 				</plugin>
 				<plugin>
 					<groupId>org.apache.maven.plugins</groupId>
 					<artifactId>maven-ejb-plugin</artifactId>
-					<version>3.0.0</version>
+					<version>3.1.0</version>
 					<configuration>
 						<ejbVersion>3.2</ejbVersion>
 					</configuration>
@@ -181,7 +258,7 @@
 				<plugin>
 					<groupId>org.apache.maven.plugins</groupId>
 					<artifactId>maven-ear-plugin</artifactId>
-					<version>2.10.1</version>
+					<version>3.2.0</version>
 					<configuration>
 						<version>6</version>
 						<filtering>true</filtering>
@@ -189,17 +266,17 @@
 							<version>5</version>
 						</jboss>
 						<defaultLibBundleDir>lib</defaultLibBundleDir>
-						<applicationName>gics</applicationName>
-						<finalName>gics-${project.version}</finalName>
+						<applicationName>${project.shortName}</applicationName>
+						<finalName>${project.shortName}-${project.version}</finalName>
 					</configuration>
 				</plugin>
 				<plugin>
 					<groupId>org.apache.maven.plugins</groupId>
 					<artifactId>maven-compiler-plugin</artifactId>
-					<version>3.7.0</version>
+					<version>3.10.1</version>
 					<configuration>
-						<source>1.8</source>
-						<target>1.8</target>
+						<source>11</source>
+						<target>11</target>
 						<debug>true</debug>
 						<debuglevel>source,lines,vars</debuglevel>
 						<generatedSourcesDirectory>target/generated-sources/annotations</generatedSourcesDirectory>
@@ -208,11 +285,11 @@
 				<plugin>
 					<groupId>org.apache.maven.plugins</groupId>
 					<artifactId>maven-war-plugin</artifactId>
-					<version>3.2.0</version>
+					<version>3.3.2</version>
 					<configuration>
 						<archive>
 							<manifestEntries>
-								<Dependencies>org.slf4j,deployment.gics-${project.version}.ear</Dependencies>
+								<Dependencies>org.slf4j,deployment.${project.shortName}-${project.version}.ear</Dependencies>
 							</manifestEntries>
 						</archive>
 						<nonFilteredFileExtensions>
@@ -231,9 +308,27 @@
 					</configuration>
 				</plugin>
 				<plugin>
+					<groupId>org.apache.maven.plugins</groupId>
+					<artifactId>maven-deploy-plugin</artifactId>
+					<version>2.8.2</version>
+				</plugin>
+				<plugin>
+					<groupId>org.apache.maven.plugins</groupId>
+					<artifactId>maven-surefire-plugin</artifactId>
+					<version>2.22.2</version>
+					<configuration>
+						<excludes>
+							<exclude>**/CM2ManagerTests.java</exclude>
+							<exclude>**/ConsentScanTests.java</exclude>
+							<exclude>**/ExternPropertiesTest.java</exclude>
+						</excludes>
+					</configuration>
+				</plugin>
+				<plugin>
+					<!--To update license details, set canUpdateCopyright to true and run with maven goal 'license:update-file-header' -->
 					<groupId>org.codehaus.mojo</groupId>
 					<artifactId>license-maven-plugin</artifactId>
-					<version>1.14</version>
+					<version>1.20</version>
 					<configuration>
 						<verbose>false</verbose>
 						<processStartTag>###license-information-start###</processStartTag>
@@ -241,18 +336,29 @@
 						<sectionDelimiter>__</sectionDelimiter>
 						<projectName>gICS - a Generic Informed Consent Service</projectName>
 						<inceptionYear>2014</inceptionYear>
-						<organizationName>The MOSAIC Project - Institut fuer Community
-							Medicine of the University Medicine Greifswald -
-							mosaic-projekt@uni-greifswald.de
+						<organizationName>Trusted Third Party of the University Medicine Greifswald -
+							kontakt-ths@uni-greifswald.de
 
 							concept and implementation
-							l.geidel
+							l.geidel, c.hampf
 							web client
-							a.blumentritt, m.bialke
+							a.blumentritt, m.bialke, f.m.moser
+							fhir-api
+							m.bialke
+							docker
+							r. schuldt
 
-							Selected functionalities of gICS were developed as part of the MAGIC Project (funded by the DFG HO 1937/5-1).
+							The gICS was developed by the University Medicine Greifswald and published
+							in 2014 as part of the research project "MOSAIC" (funded by the DFG HO 1937/2-1).
+
+							Selected functionalities of gICS were developed as
+							part of the following research projects:
+							- MAGIC (funded by the DFG HO 1937/5-1)
+							- MIRACUM (funded by the German Federal Ministry of Education and Research 01ZZ1801M)
+							- NUM-CODEX (funded by the German Federal Ministry of Education and Research 01KX2021)
 
 							please cite our publications
+							https://doi.org/10.1186/s12967-020-02457-y
 							http://dx.doi.org/10.3414/ME14-01-0133
 							http://dx.doi.org/10.1186/s12967-015-0545-6
 							http://dx.doi.org/10.3205/17gmds146
@@ -260,7 +366,7 @@
 						<licenseName>agpl_v3</licenseName>
 						<excludes>
 							<exclude>**/beans.xml</exclude>
-							<exclude>**/JBossLogger.java</exclude>
+							<exclude>**/*.json</exclude>
 						</excludes>
 					</configuration>
 				</plugin>

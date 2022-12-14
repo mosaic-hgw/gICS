@@ -1,24 +1,32 @@
 package org.emau.icmvc.ganimed.ttp.cm2.frontend.converter;
 
-import java.util.ArrayList;
-import java.util.List;
-
-/*
+/*-
  * ###license-information-start###
  * gICS - a Generic Informed Consent Service
  * __
- * Copyright (C) 2014 - 2018 The MOSAIC Project - Institut fuer Community
- * 							Medicine of the University Medicine Greifswald -
- * 							mosaic-projekt@uni-greifswald.de
+ * Copyright (C) 2014 - 2022 Trusted Third Party of the University Medicine Greifswald -
+ * 							kontakt-ths@uni-greifswald.de
  * 
  * 							concept and implementation
- * 							l.geidel
+ * 							l.geidel, c.hampf
  * 							web client
- * 							a.blumentritt, m.bialke
+ * 							a.blumentritt, m.bialke, f.m.moser
+ * 							fhir-api
+ * 							m.bialke
+ * 							docker
+ * 							r. schuldt
  * 
- * 							Selected functionalities of gICS were developed as part of the MAGIC Project (funded by the DFG HO 1937/5-1).
+ * 							The gICS was developed by the University Medicine Greifswald and published
+ *  							in 2014 as part of the research project "MOSAIC" (funded by the DFG HO 1937/2-1).
+ *  
+ * 							Selected functionalities of gICS were developed as
+ * 							part of the following research projects:
+ * 							- MAGIC (funded by the DFG HO 1937/5-1)
+ * 							- MIRACUM (funded by the German Federal Ministry of Education and Research 01ZZ1801M)
+ * 							- NUM-CODEX (funded by the German Federal Ministry of Education and Research 01KX2021)
  * 
  * 							please cite our publications
+ * 							https://doi.org/10.1186/s12967-020-02457-y
  * 							http://dx.doi.org/10.3414/ME14-01-0133
  * 							http://dx.doi.org/10.1186/s12967-015-0545-6
  * 							http://dx.doi.org/10.3205/17gmds146
@@ -38,132 +46,43 @@ import java.util.List;
  * ###license-information-end###
  */
 
-import javax.faces.bean.ManagedBean;
-import javax.faces.component.UIComponent;
-import javax.faces.context.FacesContext;
-import javax.faces.convert.Converter;
+
+import java.util.ArrayList;
+import java.util.List;
 
 import org.emau.icmvc.ganimed.ttp.cm2.dto.ConsentTemplateDTO;
-import org.emau.icmvc.ganimed.ttp.cm2.dto.ConsentTemplateKeyDTO;
 
-//@FacesConverter("templateKeyConverter")
-@ManagedBean(name = "templateKeyConverter")
-public class TemplateKeyConverter implements Converter {
+public class TemplateKeyConverter
+{
+	private TemplateKeyConverter()
+	{}
 
-	@Override
-	public Object getAsObject(FacesContext arg0, UIComponent arg1, String arg2) {
-		String[] args = arg2.split(",");
-		if (!(args.length < 3)) {
-			return new ConsentTemplateKeyDTO(args[0], args[1], args[2]);
-		} else {
-			return null;
-		}
-
-	}
-
-	@Override
-	public String getAsString(FacesContext arg0, UIComponent arg1, Object value) {
-
-		if (value == null || value.equals("")) {
-			return null;
-		} else {
-			ConsentTemplateKeyDTO key = (ConsentTemplateKeyDTO) value;
-
-			return key.getDomainName() + "," + key.getName() + "," + key.getVersion();
-		}
-
-	}
-	
-	/**
-	 * convert keydto to keystring
-	 * 
-	 * @param key
-	 *            TemplateKeyDTO to be converted to keystring domain<sep>name<sep>version
-	 * @param sep
-	 *            specify key separator, default=','
-	 * @return keystring
-	 */
-	public static String getAsString(ConsentTemplateKeyDTO key, char sep)
-	{
-
-		String result = "";
-		if (key != null)
-		{
-			if (sep != '\0')
-			{
-				result = key.getDomainName() + sep + key.getName() + sep + key.getVersion();
-			}
-			else
-			{
-				result = key.getDomainName() + "," + key.getName() + "," + key.getVersion();
-			}
-		}
-
-		return result;
-	}
-	
 	/**
 	 * convert keydto to list of keystrings
-	 * 
+	 *
 	 * @param keys
-	 *            list of ConsentTemplateDTO to be converted to keystrings domain<sep>name<sep>version
+	 *            list of ConsentTemplateDTO to be converted to keystrings
+	 *            domain<sep>name<sep>version
 	 * @param sep
 	 *            specify key separator, default=','
 	 * @return list with keystrings
 	 */
-	public static List<String> getAsStrings(List<ConsentTemplateDTO> keys, char sep)
+	public static List<String> getKeysAsStrings(List<ConsentTemplateDTO> keys, char sep)
 	{
+		List<String> result = new ArrayList<>();
 
-		List<String> result = new ArrayList<String>();
-		
-		if (keys != null && keys.size()>0)
+		if (keys != null && !keys.isEmpty())
 		{
-			if (sep == '\0') {sep=',';}
+			if (sep == '\0')
+			{
+				sep = ',';
+			}
 			for (ConsentTemplateDTO t : keys)
 			{
-				result.add(t.getKey().getDomainName()+sep+t.getKey().getName()+sep+t.getKey().getVersion());
+				result.add(t.getKey().getDomainName() + sep + t.getKey().getName() + sep + t.getKey().getVersion());
 			}
 		}
 
 		return result;
 	}
-
-	/**
-	 * split given keystring and use arguments to return respective ConsentTemplateDTO
-	 * 
-	 * @param keystring
-	 * @param sep
-	 *            seperator used to split string, default=','
-	 * @return ConsentTemplateDTO or is null (if keystring is invalid)
-	 */
-	public static ConsentTemplateDTO getAsObject(String keystring, char sep)
-	{
-		if (keystring != null && !keystring.isEmpty())
-		{
-			String[] args;
-
-			if (sep != '\0')
-			{
-				args = keystring.split(",");
-
-			}
-			else
-			{
-				args = keystring.split(String.valueOf(sep));
-			}
-
-			if (!(args.length < 3))
-			{
-				ConsentTemplateDTO templ = new ConsentTemplateDTO(new ConsentTemplateKeyDTO(args[0], args[1], args[2]));
-				return templ;
-			}
-			else
-			{
-				return null;
-			}
-		}
-
-		return null;
-	}
-
 }

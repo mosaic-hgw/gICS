@@ -1,21 +1,32 @@
 package org.emau.icmvc.ganimed.ttp.cm2.model;
 
-/*
+/*-
  * ###license-information-start###
  * gICS - a Generic Informed Consent Service
  * __
- * Copyright (C) 2014 - 2018 The MOSAIC Project - Institut fuer Community
- * 							Medicine of the University Medicine Greifswald -
- * 							mosaic-projekt@uni-greifswald.de
+ * Copyright (C) 2014 - 2022 Trusted Third Party of the University Medicine Greifswald -
+ * 							kontakt-ths@uni-greifswald.de
  * 
  * 							concept and implementation
- * 							l.geidel
+ * 							l.geidel, c.hampf
  * 							web client
- * 							a.blumentritt, m.bialke
+ * 							a.blumentritt, m.bialke, f.m.moser
+ * 							fhir-api
+ * 							m.bialke
+ * 							docker
+ * 							r. schuldt
  * 
- * 							Selected functionalities of gICS were developed as part of the MAGIC Project (funded by the DFG HO 1937/5-1).
+ * 							The gICS was developed by the University Medicine Greifswald and published
+ *  							in 2014 as part of the research project "MOSAIC" (funded by the DFG HO 1937/2-1).
+ *  
+ * 							Selected functionalities of gICS were developed as
+ * 							part of the following research projects:
+ * 							- MAGIC (funded by the DFG HO 1937/5-1)
+ * 							- MIRACUM (funded by the German Federal Ministry of Education and Research 01ZZ1801M)
+ * 							- NUM-CODEX (funded by the German Federal Ministry of Education and Research 01KX2021)
  * 
  * 							please cite our publications
+ * 							https://doi.org/10.1186/s12967-020-02457-y
  * 							http://dx.doi.org/10.3414/ME14-01-0133
  * 							http://dx.doi.org/10.1186/s12967-015-0545-6
  * 							http://dx.doi.org/10.3205/17gmds146
@@ -41,6 +52,7 @@ import java.io.Serializable;
 import javax.persistence.Column;
 import javax.persistence.Embeddable;
 
+import org.emau.icmvc.ganimed.ttp.cm2.model.enums.SignatureType;
 
 /**
  * zusammengesetzter primaerschluessel fuer eine unterschrift
@@ -49,31 +61,35 @@ import javax.persistence.Embeddable;
  *
  */
 @Embeddable
-public class SignatureKey implements Serializable {
-
+public class SignatureKey implements Serializable
+{
 	private static final long serialVersionUID = -522166246474230411L;
 	@Column(insertable = false, updatable = false)
 	private ConsentKey consentKey;
 	private SignatureType type;
 
-	public SignatureKey() {
-	}
+	public SignatureKey()
+	{}
 
-	public SignatureKey(ConsentKey consentKey, SignatureType type) {
+	public SignatureKey(ConsentKey consentKey, SignatureType type)
+	{
 		this.consentKey = consentKey;
 		this.type = type;
 	}
 
-	public ConsentKey getConsentKey() {
+	public ConsentKey getConsentKey()
+	{
 		return consentKey;
 	}
 
-	public SignatureType getType() {
+	public SignatureType getType()
+	{
 		return type;
 	}
 
 	@Override
-	public int hashCode() {
+	public int hashCode()
+	{
 		final int prime = 31;
 		int result = 1;
 		result = prime * result + ((consentKey == null) ? 0 : consentKey.hashCode());
@@ -82,7 +98,8 @@ public class SignatureKey implements Serializable {
 	}
 
 	@Override
-	public boolean equals(Object obj) {
+	public boolean equals(Object obj)
+	{
 		if (this == obj)
 			return true;
 		if (obj == null)
@@ -90,10 +107,12 @@ public class SignatureKey implements Serializable {
 		if (getClass() != obj.getClass())
 			return false;
 		SignatureKey other = (SignatureKey) obj;
-		if (consentKey == null) {
+		if (consentKey == null)
+		{
 			if (other.consentKey != null)
 				return false;
-		} else if (!consentKey.equals(other.consentKey))
+		}
+		else if (!consentKey.equals(other.consentKey))
 			return false;
 		if (type != other.type)
 			return false;
@@ -101,7 +120,8 @@ public class SignatureKey implements Serializable {
 	}
 
 	@Override
-	public String toString() {
+	public String toString()
+	{
 		StringBuilder sb = new StringBuilder();
 		sb.append("signature type '");
 		sb.append(type.toString());

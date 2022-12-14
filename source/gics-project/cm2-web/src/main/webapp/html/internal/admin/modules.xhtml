@@ -2,18 +2,29 @@
   ###license-information-start###
   gICS - a Generic Informed Consent Service
   __
-  Copyright (C) 2014 - 2018 The MOSAIC Project - Institut fuer Community
-  							Medicine of the University Medicine Greifswald -
-  							mosaic-projekt@uni-greifswald.de
+  Copyright (C) 2014 - 2022 Trusted Third Party of the University Medicine Greifswald -
+  							kontakt-ths@uni-greifswald.de
   
   							concept and implementation
-  							l.geidel
+  							l.geidel, c.hampf
   							web client
-  							a.blumentritt, m.bialke
+  							a.blumentritt, m.bialke, f.m.moser
+  							fhir-api
+  							m.bialke
+  							docker
+  							r. schuldt
   
-  							Selected functionalities of gICS were developed as part of the MAGIC Project (funded by the DFG HO 1937/5-1).
+  							The gICS was developed by the University Medicine Greifswald and published
+   							in 2014 as part of the research project "MOSAIC" (funded by the DFG HO 1937/2-1).
+   
+  							Selected functionalities of gICS were developed as
+  							part of the following research projects:
+  							- MAGIC (funded by the DFG HO 1937/5-1)
+  							- MIRACUM (funded by the German Federal Ministry of Education and Research 01ZZ1801M)
+  							- NUM-CODEX (funded by the German Federal Ministry of Education and Research 01KX2021)
   
   							please cite our publications
+  							https://doi.org/10.1186/s12967-020-02457-y
   							http://dx.doi.org/10.3414/ME14-01-0133
   							http://dx.doi.org/10.1186/s12967-015-0545-6
   							http://dx.doi.org/10.3205/17gmds146
@@ -33,124 +44,49 @@
   ###license-information-end###
   -->
 
-<!-- author: Arne Blumentritt -->
-
 <html xmlns="http://www.w3.org/1999/xhtml" xmlns:h="http://java.sun.com/jsf/html"
-	xmlns:f="http://java.sun.com/jsf/core" xmlns:ui="http://java.sun.com/jsf/facelets"
-	xmlns:jstl="http://java.sun.com/jsp/jstl/functions" xmlns:p="http://primefaces.org/ui"
-	xmlns:components="http://java.sun.com/jsf/composite/components">
+	  xmlns:ui="http://java.sun.com/jsf/facelets" xmlns:p="http://primefaces.org/ui"
+	  xmlns:module="http://java.sun.com/jsf/composite/components/module">
 
 <body>
-	<ui:composition template="/resources/templates/gics.xhtml">
-		<ui:define name="header_title">
-			<h:outputText value="#{msg['module.titleHeader']}" />
-		</ui:define>
+<ui:composition template="/resources/templates/gics.xhtml">
+	<ui:define name="header_title">
+		<h:outputText value="#{msg['module.title.'.concat(moduleController.pageMode)]}" />
+	</ui:define>
 
-		<ui:define name="title">
-			<h:outputText value="#{msg['module.title']}" rendered="#{!moduleController.editMode}" />
-			<h:outputText value="#{msg['module.new.title']}"
-				rendered="#{moduleController.editMode and empty moduleController.editModule.key.name}" />
-			<h:outputText value="#{msg['module.edit.title']}"
-				rendered="#{moduleController.editMode and ! empty moduleController.editModule.key.name}" />
-		</ui:define>
+	<ui:define name="title">
+		<h:outputText value="#{msg['module.title.'.concat(moduleController.pageMode)]}" />
+	</ui:define>
 
-		<ui:define name="help">
-			<h:outputText value="#{msg['module.help']}" escape="false" />
-		</ui:define>
+	<ui:define name="help">
+		<h:outputText value="#{msg['module.help.'.concat(moduleController.pageMode)]}" escape="false" />
+	</ui:define>
 
-		<ui:define name="content">
+	<ui:define name="content">
 
-			<h:panelGroup layout="block" id="listModules">
-				<h:form onkeypress="if (event.keyCode == 13) { return false; }"
-					rendered="#{!moduleController.editMode}">
-					<p:panel>
-						<h4>
-							<h:outputText value="#{msg['module.label.new']}" />
-						</h4>
-						<p:commandButton actionListener="#{moduleController.onNewModule}"
-							update="listModules, newModule, title" value="#{msg['common.button.add']}" />
-					</p:panel>
+		<h:panelGroup id="newModuleButton">
+			<p:panel rendered="#{moduleController.pageMode == 'READ'}" style="margin-bottom: 15px;">
+				<h4>
+					<h:outputText value="#{msg['module.label.new']}" />
+				</h4>
 
-					<p:panel>
-						<h4>
-							<h:outputFormat value="#{msg['module.label.found']}">
-								<f:param value="#{moduleController.modules.size()}" />
-							</h:outputFormat>
-						</h4>
-
-						<p:dataTable id="modules" widgetVar="modules" value="#{moduleController.modules}"
-							var="_module" rowKey="#{_module.key}" paginator="true" paginatorPosition="bottom"
-							paginatorTemplate="{CurrentPageReport} {FirstPageLink} {PreviousPageLink} {PageLinks} {NextPageLink} {LastPageLink}"
-							currentPageReportTemplate="{startRecord}-{endRecord} #{cmsg['ui.table.of']} {totalRecords}"
-							rows="10" pageLinks="1" sortBy="#{_module.key.name}" selectionMode="single"
-							selection="#{moduleController.selectedModule}">
-
-							<f:facet name="header">
-								<p:inputText id="globalFilter" onkeyup="PF('modules').filter()"
-									placeholder="#{cmsg['ui.table.search']}" />
-							</f:facet>
-
-							<p:column headerText="#{msg['module.name']}" sortBy="#{_module.key.name}"
-								filterBy="#{_module.key.name}" filterable="false" width="33%">
-								<h:outputText value="#{_module.key.name}" />
-							</p:column>
-							<p:column headerText="#{msg['module.version']}" sortBy="#{_module.key.version}"
-								filterBy="#{_module.key.version}" filterable="false">
-								<h:outputText value="#{_module.key.version}" />
-							</p:column>
-							<p:column headerText="#{msg['module.moduleTitle']}" sortBy="#{_module.title}"
-								filterBy="#{_module.title}" filterable="false" width="33%" style="min-width: 150px;">
-								<h:outputText value="#{moduleController.cleanStringForTable(_module.title)}"
-									styleClass="ellipsis" />
-							</p:column>
-							<p:column headerText="#{msg['module.text']}" sortBy="#{_module.text}"
-								filterBy="#{_module.text}" filterable="false" width="33%" style="min-width: 150px;">
-								<h:outputText value="#{moduleController.cleanStringForTable(_module.text)}"
-									styleClass="ellipsis" />
-							</p:column>
-
-							<p:column headerText="#{msg['common.button.actions']}" styleClass="icons">
-								<p:commandButton action="#{moduleController.onEditModule(_module)}"
-									update="listModules, newModule, title" icon="mdi mdi-pencil"
-									alt="#{msg['common.button.edit']}" title="#{msg['common.button.edit']}" />
-								<p:commandButton action="#{moduleController.onDeleteModule(_module)}" update="@form"
-									icon="mdi mdi-delete-empty" alt="#{msg['common.button.delete']}"
-									title="#{msg['common.button.delete']}">
-									<p:confirm header="#{msg['common.confirmation']}"
-										message="#{msg['module.label.confirmDelete']}" icon="mdi mdi-alert-outline" />
-								</p:commandButton>
-								<p:confirmDialog global="true">
-									<p:commandButton value="#{msg['common.button.yes']}" type="button"
-										styleClass="ui-confirmdialog-yes" />
-									<p:commandButton value="#{msg['common.button.no']}" type="button"
-										styleClass="ui-confirmdialog-no" />
-								</p:confirmDialog>
-							</p:column>
-						</p:dataTable>
-
-						<p:contextMenu for="modules" event="contextmenu touchend">
-							<p:menuitem value="#{msg['common.button.edit']}" icon="mdi mdi-pencil"
-								actionListener="#{moduleController.onEditModule(moduleController.selectedModule)}"
-								update="listModules, newModule, title" />
-							<p:separator />
-							<p:menuitem value="#{msg['common.button.delete']}" icon="mdi mdi-delete-empty"
-								actionListener="#{moduleController.onDeleteModule(moduleController.selectedModule)}"
-								update="@form">
-								<p:confirm header="#{msg['common.confirmation']}"
-									message="#{msg['module.label.confirmDelete']}" icon="mdi mdi-alert-outline" />
-							</p:menuitem>
-						</p:contextMenu>
-					</p:panel>
+				<h:form>
+					<p:commandButton actionListener="#{moduleController.onNewModule}" update="title, help, newModuleButton, listModules, newModuleForm"
+									 value="#{cmsg['ui.button.create']}" icon="mdi mdi-plus" />
 				</h:form>
-			</h:panelGroup>
+			</p:panel>
+		</h:panelGroup>
 
-			<h:panelGroup layout="block" id="newModule">
-				<components:new_module moduleController="#{moduleController}"
-					policyController="#{policyController}" update="listModules, title, newModule"
-					rendered="#{moduleController.editMode}" />
-			</h:panelGroup>
+		<h:panelGroup id="newModuleForm">
+			<module:new rendered="#{moduleController.pageMode != 'READ'}" update="title, help, newModuleButton, listModules, newModuleForm"
+						onSubmitFunction="if (args &amp;&amp; !args.validationFailed) PF('modules').filter();" />
+		</h:panelGroup>
 
-		</ui:define>
-	</ui:composition>
+		<h:panelGroup id="listModules">
+			<module:list rendered="#{moduleController.pageMode == 'READ'}" update="title, help, newModuleButton, listModules, newModuleForm" />
+		</h:panelGroup>
+
+	</ui:define>
+</ui:composition>
 </body>
 </html>

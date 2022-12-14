@@ -1,27 +1,35 @@
 package org.emau.icmvc.ganimed.ttp.cm2.frontend.controller.component;
 
-import java.io.IOException;
-
-/*
+/*-
  * ###license-information-start###
  * gICS - a Generic Informed Consent Service
  * __
- * Copyright (C) 2014 - 2018 The MOSAIC Project - Institut fuer Community
- * Medicine of the University Medicine Greifswald -
- * mosaic-projekt@uni-greifswald.de
+ * Copyright (C) 2014 - 2022 Trusted Third Party of the University Medicine Greifswald -
+ * 							kontakt-ths@uni-greifswald.de
  * 
- * concept and implementation
- * l.geidel
- * web client
- * a.blumentritt, m.bialke
+ * 							concept and implementation
+ * 							l.geidel, c.hampf
+ * 							web client
+ * 							a.blumentritt, m.bialke, f.m.moser
+ * 							fhir-api
+ * 							m.bialke
+ * 							docker
+ * 							r. schuldt
  * 
- * Selected functionalities of gICS were developed as part of the MAGIC Project (funded by the DFG
- * HO 1937/5-1).
+ * 							The gICS was developed by the University Medicine Greifswald and published
+ *  							in 2014 as part of the research project "MOSAIC" (funded by the DFG HO 1937/2-1).
+ *  
+ * 							Selected functionalities of gICS were developed as
+ * 							part of the following research projects:
+ * 							- MAGIC (funded by the DFG HO 1937/5-1)
+ * 							- MIRACUM (funded by the German Federal Ministry of Education and Research 01ZZ1801M)
+ * 							- NUM-CODEX (funded by the German Federal Ministry of Education and Research 01KX2021)
  * 
- * please cite our publications
- * http://dx.doi.org/10.3414/ME14-01-0133
- * http://dx.doi.org/10.1186/s12967-015-0545-6
- * http://dx.doi.org/10.3205/17gmds146
+ * 							please cite our publications
+ * 							https://doi.org/10.1186/s12967-020-02457-y
+ * 							http://dx.doi.org/10.3414/ME14-01-0133
+ * 							http://dx.doi.org/10.1186/s12967-015-0545-6
+ * 							http://dx.doi.org/10.3205/17gmds146
  * __
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -30,15 +38,18 @@ import java.io.IOException;
  * 
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  * 
  * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  * ###license-information-end###
  */
 
+import java.io.IOException;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 import javax.annotation.PostConstruct;
 import javax.ejb.EJB;
@@ -53,11 +64,12 @@ import org.emau.icmvc.ganimed.ttp.cm2.GICSService;
 import org.emau.icmvc.ganimed.ttp.cm2.dto.DomainDTO;
 import org.icmvc.ttp.web.controller.AbstractBean;
 
+import static org.apache.commons.lang3.StringUtils.isNotEmpty;
+
 /**
  * Managed bean for selecting and providing the current domain
- * 
- * @author Arne Blumentritt
  *
+ * @author Arne Blumentritt
  */
 @SessionScoped
 @ManagedBean(name = "domainSelector")
@@ -68,6 +80,8 @@ public class DomainSelector extends AbstractBean
 
 	private List<DomainDTO> domains;
 	private DomainDTO selectedDomain;
+
+	private final Map<String, Boolean> selectedDomainQcTypes = new LinkedHashMap<>();
 
 	/**
 	 * Init domains.
@@ -85,7 +99,6 @@ public class DomainSelector extends AbstractBean
 	public void loadDomains()
 	{
 		domains = cmManager.listDomains();
-		logger.debug(String.valueOf(domains.size()) + " Domains loaded.");
 	}
 
 	public List<DomainDTO> getDomains()
@@ -123,6 +136,8 @@ public class DomainSelector extends AbstractBean
 	public void setSelectedDomain(DomainDTO selectedDomain)
 	{
 		this.selectedDomain = selectedDomain;
+		loadDomainData();
+
 		ExternalContext ec = FacesContext.getCurrentInstance().getExternalContext();
 		try
 		{
@@ -130,7 +145,40 @@ public class DomainSelector extends AbstractBean
 		}
 		catch (IOException e)
 		{
-			e.printStackTrace();
+			logMessage(e);
+		}
+	}
+
+	public void setSelectedDomain(String name)
+	{
+		for (DomainDTO domain : domains)
+		{
+			if (domain.getName().equals(name))
+			{
+				selectedDomain = domain;
+				loadDomainData();
+			}
+		}
+	}
+
+	private void loadDomainData()
+	{
+		selectedDomainQcTypes.clear();
+
+		for (String type : selectedDomain.getValidQcTypes())
+		{
+			if (isNotEmpty(type))
+			{
+				selectedDomainQcTypes.put(type, true);
+			}
+		}
+
+		for (String type : selectedDomain.getInvalidQcTypes())
+		{
+			if (isNotEmpty(type))
+			{
+				selectedDomainQcTypes.put(type, false);
+			}
 		}
 	}
 
@@ -146,5 +194,10 @@ public class DomainSelector extends AbstractBean
 	public String getSelectedDomainName()
 	{
 		return selectedDomain.getName();
+	}
+
+	public Map<String, Boolean> getSelectedDomainQcTypes()
+	{
+		return selectedDomainQcTypes;
 	}
 }

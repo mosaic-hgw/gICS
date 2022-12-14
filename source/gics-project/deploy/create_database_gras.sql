@@ -1,8 +1,15 @@
+-- version from 2020-09-11 RS
+
+DROP SCHEMA IF EXISTS `gras` ;
 /*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
 /*!40101 SET NAMES utf8 */;
 /*!50503 SET NAMES utf8mb4 */;
 /*!40014 SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0 */;
 /*!40101 SET @OLD_SQL_MODE=@@SQL_MODE, SQL_MODE='NO_AUTO_VALUE_ON_ZERO' */;
+
+CREATE DATABASE gras DEFAULT CHARACTER SET utf8;
+
+USE gras;
 
 -- Exportiere Struktur von Tabelle gras.domain
 CREATE TABLE IF NOT EXISTS `domain` (
@@ -12,14 +19,14 @@ CREATE TABLE IF NOT EXISTS `domain` (
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 
 -- Exportiere Struktur von View gras.domainuser_password
--- Erstelle temporäre Tabelle um View Abhängigkeiten zuvorzukommen
+-- Erstelle temporaere Tabelle um View Abhaengigkeiten zuvorzukommen
 CREATE TABLE `domainuser_password` (
 	`domainuser` VARCHAR(511) NOT NULL COLLATE 'latin1_swedish_ci',
 	`password` VARCHAR(255) NULL COLLATE 'latin1_swedish_ci'
 ) ENGINE=MyISAM;
 
 -- Exportiere Struktur von View gras.domainuser_role
--- Erstelle temporäre Tabelle um View Abhängigkeiten zuvorzukommen
+-- Erstelle temporaere Tabelle um View Abhaengigkeiten zuvorzukommen
 CREATE TABLE `domainuser_role` (
 	`domainuser` VARCHAR(511) NOT NULL COLLATE 'latin1_swedish_ci',
 	`role` VARCHAR(255) NOT NULL COLLATE 'latin1_swedish_ci'
@@ -170,7 +177,7 @@ CREATE TABLE IF NOT EXISTS `user` (
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 
 -- Exportiere Struktur von View gras.validate
--- Erstelle temporäre Tabelle um View Abhängigkeiten zuvorzukommen
+-- Erstelle temporaere Tabelle um View Abhaengigkeiten zuvorzukommen
 CREATE TABLE `validate` (
 	`domainuser` VARCHAR(511) NOT NULL COLLATE 'latin1_swedish_ci',
 	`password` VARCHAR(255) NULL COLLATE 'latin1_swedish_ci',
@@ -324,20 +331,176 @@ DELIMITER ;
 SET SQL_MODE=@OLDTMP_SQL_MODE;
 
 -- Exportiere Struktur von View gras.domainuser_password
--- Entferne temporäre Tabelle und erstelle die eigentliche View
+-- Entferne temporaere Tabelle und erstelle die eigentliche View
 DROP TABLE IF EXISTS `domainuser_password`;
 CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY DEFINER VIEW `domainuser_password` AS select distinct concat_ws('@',`p`.`user_name`,`p`.`domain_name`) AS `domainuser`,`u`.`password` AS `password` from (`permission` `p` join `user` `u`) where ((`u`.`name` = `p`.`user_name`) and (`u`.`active` = 1));
 
 -- Exportiere Struktur von View gras.domainuser_role
--- Entferne temporäre Tabelle und erstelle die eigentliche View
+-- Entferne temporaere Tabelle und erstelle die eigentliche View
 DROP TABLE IF EXISTS `domainuser_role`;
-CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY DEFINER VIEW `domainuser_role` AS select distinct concat_ws('@',`p`.`user_name`,`p`.`domain_name`) AS `domainuser`,`r`.`name` AS `role` from ((`permission` `p` join `group_role_mapping` `m`) join `role` `r`) where ((`p`.`group_id` = `m`.`group_id`) and (`m`.`role_id` = `r`.`id`));
+CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY DEFINER VIEW `domainuser_role` AS select 
+
+distinct concat_ws('@',`p`.`user_name`,`p`.`domain_name`) AS `domainuser`,
+`r`.`name` AS `role` 
+from (((`permission` `p` join `group_role_mapping` `m`) join `role` `r`) join `user` `u`)
+
+where (
+(`p`.`group_id` = `m`.`group_id`) and 
+(`m`.`role_id` = `r`.`id`) and 
+(`u`.`name`=`p`.`user_name`) and
+(`u`.`active`= 1)
+);
 
 -- Exportiere Struktur von View gras.validate
--- Entferne temporäre Tabelle und erstelle die eigentliche View
+-- Entferne temporaere Tabelle und erstelle die eigentliche View
 DROP TABLE IF EXISTS `validate`;
 CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY DEFINER VIEW `validate` AS select distinct `a`.`domainuser` AS `domainuser`,`a`.`password` AS `password`,`b`.`role` AS `role` from (`domainuser_password` `a` join `domainuser_role` `b`);
 
 /*!40101 SET SQL_MODE=IFNULL(@OLD_SQL_MODE, '') */;
 /*!40014 SET FOREIGN_KEY_CHECKS=IF(@OLD_FOREIGN_KEY_CHECKS IS NULL, 1, @OLD_FOREIGN_KEY_CHECKS) */;
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
+
+-- *** comfort procedures ***
+
+-- create domain
+DELIMITER $$
+DROP PROCEDURE IF EXISTS `createDomain`$$
+CREATE PROCEDURE `createDomain`(
+	IN domainName VARCHAR(255),
+	IN description VARCHAR(255)
+)
+BEGIN
+	INSERT IGNORE INTO `gras`.`domain` SET `name`=domainName, `description`=description;
+END$$
+
+
+-- create project
+DROP PROCEDURE IF EXISTS `createProject`$$
+CREATE PROCEDURE `createProject`(
+	IN projectName VARCHAR(255),
+	IN description VARCHAR(255)
+)
+BEGIN
+	INSERT IGNORE INTO `gras`.`project` SET `name`=projectName, `description`=description;
+END$$
+
+
+-- disable given user
+DROP PROCEDURE IF EXISTS `disableUser`$$
+CREATE PROCEDURE `disableUser`(
+	IN userName VARCHAR(255)
+)
+BEGIN
+	UPDATE `gras`.`user` SET `active`=0 WHERE `name`=userName;
+END$$
+
+
+-- enable given userName
+DROP procedure IF EXISTS `enableUser`$$
+CREATE PROCEDURE `enableUser`(
+	IN userName VARCHAR(255)
+)
+BEGIN
+	UPDATE `gras`.`user` SET `active`=1 WHERE `name`=userName;
+END$$
+
+
+-- change user-password
+DROP procedure IF EXISTS `changePassword`$$
+CREATE PROCEDURE `changePassword`(
+	IN userName VARCHAR(255),
+    IN newPassword VARCHAR(255)
+)
+BEGIN
+	UPDATE `gras`.`user` SET `password`=SHA2(newPassword, 256) WHERE `name`=userName;
+END$$
+
+
+-- user and privileges
+DROP procedure IF EXISTS `createUser`$$
+CREATE PROCEDURE `createUser`(	
+	IN userName VARCHAR(255),
+    IN password VARCHAR(255),
+    IN description VARCHAR(255)
+)
+BEGIN
+	INSERT IGNORE INTO `user` SET `name`=userName, `password`=SHA2(password, 256), `active`=1, `description`=description;    
+END$$
+
+
+DROP procedure IF EXISTS `createGroup`$$
+CREATE PROCEDURE `createGroup`(
+	IN projectName VARCHAR(255),
+	IN groupName VARCHAR(255),
+    IN description VARCHAR(255)
+)
+BEGIN
+    INSERT INTO `group_` SET `name`=groupName, `project_name`=projectName, `description`=description;
+END$$
+
+
+DROP procedure IF EXISTS `createRole`$$
+CREATE PROCEDURE `createRole`(
+	IN projectName VARCHAR(255),
+	IN roleName VARCHAR(255),
+	IN description VARCHAR(255)   
+)
+BEGIN
+    INSERT INTO `role` SET `name`=roleName, `project_name`=projectName, `description`=description;
+END$$
+
+
+DROP procedure IF EXISTS `createGroupRoleMapping`$$
+CREATE PROCEDURE `createGroupRoleMapping`(
+	IN projectName VARCHAR(255),
+	IN groupName VARCHAR(255),
+	IN roleName VARCHAR(255)   
+)
+BEGIN
+	INSERT INTO `group_role_mapping` (`group_id`, `role_id`) VALUES (
+		(SELECT id from `group_` WHERE `name`=groupName AND `project_name`=projectName), 
+		(SELECT id FROM `role` WHERE `name`=roleName)
+	);
+END$$
+
+
+DROP procedure IF EXISTS `grantAdminRights`$$
+CREATE PROCEDURE `grantAdminRights`(
+	IN domainName VARCHAR(255),
+	IN projectName VARCHAR(255),
+	IN userName VARCHAR(255)   
+)
+BEGIN
+    INSERT INTO `permission` (`group_id`, `user_name`, `domain_name`)
+		SELECT DISTINCT `id`, userName, domainName FROM `group_` WHERE `project_name`=projectName;
+END$$
+
+
+DROP procedure IF EXISTS `grantStandardRights`$$
+CREATE PROCEDURE `grantStandardRights`(
+	IN domainName VARCHAR(255),
+	IN projectName VARCHAR(255),
+	IN userName VARCHAR(255)
+)
+BEGIN
+    INSERT INTO `permission` (`group_id`, `user_name`, `domain_name`)
+		SELECT DISTINCT `id`, userName, domainName FROM `group_` WHERE `project_name`=projectName AND `name` NOT RLIKE '[aA]dmin';
+END$$
+
+DELIMITER ;
+
+
+-- for remote and wildfly access
+create user 'gras_user'@'%' identified by 'gras_password';
+GRANT ALL PRIVILEGES ON gras.* TO 'gras_user'@'%';
+
+-- for docker exec commands
+create user 'gras_user'@'localhost' identified by 'gras_password';
+GRANT ALL PRIVILEGES ON gras.* TO 'gras_user'@'localhost';
+
+
+-- for remote and wildfly access
+GRANT ALL PRIVILEGES ON gras.* TO 'root'@'%';
+
+-- for docker exec commands
+GRANT ALL PRIVILEGES ON gras.* TO 'root'@'localhost';

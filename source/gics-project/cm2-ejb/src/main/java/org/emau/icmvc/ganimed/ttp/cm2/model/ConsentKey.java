@@ -1,21 +1,32 @@
 package org.emau.icmvc.ganimed.ttp.cm2.model;
 
-/*
+/*-
  * ###license-information-start###
  * gICS - a Generic Informed Consent Service
  * __
- * Copyright (C) 2014 - 2018 The MOSAIC Project - Institut fuer Community
- * 							Medicine of the University Medicine Greifswald -
- * 							mosaic-projekt@uni-greifswald.de
+ * Copyright (C) 2014 - 2022 Trusted Third Party of the University Medicine Greifswald -
+ * 							kontakt-ths@uni-greifswald.de
  * 
  * 							concept and implementation
- * 							l.geidel
+ * 							l.geidel, c.hampf
  * 							web client
- * 							a.blumentritt, m.bialke
+ * 							a.blumentritt, m.bialke, f.m.moser
+ * 							fhir-api
+ * 							m.bialke
+ * 							docker
+ * 							r. schuldt
  * 
- * 							Selected functionalities of gICS were developed as part of the MAGIC Project (funded by the DFG HO 1937/5-1).
+ * 							The gICS was developed by the University Medicine Greifswald and published
+ *  							in 2014 as part of the research project "MOSAIC" (funded by the DFG HO 1937/2-1).
+ *  
+ * 							Selected functionalities of gICS were developed as
+ * 							part of the following research projects:
+ * 							- MAGIC (funded by the DFG HO 1937/5-1)
+ * 							- MIRACUM (funded by the German Federal Ministry of Education and Research 01ZZ1801M)
+ * 							- NUM-CODEX (funded by the German Federal Ministry of Education and Research 01KX2021)
  * 
  * 							please cite our publications
+ * 							https://doi.org/10.1186/s12967-020-02457-y
  * 							http://dx.doi.org/10.3414/ME14-01-0133
  * 							http://dx.doi.org/10.1186/s12967-015-0545-6
  * 							http://dx.doi.org/10.3205/17gmds146
@@ -38,6 +49,7 @@ package org.emau.icmvc.ganimed.ttp.cm2.model;
 import java.io.Serializable;
 import java.util.Date;
 import java.util.HashSet;
+import java.util.Objects;
 import java.util.Set;
 
 import javax.persistence.Column;
@@ -52,14 +64,14 @@ import org.emau.icmvc.ganimed.ttp.cm2.version.VersionConverter;
 
 /**
  * zusammengesetzter primaerschluessel fuer einen consent
- * 
+ *
  * @author geidell
- * 
+ *
  */
 @Embeddable
-public class ConsentKey implements Serializable {
-
-	private static final long serialVersionUID = 5748616991194260088L;
+public class ConsentKey implements Serializable
+{
+	private static final long serialVersionUID = 1829459362365503501L;
 	@Column(insertable = false, updatable = false)
 	private ConsentTemplateKey ctKey;
 	@Temporal(TemporalType.TIMESTAMP)
@@ -68,76 +80,89 @@ public class ConsentKey implements Serializable {
 	@Column(name = "VIRTUAL_PERSON_ID")
 	private Long virtualPersonId;
 
-	public ConsentKey() {
-	}
+	public ConsentKey()
+	{}
 
-	public ConsentKey(ConsentTemplate ct, Date consentDate, Long virtualPersonId) {
+	public ConsentKey(ConsentTemplateKey ctKey, Date consentDate, Long virtualPersonId)
+	{
 		super();
-		this.ctKey = ct.getKey();
+		this.ctKey = ctKey;
 		this.consentDate = consentDate;
 		this.virtualPersonId = virtualPersonId;
 	}
 
-	public ConsentTemplateKey getCtKey() {
+	public ConsentTemplateKey getCtKey()
+	{
 		return ctKey;
 	}
 
-	public Date getConsentDate() {
+	public Date getConsentDate()
+	{
 		return consentDate;
 	}
 
-	public Long getVirtualPersonId() {
+	public Long getVirtualPersonId()
+	{
 		return virtualPersonId;
 	}
 
-	public ConsentKeyDTO toDTO(VersionConverter ctVersionConverter, VirtualPerson signer) throws InvalidVersionException {
-		Set<SignerIdDTO> signerIds = new HashSet<SignerIdDTO>();
-		for (VirtualPersonSignerId virtualPersonSignerId : signer.getVirtualPersonSignerIds()) {
-			signerIds.add(new SignerIdDTO(virtualPersonSignerId.getKey().getSignerIdKey().getSignerIdTypeKey().getName(), virtualPersonSignerId
-					.getKey().getSignerIdKey().getValue()));
+	public ConsentKeyDTO toDTO(VersionConverter ctVersionConverter, VirtualPerson signer) throws InvalidVersionException
+	{
+		Set<SignerIdDTO> signerIds = new HashSet<>();
+		for (VirtualPersonSignerId virtualPersonSignerId : signer.getVirtualPersonSignerIds())
+		{
+			signerIds.add(new SignerIdDTO(virtualPersonSignerId.getKey().getSignerIdKey().getSignerIdTypeKey().getName(),
+					virtualPersonSignerId.getKey().getSignerIdKey().getValue(), virtualPersonSignerId.getSignerId().getSignerIdType().getOrderNumber(),
+					virtualPersonSignerId.getSignerId().getCreateTimestamp(), virtualPersonSignerId.getSignerId().getFhirID()));
 		}
 		return new ConsentKeyDTO(ctKey.toDTO(ctVersionConverter), signerIds, consentDate);
 	}
 
 	@Override
-	public int hashCode() {
+	public int hashCode()
+	{
 		final int prime = 31;
 		int result = 1;
-		result = prime * result + ((ctKey == null) ? 0 : ctKey.hashCode());
-		result = prime * result + ((consentDate == null) ? 0 : consentDate.hashCode());
-		result = prime * result + ((virtualPersonId == null) ? 0 : virtualPersonId.hashCode());
+		result = prime * result + (ctKey == null ? 0 : ctKey.hashCode());
+		result = prime * result + (consentDate == null ? 0 : consentDate.hashCode());
+		result = prime * result + (virtualPersonId == null ? 0 : virtualPersonId.hashCode());
 		return result;
 	}
 
 	@Override
-	public boolean equals(Object obj) {
+	public boolean equals(Object obj)
+	{
 		if (this == obj)
+		{
 			return true;
+		}
 		if (obj == null)
+		{
 			return false;
+		}
 		if (getClass() != obj.getClass())
+		{
 			return false;
+		}
 		ConsentKey other = (ConsentKey) obj;
-		if (ctKey == null) {
-			if (other.ctKey != null)
-				return false;
-		} else if (!ctKey.equals(other.ctKey))
+		if (!Objects.equals(ctKey, other.ctKey))
+		{
 			return false;
-		if (consentDate == null) {
-			if (other.consentDate != null)
-				return false;
-		} else if (!consentDate.equals(other.consentDate))
+		}
+		if (!Objects.equals(consentDate, other.consentDate))
+		{
 			return false;
-		if (virtualPersonId == null) {
-			if (other.virtualPersonId != null)
-				return false;
-		} else if (!virtualPersonId.equals(other.virtualPersonId))
+		}
+		if (!Objects.equals(virtualPersonId, other.virtualPersonId))
+		{
 			return false;
+		}
 		return true;
 	}
 
 	@Override
-	public String toString() {
+	public String toString()
+	{
 		StringBuilder sb = new StringBuilder();
 		sb.append("consent for ");
 		sb.append(ctKey);

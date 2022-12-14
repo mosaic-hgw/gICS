@@ -1,21 +1,32 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
-        "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+		"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 <!--
   ###license-information-start###
   gICS - a Generic Informed Consent Service
   __
-  Copyright (C) 2014 - 2018 The MOSAIC Project - Institut fuer Community
-  							Medicine of the University Medicine Greifswald -
-  							mosaic-projekt@uni-greifswald.de
+  Copyright (C) 2014 - 2022 Trusted Third Party of the University Medicine Greifswald -
+  							kontakt-ths@uni-greifswald.de
   
   							concept and implementation
-  							l.geidel
+  							l.geidel, c.hampf
   							web client
-  							a.blumentritt, m.bialke
+  							a.blumentritt, m.bialke, f.m.moser
+  							fhir-api
+  							m.bialke
+  							docker
+  							r. schuldt
   
-  							Selected functionalities of gICS were developed as part of the MAGIC Project (funded by the DFG HO 1937/5-1).
+  							The gICS was developed by the University Medicine Greifswald and published
+   							in 2014 as part of the research project "MOSAIC" (funded by the DFG HO 1937/2-1).
+   
+  							Selected functionalities of gICS were developed as
+  							part of the following research projects:
+  							- MAGIC (funded by the DFG HO 1937/5-1)
+  							- MIRACUM (funded by the German Federal Ministry of Education and Research 01ZZ1801M)
+  							- NUM-CODEX (funded by the German Federal Ministry of Education and Research 01KX2021)
   
   							please cite our publications
+  							https://doi.org/10.1186/s12967-020-02457-y
   							http://dx.doi.org/10.3414/ME14-01-0133
   							http://dx.doi.org/10.1186/s12967-015-0545-6
   							http://dx.doi.org/10.3205/17gmds146
@@ -35,148 +46,202 @@
   ###license-information-end###
   -->
 
+
 <!-- author: Arne Blumentritt -->
 
-<html xmlns="http://www.w3.org/1999/xhtml" xmlns:h="http://java.sun.com/jsf/html"
-	xmlns:f="http://java.sun.com/jsf/core" xmlns:ui="http://java.sun.com/jsf/facelets"
-	xmlns:p="http://primefaces.org/ui" xmlns:c="http://java.sun.com/jsp/jstl/core"
-	xmlns:composite="http://java.sun.com/jsf/composite"
-	xmlns:components="http://java.sun.com/jsf/composite/components">
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:h="http://java.sun.com/jsf/html" xmlns:f="http://java.sun.com/jsf/core"
+	  xmlns:ui="http://java.sun.com/jsf/facelets" xmlns:p="http://primefaces.org/ui" xmlns:c="http://java.sun.com/jsp/jstl/core"
+	  xmlns:composite="http://java.sun.com/jsf/composite">
 
 <!-- INTERFACE -->
 <composite:interface>
-	<composite:attribute name="consentController"
-		type="org.emau.icmvc.ganimed.ttp.cm2.frontend.controller.ConsentController" required="true" />
-	<composite:attribute name="consent" type="org.emau.icmvc.ganimed.ttp.cm2.frontend.model.WebConsent"
-		required="true" />
+	<composite:attribute name="consent" type="org.emau.icmvc.ganimed.ttp.cm2.frontend.model.WebConsent" required="true" />
 </composite:interface>
 
 <!-- IMPLEMENTATION -->
 <composite:implementation>
 	<h:form>
-		<p:panelGrid columns="#{empty consentController.selectedConsent.scanBase64 ? 1 : 2}"
-			columnClasses="ui-grid-col-#{empty consentController.selectedConsent.scanBase64 ? 12 : '6 pdf-cell'},ui-grid-col-6"
-			layout="grid" styleClass="details-dialog">
-			<p:column rendered="#{not empty consentController.selectedConsent.scanBase64}">
+		<f:event type="preRenderComponent" listener="#{cc.attrs.consent.prepareScanPreview}" />
+		<p:panelGrid columns="#{empty cc.attrs.consent.scans ? 1 : 2}"
+					 columnClasses="ui-grid-col-#{empty cc.attrs.consent.scans ? 12 : '6 pdf-cell'},ui-grid-col-6" layout="grid" styleClass="details-dialog">
+			<p:column rendered="#{not empty cc.attrs.consent.scans}">
 				<h3>
-					<h:outputText value="Scan" />
+					<h:outputText value="Scans" />
 				</h3>
-				<p:media value="#{mediaProvider.consentPDFStream}" player="pdf" styleClass="pdf-preview">
-					<f:param name="#view" value="Fit" />
-					#{msg['consent.scan.pdf.browserNotSupported']}
-					<br />
-					<p:commandLink ajax="false" icon="fa fa-fw fa-download" value="#{msg['consent.scan.download']}">
-						<p:fileDownload value="#{mediaProvider.consentPDFStream}" />
-					</p:commandLink>
-				</p:media>
+				<p:tabView cache="false" dynamic="true" value="#{cc.attrs.consent.scans}" var="_scan" varStatus="_i" styleClass="pdf-tabs">
+					<p:ajax event="tabChange" listener="#{cc.attrs.consent.prepareScanPreview(_scan.fhirID)}" />
+					<p:tab title="#{consentController.getConsentScanTitle(_scan)}" titletip="#{consentController.getConsentScanTitleTip(_scan)}">
+						<p:media value="#{mediaProvider.consentPDFStream}" player="pdf" styleClass="pdf-preview">
+							<f:param name="#view" value="Fit" />
+							#{msg['consent.scan.pdf.browserNotSupported']}
+							<br />
+							<p:commandLink ajax="false" icon="mdi mdi-download" value="#{msg['consent.scan.download']}">
+								<p:fileDownload value="#{mediaProvider.consentPDFStream}" />
+							</p:commandLink>
+							<!-- unique id to force the browser pdf plugin to refresh -->
+							<f:param name="id" value="#{_scan.fhirID}" />
+						</p:media>
+					</p:tab>
+				</p:tabView>
 			</p:column>
 			<p:column>
 				<h3>
-					<h:outputText
-						value="#{msg['template.type.'.concat(consentController.selectedConsent.templateType.name())]}" />
+					<h:outputText value="#{msg['template.type.'.concat(cc.attrs.consent.templateType.name())]}" />
+					<h:outputFormat value=" (#{msg['common.expired.on']})" styleClass="red" rendered="#{cc.attrs.consent.expired}">
+						<f:param value="#{consentController.dateToString(cc.attrs.consent.consentDates.consentExpirationDate, 'date')}" />
+					</h:outputFormat>
+					<h:outputText styleClass="red" value=" (#{msg['common.partlyExpired']})" rendered="#{cc.attrs.consent.partlyExpired}" />
+					<h:outputFormat rendered="#{cc.attrs.consent.expires and not cc.attrs.consent.expired}" styleClass="module-key"
+									value="#{msg['common.expires.on']}">
+						<f:param value="#{consentController.dateToString(cc.attrs.consent.consentDates.consentExpirationDate, 'date')}" />
+					</h:outputFormat>
 				</h3>
-				<p:panelGrid columns="2" columnClasses="ui-grid-col-8,ui-grid-col-4" layout="grid"
-					styleClass="mimic-datatable">
+				<p:panelGrid columns="2" columnClasses="ui-grid-col-7,ui-grid-col-5" layout="grid" styleClass="mimic-datatable">
 					<h:outputText value="#{msg['consent.template']}" />
-					<h:outputText value="#{consentController.selectedConsent.key.consentTemplateKey.name}" />
+					<h:outputText value="#{cc.attrs.consent.template.label}" />
 					<h:outputText value="#{msg['consent.template.version']}" />
-					<h:outputText value="#{consentController.selectedConsent.key.consentTemplateKey.version}" />
-					<h:outputText value="#{msg['consent.label.date']}" />
-					<h:outputText value="#{consentController.selectedConsent.key.consentDate}">
-						<f:convertDateTime pattern="#{msg['common.date.time.pattern']}" />
-					</h:outputText>
-					<!-- 						<h:outputText value="#{msg['consent.comment']}" />
-						<h:outputText value="#{consentController.selectedConsent.comment}" />
-						<h:outputText value="#{msg['consent.externProperties']}" />
-						<h:outputText value="#{consentController.selectedConsent.externProperties}" /> -->
+					<h:outputText value="#{cc.attrs.consent.template.versionLabelAndVersion}" />
+					<h:outputText value="#{msg['model.consent.date']}" />
+					<h:panelGroup>
+						<h:outputText value="#{cc.attrs.consent.key.consentDate}" converter="datetime"/>
+						<h:outputText value="#{cc.attrs.consent.key.consentDate}" styleClass="lightgrey little" style="margin-left: 1px;">
+							<f:convertDateTime pattern=".SSS" />
+						</h:outputText>
+					</h:panelGroup>
+					<h:outputText value="#{msg['consent.comment']}" />
+					<h:outputText value="#{cc.attrs.consent.comment}" />
 				</p:panelGrid>
 
-				<h4>
-					<h:outputText value="#{msg['consent.details.modules']}" />
+				<!-- Consent Quality -->
+				<h4 style="float: left;">
+					<h:outputText value="#{msg['model.consent.qc']}" />
 				</h4>
-				<p:panelGrid columns="2" columnClasses="ui-grid-col-8,ui-grid-col-4" layout="grid"
-					styleClass="mimic-datatable modules-table">
-					<c:forEach items="#{consentController.selectedConsent.modules.entrySet().toArray()}"
-						var="_module">
-						<p:column
-							style="font-style:#{consentController.cleanStringForTable(_module.key.module.title).isEmpty() ? 'italic' : ''}">
-						#{consentController.cleanStringForTable(_module.key.module.title).isEmpty() ? msg['consent.module.noTitle'] : consentController.cleanStringForTable(_module.key.module.title)}<br />
-							<h:outputText
-								value="#{_module.key.module.key.name}, Version #{_module.key.module.key.version}"
-								styleClass="module-key" />
+				<p:commandButton actionListener="#{consentController.onNewQc}" icon="mdi mdi-check-decagram" value="#{msg['page.consents.qc.set']}"
+								 update="qc_dialog" oncomplete="PF('qc_dialog').show();" styleClass="secondary" style="float: right; margin-top: -6px;" />
+				<p:panelGrid columns="2" columnClasses="ui-grid-col-7,ui-grid-col-5" layout="grid" styleClass="mimic-datatable">
+					<!-- History -->
+					<c:forEach items="#{cc.attrs.consent.qcHistory}" var="_qc">
+						<p:column>
+							<h:outputText value="#{_qc.startDate}" converter="datetime"/>
+							<br />
+							<h:outputFormat styleClass="module-key" value="#{msg['model.consent.qc.inspectorIs']}">
+								<f:param value="#{_qc.inspector}" />
+							</h:outputFormat>
+							<h:outputText styleClass="module-key" value="#{cmsg['common.comment']}: #{_qc.comment}" />
 						</p:column>
 						<p:column>
-							<p:outputLabel
-								styleClass="tag #{_module.value.consentState.name().equals('ACCEPTED') ? 'tag_green' : ''}
-								#{_module.value.consentState.name().equals('DECLINED') || _module.value.consentState.name().equals('REVOKED') || _module.value.consentState.name().equals('INVALIDATED') ? 'tag_red' : ''}"
-								value="#{msg['consent.status.'.concat(_module.value.consentState)]}"
-								rendered="#{not empty _module.value.consentState}" />
+							<h:outputText style="white-space: normal;" styleClass=" tag #{_qc.qcPassed ? 'tag_lightgreen' : 'tag_lightred'}"
+										  value="#{consentController.getQcTypeLabel(_qc.type)}" />
+							<br />
 						</p:column>
 					</c:forEach>
 				</p:panelGrid>
 
-				<ui:fragment
-					rendered="#{not empty consentController.selectedConsent.freeTexts.entrySet().toArray()}">
+				<!-- Modules -->
+				<h4>
+					<h:outputText value="#{msg['consent.details.modules']}" />
+				</h4>
+				<p:panelGrid columns="2" columnClasses="ui-grid-col-7,ui-grid-col-5" layout="grid" styleClass="mimic-datatable modules-table">
+					<c:forEach items="#{cc.attrs.consent.modules.entrySet().toArray()}" var="_module">
+						<p:column style="font-style:#{consentController.cleanStringForTable(_module.key.module.title).isEmpty() ? 'italic' : ''}">
+							#{empty _module.key.module.shortText ? _module.key.module.label : _module.key.module.shortText}, Version #{_module.key.module.key.version}<br />
+							<h:outputText rendered="#{not empty consentController.cleanStringForTable(_module.key.module.title)}"
+										  value="#{consentController.cleanStringForTable(_module.key.module.title)}" styleClass="module-key" />
+							<h:outputFormat rendered="#{cc.attrs.consent.getModuleExpires(_module.value) and not cc.attrs.consent.getModuleExpired(_module.value)}"
+											styleClass="module-key" value="#{msg['common.expires.on']}">
+								<f:param value="#{consentController.dateToString(cc.attrs.consent.consentDates.moduleExpirations.get(_module.value.key), 'date')}" />
+							</h:outputFormat>
+						</p:column>
+						<p:column>
+							<div style="white-space: nowrap">
+								<h:outputText
+										styleClass="
+                                            tag #{_module.value.consentState.name().equals('ACCEPTED') ? 'tag_green' : ''}
+                                            #{_module.value.consentState.name().equals('DECLINED') || _module.value.consentState.name().equals('REVOKED') || _module.value.consentState.name().equals('WITHDRAWN') || _module.value.consentState.name().equals('INVALIDATED') ? 'tag_red' : ''}
+                                            #{cc.attrs.consent.getModuleExpired(_module.value) or !cc.attrs.consent.qualityControl.qcPassed ? 'tag_lightgrey crossed' : ''}"
+										value="#{cmsg['model.consent.status.admin.'.concat(_module.value.consentState)]}" rendered="#{not empty _module.value.consentState}" />
+								<h:panelGroup styleClass="red" rendered="#{cc.attrs.consent.getModuleExpired(_module.value)}">
+									<h:outputFormat value=" #{msg['common.expired.on']}">
+										<f:param value="#{consentController.dateToString(cc.attrs.consent.consentDates.moduleExpirations.get(_module.value.key), 'date')}" />
+									</h:outputFormat>
+								</h:panelGroup>
+								<h:outputText rendered="#{!cc.attrs.consent.qualityControl.qcPassed}" value=" #{msg['common.qc.invalid']}" />
+							</div>
+						</p:column>
+					</c:forEach>
+				</p:panelGrid>
+
+				<ui:fragment rendered="#{not empty cc.attrs.consent.freeTexts}">
 					<h4>
 						<h:outputText value="#{msg['consent.details.customfields']}" />
 					</h4>
-					<p:panelGrid columns="2" columnClasses="ui-grid-col-8,ui-grid-col-4" layout="grid"
-						styleClass="mimic-datatable modules-table">
-						<c:forEach items="#{consentController.selectedConsent.freeTexts.entrySet().toArray()}"
-							var="_freeText">
-							<h:outputText value="#{_freeText.key.name}" />
+					<p:panelGrid columns="2" columnClasses="ui-grid-col-7,ui-grid-col-5" layout="grid" styleClass="mimic-datatable modules-table">
+						<c:forEach items="#{cc.attrs.consent.freeTexts}" var="_freeText">
+							<h:outputText value="#{_freeText.dto.labelOrName}" />
 							<h:outputText value="#{_freeText.value}" />
 						</c:forEach>
 					</p:panelGrid>
 				</ui:fragment>
 
 				<h4>
-					<h:outputText
-						value="#{consentController.selectedConsent.patientSignatureIsFromGuardian ? msg['consent.details.signer.guardian'] : msg['consent.details.signer']}"
-						styleClass="headline" />
+					<h:outputText value="#{cc.attrs.consent.patientSignatureIsFromGuardian ? msg['consent.details.signer.guardian'] : msg['consent.details.signer']}"
+								  styleClass="headline" />
 				</h4>
-				<p:panelGrid columns="2" columnClasses="ui-grid-col-8,ui-grid-col-4" layout="grid"
-					styleClass="mimic-datatable">
-					<c:forEach items="#{consentController.selectedConsent.key.signerIds}" var="_signerId">
-						<h:outputText value="#{_signerId.idType}" />
-						<h:outputText value="#{_signerId.id}" />
-					</c:forEach>
-					<h:outputText value="#{msg['consent.details.signer.signature']}" />
-					<p:graphicImage height="100px" value="#{mediaProvider.patientSignatureStream}" cache="false"
-						rendered="#{not empty consentController.selectedConsent.patientSignatureBase64}"
-						styleClass="fit" />
-					<h:outputText value="#{msg['consent.noPatientSignature']}"
-						rendered="#{empty consentController.selectedConsent.patientSignatureBase64 and empty consentController.selectedConsent.scanBase64}" />
-					<h:outputText value="#{msg['consent.scan.containsSignatures']}"
-						rendered="#{empty consentController.selectedConsent.patientSignatureBase64 and not empty consentController.selectedConsent.scanBase64}" />
+				<p:panelGrid columns="2" columnClasses="ui-grid-col-7,ui-grid-col-5" layout="grid" styleClass="mimic-datatable">
+					<p:column>
+						<c:forEach items="#{cc.attrs.consent.key.orderedSignerIds}" var="_signerId">
+							<h:outputText value="#{_signerId.idType}: " />
+							<h:outputText value="#{_signerId.id}" />
+							<br />
+						</c:forEach>
+						<br />
+						<c:if test="#{not empty cc.attrs.consent.patientSigningPlace}">
+							<h:outputText value="#{msg['consent.details.signer.signaturePlace']}: " />
+							<h:outputText value="#{cc.attrs.consent.patientSigningPlace}" />
+							<br />
+						</c:if>
+						<h:outputText value="#{msg['consent.details.signer.signatureDate']}: " />
+						<h:outputText value="#{cc.attrs.consent.patientSigningDate}" converter="date"/>
+					</p:column>
+					<p:column>
+						<p:graphicImage height="100px"
+										value="#{consentController.getImageStreamFromBase64(cc.attrs.consent.patientSignatureBase64, 'png', 'signature-patient')}"
+										rendered="#{not empty cc.attrs.consent.patientSignatureBase64}" cache="false" stream="false" styleClass="fit" />
 
-					<h:outputText value="#{msg['consent.details.signer.signedat']}" />
-					<h:outputText value="#{consentController.selectedConsent.patientSigningDate}">
-						<f:convertDateTime pattern="#{msg['common.date.pattern']}" />
-					</h:outputText>
+						<h:outputText value="#{msg['consent.noPatientSignature']}"
+									  rendered="#{empty cc.attrs.consent.patientSignatureBase64 and empty cc.attrs.consent.scans}" />
+						<h:outputText value="#{msg['consent.scan.containsSignatures']}"
+									  rendered="#{empty cc.attrs.consent.patientSignatureBase64 and not empty cc.attrs.consent.scans}" />
+					</p:column>
 				</p:panelGrid>
 
 				<h4>
 					<h:outputText value="#{msg['consent.details.physician']}" styleClass="headline" />
 				</h4>
-				<p:panelGrid columns="2" columnClasses="ui-grid-col-8,ui-grid-col-4" layout="grid"
-					styleClass="mimic-datatable">
-					<h:outputText value="#{msg['consent.details.physician.ids']}" />
-					<h:outputText value="#{consentController.selectedConsent.physicanId}" />
+				<p:panelGrid columns="2" columnClasses="ui-grid-col-7,ui-grid-col-5" layout="grid" styleClass="mimic-datatable">
+					<p:column>
+						<h:outputText value="#{msg['consent.details.physician.ids']}: " />
+						<h:outputText value="#{cc.attrs.consent.physicianId}" />
+						<br />
+						<br />
+						<c:if test="#{not empty cc.attrs.consent.physicianSigningPlace}">
+							<h:outputText value="#{msg['consent.details.physician.signaturePlace']}: " />
+							<h:outputText value="#{cc.attrs.consent.physicianSigningPlace}" />
+							<br />
+						</c:if>
+						<h:outputText value="#{msg['consent.details.physician.signatureDate']}: " />
+						<h:outputText value="#{cc.attrs.consent.physicianSigningDate}" converter="date"/>
+					</p:column>
+					<p:column>
+						<p:graphicImage height="100px"
+										value="#{consentController.getImageStreamFromBase64(cc.attrs.consent.physicianSignatureBase64, 'png', 'signature-physician')}"
+										rendered="#{not empty cc.attrs.consent.physicianSignatureBase64}" cache="false" stream="false" styleClass="fit" />
 
-					<h:outputText value="#{msg['consent.details.physician.signature']}" />
-					<p:graphicImage height="100px" value="#{mediaProvider.physicianSignatureStream}" cache="false"
-						rendered="#{not empty consentController.selectedConsent.physicanSignatureBase64}"
-						styleClass="fit" />
-					<h:outputText value="#{msg['consent.noPhysicanSignature']}"
-						rendered="#{empty consentController.selectedConsent.physicanSignatureBase64 and empty consentController.selectedConsent.scanBase64}" />
-					<h:outputText value="#{msg['consent.scan.containsSignatures']}"
-						rendered="#{empty consentController.selectedConsent.physicanSignatureBase64 and not empty consentController.selectedConsent.scanBase64}" />
-
-					<h:outputText value="#{msg['consent.details.physician.signedat']}" />
-					<h:outputText value="#{consentController.selectedConsent.physicanSigningDate}">
-						<f:convertDateTime pattern="#{msg['common.date.pattern']}" />
-					</h:outputText>
+						<h:outputText value="#{msg['consent.noPhysicianSignature']}"
+									  rendered="#{empty cc.attrs.consent.physicianSignatureBase64 and empty cc.attrs.consent.scans}" />
+						<h:outputText value="#{msg['consent.scan.containsSignatures']}"
+									  rendered="#{empty cc.attrs.consent.physicianSignatureBase64 and not empty cc.attrs.consent.scans}" />
+					</p:column>
 				</p:panelGrid>
 			</p:column>
 		</p:panelGrid>

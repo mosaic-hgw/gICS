@@ -1,25 +1,32 @@
 package org.emau.icmvc.ganimed.ttp.cm2.frontend.controller;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.StringReader;
-
-/*
+/*-
  * ###license-information-start###
  * gICS - a Generic Informed Consent Service
  * __
- * Copyright (C) 2014 - 2018 The MOSAIC Project - Institut fuer Community
- * 							Medicine of the University Medicine Greifswald -
- * 							mosaic-projekt@uni-greifswald.de
+ * Copyright (C) 2014 - 2022 Trusted Third Party of the University Medicine Greifswald -
+ * 							kontakt-ths@uni-greifswald.de
  * 
  * 							concept and implementation
- * 							l.geidel
+ * 							l.geidel, c.hampf
  * 							web client
- * 							a.blumentritt, m.bialke
+ * 							a.blumentritt, m.bialke, f.m.moser
+ * 							fhir-api
+ * 							m.bialke
+ * 							docker
+ * 							r. schuldt
  * 
- * 							Selected functionalities of gICS were developed as part of the MAGIC Project (funded by the DFG HO 1937/5-1).
+ * 							The gICS was developed by the University Medicine Greifswald and published
+ *  							in 2014 as part of the research project "MOSAIC" (funded by the DFG HO 1937/2-1).
+ *  
+ * 							Selected functionalities of gICS were developed as
+ * 							part of the following research projects:
+ * 							- MAGIC (funded by the DFG HO 1937/5-1)
+ * 							- MIRACUM (funded by the German Federal Ministry of Education and Research 01ZZ1801M)
+ * 							- NUM-CODEX (funded by the German Federal Ministry of Education and Research 01KX2021)
  * 
  * 							please cite our publications
+ * 							https://doi.org/10.1186/s12967-020-02457-y
  * 							http://dx.doi.org/10.3414/ME14-01-0133
  * 							http://dx.doi.org/10.1186/s12967-015-0545-6
  * 							http://dx.doi.org/10.3205/17gmds146
@@ -31,21 +38,19 @@ import java.io.StringReader;
  * 
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  * 
  * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  * ###license-information-end###
  */
 
+import java.text.MessageFormat;
+import java.text.ParseException;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 import javax.annotation.PostConstruct;
 import javax.faces.bean.ManagedBean;
@@ -59,191 +64,188 @@ import org.emau.icmvc.ganimed.ttp.cm2.dto.SignerIdDTO;
 import org.emau.icmvc.ganimed.ttp.cm2.exceptions.InvalidVersionException;
 import org.emau.icmvc.ganimed.ttp.cm2.exceptions.UnknownConsentTemplateException;
 import org.emau.icmvc.ganimed.ttp.cm2.exceptions.UnknownDomainException;
-import org.emau.icmvc.ganimed.ttp.cm2.exceptions.VersionConverterClassException;
 import org.emau.icmvc.ganimed.ttp.cm2.frontend.controller.common.AbstractConsentController;
-import org.primefaces.event.FileUploadEvent;
-import org.primefaces.model.UploadedFile;
+import org.emau.icmvc.ganimed.ttp.cm2.frontend.model.PrintPrefillEntry;
+import org.emau.icmvc.ganimed.ttp.cm2.frontend.util.SessionMapKeys;
+import org.icmvc.ttp.web.model.WebFile;
 
 /**
  * Backing Bean for Consent Print View
- * 
+ *
  * @author Arne Blumentritt
- * 
  */
 @ManagedBean(name = "consentPrintController")
 @ViewScoped
 public class ConsentPrintController extends AbstractConsentController
 {
-	// TODO add download f�r example csv in frontend
+	// TODO add download for example csv in frontend
 
-	private List<HashMap<String, String>> signerIdMatrix = new ArrayList<>();
+	private final List<PrintPrefillEntry> printPrefillEntries = new ArrayList<>();
 	private ConsentTemplateDTO template;
 
-	private HashMap<String, String> selectedSignerIds;
-	private List<SignerIdDTO> editSignerIds;
+	private PrintPrefillEntry selectedPrefillEntry;
+	private PrintPrefillEntry editPrefillEntry;
 	private Integer editIndex;
+
+	// File
+	private WebFile webFile;
 
 	@PostConstruct
 	protected void init()
 	{
+		webFile = new WebFile("gICS");
+		onNewUpload();
+
 		ExternalContext externalContext = FacesContext.getCurrentInstance().getExternalContext();
 		Map<String, Object> sessionMap = externalContext.getSessionMap();
-		if (sessionMap.containsKey("printTemplate"))
+		if (sessionMap.containsKey(SessionMapKeys.PRINT_TEMPLATE))
 		{
 			try
 			{
-				template = cmManager.getConsentTemplate((ConsentTemplateKeyDTO) sessionMap.get("printTemplate"));
+				template = service.getConsentTemplate((ConsentTemplateKeyDTO) sessionMap.get(SessionMapKeys.PRINT_TEMPLATE));
 			}
-			catch (UnknownDomainException | UnknownConsentTemplateException | VersionConverterClassException | InvalidVersionException e)
+			catch (UnknownDomainException | UnknownConsentTemplateException | InvalidVersionException e)
 			{
 				logger.error(e.getLocalizedMessage());
 			}
-			sessionMap.remove("printTemplate");
+			sessionMap.remove(SessionMapKeys.PRINT_TEMPLATE);
 		}
 	}
 
-	/**
-	 * Upload a list of persons
-	 *
-	 * @param event
-	 */
-	public void onUploadSignerIds(FileUploadEvent event)
+	public void onNewUpload()
 	{
-		init();
 
-		UploadedFile file = event.getFile();
-		BufferedReader rd = new BufferedReader(new StringReader(new String(file.getContents())));
+		webFile.onNewUpload();
+	}
 
-		try
+	public void onDoAction()
+	{
+		int rowIndex = 0;
+		onClearSignerIds();
+
+		for (List<String> row : webFile.getElements())
 		{
-			String sep = null;
-			String tmp;
+			rowIndex++;
+			PrintPrefillEntry entry = new PrintPrefillEntry();
 
-			Pattern pattern = null;
-			Matcher matcher;
+			int typeCount = domainSelector.getSelectedDomain().getSignerIdTypes().size();
+			int additionalCount = 4;
 
-			while ((tmp = rd.readLine()) != null)
-			{
-				if (sep == null)
-				{
-					// Get seperator
-					if (tmp.contains("sep"))
-					{
-						sep = tmp.substring(4);
-						tmp = rd.readLine();
-					}
-					else
-					{
-						sep = ",";
-					}
-
-					// Compile pattern
-					pattern = Pattern.compile("((?:\"[^\"]*?\")*|[^\"][^" + sep + "]*?)([" + sep + "]|$)");
-				}
-
-				if (tmp != null && !tmp.isEmpty())
-				{
-					HashMap<String, String> ids = new HashMap<>();
-					matcher = pattern.matcher(tmp);
-					int i = 0;
-
-					while (matcher.find())
-					{
-						if (i + 1 > domainSelector.getSelectedDomain().getSignerIdTypes().size())
-						{
-							break;
-						}
-						ids.put(domainSelector.getSelectedDomain().getSignerIdTypes().get(i), matcher.group(1));
-						i++;
-					}
-					signerIdMatrix.add(ids);
-				}
-			}
-
-		}
-		catch (Exception e)
-		{
-			logger.error(e.getLocalizedMessage());
-		}
-		finally
-		{
-			if (rd != null)
+			if ((typeCount + additionalCount) == webFile.getColumns().size())
 			{
 				try
 				{
-					rd.close();
-				}
-				catch (IOException e)
-				{
-					if (logger.isErrorEnabled())
+					//n = number of signertypes in domain
+					//item 0 - n-1: signerids
+					List<SignerIdDTO> sids = new ArrayList<>();
+					for (String type : domainSelector.getSelectedDomain().getSignerIdTypes())
 					{
-						logger.error(e.getLocalizedMessage());
+						sids.add(new SignerIdDTO(type, row.get(sids.size())));
 					}
+					entry.setSignerIdDtos(sids);
+					// item n : Datum (Unterschrift betroffene Person)
+					if (row.get(typeCount) != null && !row.get(typeCount).isEmpty())
+					{
+						entry.setSignerDate(row.get(typeCount));
+					}
+					// item n+1: Ort (Unterschrift betroffene Person)
+					if (row.get(typeCount + 1) != null && !row.get(typeCount + 1).isEmpty())
+					{
+						entry.setSignerPlace(row.get(typeCount + 1));
+					}
+					// item n+2: Datum (Unterschrift aufklärende Person)
+					if (row.get(typeCount + 2) != null && !row.get(typeCount + 2).isEmpty())
+					{
+						entry.setPhysicianDate(row.get(typeCount + 2));
+					}
+					// item n+3: Ort (Unterschrift aufklärende Person)
+					if (row.get(typeCount + 3) != null && !row.get(typeCount + 3).isEmpty())
+					{
+						entry.setPhysicianPlace(row.get(typeCount + 3));
+					}
+					printPrefillEntries.add(entry);
+				}
+				catch (ParseException e)
+				{
+					logMessage(e.getLocalizedMessage(), Severity.ERROR);
 				}
 			}
+			else
+			{
+				String msg = "Invalid column count in line {0}, should be {1}.";
+
+				Object[] args = { rowIndex, typeCount + additionalCount };
+				logger.error(new String().format(msg, args[0], args[1]));
+				logMessage(new MessageFormat(msg).format(args), Severity.ERROR);
+			}
 		}
+	}
+
+	public WebFile getWebFile()
+	{
+		return webFile;
 	}
 
 	public void onNewSignerIds()
 	{
-		editSignerIds = new ArrayList<>();
+		editPrefillEntry = new PrintPrefillEntry();
+		List<SignerIdDTO> signerIdDtos = new ArrayList<>();
 		for (String type : domainSelector.getSelectedDomain().getSignerIdTypes())
 		{
-			editSignerIds.add(new SignerIdDTO(type, ""));
+			signerIdDtos.add(new SignerIdDTO(type, "", null, null));
 		}
+		editPrefillEntry.setSignerIdDtos(signerIdDtos);
 	}
 
 	public void onAddSignerIds()
 	{
-		HashMap<String, String> ids = new HashMap<>();
-		for (SignerIdDTO id : editSignerIds)
-		{
-			ids.put(id.getIdType(), id.getId());
-		}
-		//TODO check ob schon vorhanden
-		signerIdMatrix.add(ids);
+		printPrefillEntries.add(editPrefillEntry);
 	}
-	
+
 	public void onClearSignerIds()
 	{
-		signerIdMatrix.clear();
+		printPrefillEntries.clear();
 	}
 
-	public void onEditSignerIds(HashMap<String, String> signerIds)
+	public void onEditPrefillEntry(PrintPrefillEntry selectedEntry)
 	{
-		editIndex = signerIdMatrix.indexOf(signerIds);
-		selectedSignerIds = signerIdMatrix.get(editIndex);
-		editSignerIds = new ArrayList<>();
-		
-		for (Entry<String, String> ids : selectedSignerIds.entrySet())
+		editIndex = printPrefillEntries.indexOf(selectedEntry);
+		selectedPrefillEntry = printPrefillEntries.get(editIndex);
+
+		editPrefillEntry = new PrintPrefillEntry();
+		List<SignerIdDTO> sids = new ArrayList<>();
+
+		for (SignerIdDTO ids : selectedEntry.getSignerIdDtos())
 		{
-			editSignerIds.add(new SignerIdDTO(ids.getKey(), ids.getValue()));
+			sids.add(new SignerIdDTO(ids.getIdType(), ids.getId(), null, null));
 		}
+		editPrefillEntry.setSignerIdDtos(sids);
+		editPrefillEntry.setPhysicianDate(selectedEntry.getPhysicianDate());
+		editPrefillEntry.setPhysicianPlace(selectedEntry.getPhysicianPlace());
+		editPrefillEntry.setSignerDate(selectedEntry.getSignerDate());
+		editPrefillEntry.setSignerPlace(selectedEntry.getSignerPlace());
+
 	}
 
-	public void onUpdateSignerIds()
+	public void onUpdatePrefillEntries()
 	{
-		HashMap<String, String> ids = signerIdMatrix.get(editIndex);
-		ids.clear();
-		//TODO check ob schon vorhanden
-		for (SignerIdDTO id : editSignerIds)
-		{
-			ids.put(id.getIdType(), id.getId());
-		}
+		logger.debug("onUpdatePrefillEntries");
+		printPrefillEntries.set(editIndex, editPrefillEntry);
 		editIndex = null;
 	}
-	
-	public void onDeleteSignerIds(HashMap<String, String> selectedSignerIds)
+
+	public void onDeletePrefillEntry(PrintPrefillEntry selectedEntry)
 	{
-		signerIdMatrix.remove(selectedSignerIds);
+		logger.debug("onDeletePrefillEntry");
+		printPrefillEntries.remove(selectedEntry);
 	}
 
 	public String onPrint()
 	{
 		ExternalContext externalContext = FacesContext.getCurrentInstance().getExternalContext();
 		Map<String, Object> sessionMap = externalContext.getSessionMap();
-		sessionMap.put("printTemplate", template.getKey());
-		sessionMap.put("printSignerIds", signerIdMatrix);
+		sessionMap.put(SessionMapKeys.PRINT_TEMPLATE, template.getKey());
+		sessionMap.put(SessionMapKeys.PRINT_SIGNER_IDS, printPrefillEntries);
 
 		return "/html/internal/consents.xhtml?print=true&faces-redirect=true";
 	}
@@ -253,14 +255,14 @@ public class ConsentPrintController extends AbstractConsentController
 		return template;
 	}
 
-	public List<HashMap<String, String>> getSignerIdMatrix()
+	public List<PrintPrefillEntry> getPrintPrefillEntries()
 	{
-		return signerIdMatrix;
+		return printPrefillEntries;
 	}
 
-	public List<SignerIdDTO> getEditSignerIds()
+	public PrintPrefillEntry getEditPrefillEntry()
 	{
-		return editSignerIds;
+		return editPrefillEntry;
 	}
 
 	public boolean isEdit()
@@ -268,13 +270,13 @@ public class ConsentPrintController extends AbstractConsentController
 		return editIndex != null;
 	}
 
-	public HashMap<String, String> getSelectedSignerIds()
+	public PrintPrefillEntry getSelectedPrefillEntry()
 	{
-		return selectedSignerIds;
+		return selectedPrefillEntry;
 	}
 
-	public void setSelectedSignerIds(HashMap<String, String> selectedSignerIds)
+	public void setSelectedPrefillEntry(PrintPrefillEntry selectedSignerIds)
 	{
-		this.selectedSignerIds = selectedSignerIds;
+		this.selectedPrefillEntry = selectedSignerIds;
 	}
 }

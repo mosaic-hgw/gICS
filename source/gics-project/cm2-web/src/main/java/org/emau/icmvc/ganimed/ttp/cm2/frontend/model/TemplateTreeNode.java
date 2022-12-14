@@ -4,18 +4,29 @@ package org.emau.icmvc.ganimed.ttp.cm2.frontend.model;
  * ###license-information-start###
  * gICS - a Generic Informed Consent Service
  * __
- * Copyright (C) 2014 - 2018 The MOSAIC Project - Institut fuer Community
- * 							Medicine of the University Medicine Greifswald -
- * 							mosaic-projekt@uni-greifswald.de
+ * Copyright (C) 2014 - 2022 Trusted Third Party of the University Medicine Greifswald -
+ * 							kontakt-ths@uni-greifswald.de
  * 
  * 							concept and implementation
- * 							l.geidel
+ * 							l.geidel, c.hampf
  * 							web client
- * 							a.blumentritt, m.bialke
+ * 							a.blumentritt, m.bialke, f.m.moser
+ * 							fhir-api
+ * 							m.bialke
+ * 							docker
+ * 							r. schuldt
  * 
- * 							Selected functionalities of gICS were developed as part of the MAGIC Project (funded by the DFG HO 1937/5-1).
+ * 							The gICS was developed by the University Medicine Greifswald and published
+ *  							in 2014 as part of the research project "MOSAIC" (funded by the DFG HO 1937/2-1).
+ *  
+ * 							Selected functionalities of gICS were developed as
+ * 							part of the following research projects:
+ * 							- MAGIC (funded by the DFG HO 1937/5-1)
+ * 							- MIRACUM (funded by the German Federal Ministry of Education and Research 01ZZ1801M)
+ * 							- NUM-CODEX (funded by the German Federal Ministry of Education and Research 01KX2021)
  * 
  * 							please cite our publications
+ * 							https://doi.org/10.1186/s12967-020-02457-y
  * 							http://dx.doi.org/10.3414/ME14-01-0133
  * 							http://dx.doi.org/10.1186/s12967-015-0545-6
  * 							http://dx.doi.org/10.3205/17gmds146
@@ -35,31 +46,68 @@ package org.emau.icmvc.ganimed.ttp.cm2.frontend.model;
  * ###license-information-end###
  */
 
+
+import java.text.SimpleDateFormat;
+
 import org.emau.icmvc.ganimed.ttp.cm2.dto.ConsentTemplateKeyDTO;
+import org.emau.icmvc.ganimed.ttp.cm2.dto.ExpirationPropertiesDTO;
 import org.emau.icmvc.ganimed.ttp.cm2.dto.ModuleKeyDTO;
 import org.emau.icmvc.ganimed.ttp.cm2.dto.PolicyKeyDTO;
+import org.icmvc.ttp.web.controller.AbstractBean;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class TemplateTreeNode
+public class TemplateTreeNode extends AbstractBean
 {
-	public Logger logger = LoggerFactory.getLogger(getClass());
+	private Logger logger = LoggerFactory.getLogger(getClass());
 
 	private Object key;
-	private Boolean mandatory = true;
+	private String label;
+	private String versionLabel;
 	private Type type;
+	private Boolean finalised;
+	private String externProperties;
+	private ExpirationPropertiesDTO expiration;
+	private String comment;
+	private Boolean mandatory;
+	private SimpleDateFormat sdf;
 
-	public TemplateTreeNode(Object key)
+	private TemplateTreeNode(Object key, String label, String versionLabel, Boolean finalised, String externProperties, String comment)
 	{
 		this.key = key;
-		initType();
+		this.label = label;
+		this.versionLabel = versionLabel;
+		this.initType();
+		this.finalised = finalised;
+		this.externProperties = externProperties;
+		this.expiration = null;
+		this.comment = comment;
+		this.mandatory = true;
 	}
 
-	public TemplateTreeNode(Object key, Boolean mandatory)
+	// Policy
+	public TemplateTreeNode(Object key, String label, Boolean finalised, String externProperties, ExpirationPropertiesDTO expiration, String comment)
 	{
-		this.key = key;
+		this(key, label, null, finalised, externProperties, comment);
+		this.expiration = expiration;
+		this.sdf = getSimpleDateFormat("date");
+	}
+
+	// Template
+	public TemplateTreeNode(Object key, String label, String versionLabel, Boolean finalised, String externProperties, ExpirationPropertiesDTO expiration, String comment)
+	{
+		this(key, label, versionLabel, finalised, externProperties, comment);
+		this.expiration = expiration;
+		this.sdf = getSimpleDateFormat("date");
+	}
+
+	// Module
+	public TemplateTreeNode(Object key, String label, Boolean finalised, String externProperties, ExpirationPropertiesDTO expiration, Boolean mandatory, String comment)
+	{
+		this(key, label, null, finalised, externProperties, comment);
+		this.expiration = expiration;
+		this.sdf = getSimpleDateFormat("date");
 		this.mandatory = mandatory;
-		initType();
 	}
 
 	private void initType()
@@ -87,9 +135,14 @@ public class TemplateTreeNode
 		return key;
 	}
 
-	public Boolean getMandatory()
+	public String getLabel()
 	{
-		return mandatory;
+		return label;
+	}
+
+	public String getVersionLabel()
+	{
+		return versionLabel;
 	}
 
 	public Type getType()
@@ -97,8 +150,49 @@ public class TemplateTreeNode
 		return type;
 	}
 
+	public Boolean getFinalised()
+	{
+		return finalised;
+	}
+
+	public String getExternProperties()
+	{
+		return externProperties;
+	}
+
+	public String getExpiration()
+	{
+		StringBuilder result = new StringBuilder();
+		if (expiration != null)
+		{
+			if (expiration.getFixedExpirationDate() != null)
+			{
+				result.append(sdf.format(expiration.getFixedExpirationDate()));
+			}
+			if (expiration.getValidPeriod() != null)
+			{
+				if (result.length() > 0)
+				{
+					result.append(", ");
+				}
+				result.append(expiration.getValidPeriod().toString());
+			}
+		}
+		return result.toString();
+	}
+
+	public String getComment()
+	{
+		return comment;
+	}
+
+	public Boolean getMandatory()
+	{
+		return mandatory;
+	}
+
 	public enum Type
 	{
 		TEMPLATE, MODULE, POLICY
-	};
+	}
 }

@@ -1,5 +1,5 @@
 system requirements:
 
 jboss wildfly
-
+eclipselink 2.7.5
 mysql 5.6

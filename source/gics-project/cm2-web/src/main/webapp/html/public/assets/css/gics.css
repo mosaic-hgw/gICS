@@ -1,19 +1,30 @@
-/*
+/*-
  * ###license-information-start###
  * gICS - a Generic Informed Consent Service
  * __
- * Copyright (C) 2014 - 2018 The MOSAIC Project - Institut fuer Community
- * 							Medicine of the University Medicine Greifswald -
- * 							mosaic-projekt@uni-greifswald.de
+ * Copyright (C) 2014 - 2022 Trusted Third Party of the University Medicine Greifswald -
+ * 							kontakt-ths@uni-greifswald.de
  * 
  * 							concept and implementation
- * 							l.geidel
+ * 							l.geidel, c.hampf
  * 							web client
- * 							a.blumentritt, m.bialke
+ * 							a.blumentritt, m.bialke, f.m.moser
+ * 							fhir-api
+ * 							m.bialke
+ * 							docker
+ * 							r. schuldt
  * 
- * 							Selected functionalities of gICS were developed as part of the MAGIC Project (funded by the DFG HO 1937/5-1).
+ * 							The gICS was developed by the University Medicine Greifswald and published
+ *  							in 2014 as part of the research project "MOSAIC" (funded by the DFG HO 1937/2-1).
+ *  
+ * 							Selected functionalities of gICS were developed as
+ * 							part of the following research projects:
+ * 							- MAGIC (funded by the DFG HO 1937/5-1)
+ * 							- MIRACUM (funded by the German Federal Ministry of Education and Research 01ZZ1801M)
+ * 							- NUM-CODEX (funded by the German Federal Ministry of Education and Research 01KX2021)
  * 
  * 							please cite our publications
+ * 							https://doi.org/10.1186/s12967-020-02457-y
  * 							http://dx.doi.org/10.3414/ME14-01-0133
  * 							http://dx.doi.org/10.1186/s12967-015-0545-6
  * 							http://dx.doi.org/10.3205/17gmds146
@@ -32,7 +43,6 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  * ###license-information-end###
  */
-
 /* author: Arne Blumentritt  */
 @import url("ths_responsive.css");
 
@@ -40,44 +50,59 @@
 
 /* Normal color */
 .ui-button, .ui-progressbar-value, .ui-selectbooleanbutton.ui-button.ui-state-active,
-	.ui-selectonebutton .ui-button.ui-state-active, .ui-selectmanybutton .ui-button.ui-state-active,
-	.ui-button.ui-state-disabled:hover, .ui-datatable table tbody .ui-state-highlight>td,
-	.ui-panelgrid tbody .ui-state-highlight>td, .ui-datepicker-current-day a
-	{
+.ui-selectonebutton .ui-button.ui-state-active, .ui-selectmanybutton .ui-button.ui-state-active,
+.ui-button.ui-state-disabled:hover, .ui-datatable table tbody .ui-state-highlight > td,
+.ui-panelgrid tbody .ui-state-highlight > td, .ui-datepicker-current-day a, .ui-slider .ui-slider-handle.ui-state-focus,
+.ui-tabmenuitem.ui-state-active, .ui-sortable-placeholder, .ui-treenode-content.ui-state-highlight,
+.ui-selectonemenu[aria-expanded="true"] .ui-selectonemenu-trigger {
 	background-color: #309e59;
 }
 
-a:hover, .ui-menu a.active, .ui-state-highlight .ui-button,
-	.ui-state-highlight .ui-state-disabled.ui-button:hover,
-	.ui-datepicker-today a, td.small-icons>.ui-button-icon-only>.ui-icon,
-	#header>.mobile .toggler:checked ~ .toggler-icon, .help-button i.active
-	{
+a:hover, a.ui-menuitem-link.active, .ui-state-highlight .ui-button,
+.ui-state-highlight .ui-state-disabled.ui-button:hover,
+.ui-datepicker-today a, td.small-icons > .ui-button-icon-only > .ui-icon,
+#mobile-menu .toggler:checked ~ .toggler-icon, .help-button i.active, .flag, .ui-chkbox-box .ui-icon-check,
+.ui-datatable.checkbox-select .ui-chkbox-box .ui-icon-check,
+.ui-button.secondary, .ui-button.ui-confirmdialog-no, .ui-fileupload.secondary .ui-button,
+.ui-picklist-buttons .ui-button, .ui-inplace-cancel.ui-button,
+.ui-tabs-header.ui-state-active > a, .ui-treenode-label .tree-cut:hover {
 	color: #309e59;
 }
 
-#header, .ui-selectonemenu.ui-state-focus, .ui-inputfield.ui-state-focus
-	{
+#header, .ui-selectonemenu.ui-state-focus, .ui-inputfield.ui-state-focus, .ui-selectonemenu[aria-expanded="true"] {
 	border-bottom-color: #309e59 !important;
 }
 
+.ui-growl-item-container, .ui-button, .ui-slider .ui-slider-handle.ui-state-hover, .ui-slider .ui-slider-handle.ui-state-focus
+.ui-tabs-header.ui-state-hover, .ui-tabs-header.ui-state-active {
+	border-color: #309e59;
+}
+
 /* Hightlight color */
-.ui-button.ui-state-hover, .ui-button:hover, .ui-selectonemenu-item.ui-state-highlight,
-	.ui-picklist-item.ui-state-highlight {
+.ui-button.ui-state-hover, .ui-button:hover, .ui-button.ui-state-focus, .ui-button:focus,
+.ui-selectonemenu-item.ui-state-highlight, .ui-picklist-item.ui-state-highlight,
+.ui-selectlistbox-item.ui-state-highlight, .ui-autocomplete-item.ui-state-highlight,
+.ui-state-highlight span.ui-steps-number, .ui-tabmenuitem.ui-state-hover .ui-menuitem-link,
+.ui-treenode-content.ui-state-hover, .ui-selectbooleanbutton.ui-button.ui-state-active.ui-state-hover,
+.ui-selectbooleanbutton.ui-button.ui-state-active.ui-state-focus {
 	background-color: #37b365;
 }
 
-.ui-selectonemenu.ui-state-hover, .ui-inputfield.ui-state-hover,
-	.ui-selectbooleanbutton.ui-button.ui-state-hover, .ui-selectonebutton .ui-button.ui-state-hover,
-	.ui-selectmanybutton .ui-button.ui-state-hover, .ql-container:hover,
-	.ui-picklist-list-wrapper:hover {
+.ui-selectonemenu.ui-state-hover, .ui-inputfield.ui-state-hover, .ui-selectonebutton .ui-button.ui-state-hover,
+.ui-selectmanybutton .ui-button.ui-state-hover, .ql-container:hover,
+.ui-picklist-list-wrapper:hover {
 	border-bottom-color: #37b365 !important;
 }
 
-td.small-icons>.ui-button-icon-only.ui-state-hover>.ui-icon {
+td.small-icons > .ui-button-icon-only.ui-state-hover > .ui-icon, .highlight, .ui-autocomplete-token-icon:hover, .ui-chips-token .ui-chips-token-icon:hover {
 	color: #37b365;
 }
-/* END PROJECT COLORS */
 
+.ui-button.ui-state-focus, .ui-button:focus, .ui-chkbox-box:hover, .ui-chkbox-box:focus, .ui-radiobutton-box:hover, .ui-radiobutton-box:focus {
+	box-shadow: 0 0 1px 2px #37b36580;
+}
+
+/* END PROJECT COLORS */
 .ellipsis {
 	width: 0;
 	min-width: 100%;
@@ -90,21 +115,36 @@ td.small-icons>.ui-button-icon-only.ui-state-hover>.ui-icon {
 	display: block;
 }
 
-.moduleStates .ui-radiobutton .ui-icon-bullet, .freeTexts .ui-icon-check
-	{
-	font-size: 3.1em;
-	position: relative;
-	top: -8px;
-	width: 30px;
-	left: -7px;
-	font-weight: bold;
-	line-height: 30px;
-	color: #626262;
+.moduleStates {
+	float: left;
 }
 
-.moduleStates .ui-radiobutton .ui-icon-bullet::before, .freeTexts .ui-icon-check::before
-	{
-	content: "\00d7";
+.moduleStates .ui-radiobutton .ui-icon-bullet {
+	position: relative;
+	top: -7px;
+	width: 30px;
+	left: -8px;
+	line-height: 30px;
+}
+
+.moduleStates .ui-radiobutton .ui-icon-bullet::before {
+	content: "\F0156";
+	font-size: 34px;
+}
+
+.templateTree .ui-panelgrid td {
+	border: none !important;
+	padding: 0 3px;
+}
+
+.templateTree .ui-panelgrid tr {
+	background-color: initial !important;
+}
+
+.templateTree .version {
+	text-align: center;
+	width: 100%;
+	display: inline-block;
 }
 
 .break-word {
@@ -116,13 +156,28 @@ td.small-icons>.ui-button-icon-only.ui-state-hover>.ui-icon {
 }
 
 .icon_CONSENT::before {
-	content: "\F9ED";
+	content: "\F0E29";
 }
 
 .icon_REVOCATION::before {
-	content: "\F219";
+	content: "\F0B98";
 }
 
 .icon_REFUSAL::before {
-	content: "\F214";
+	content: "\F0DC6";
+}
+
+.ui-progressbar.accepted .ui-progressbar-value, .ui-progressbar.accepted.declined .ui-progressbar-value {
+	background-color: hsl(129, 78%, 70%);
+}
+
+.ui-progressbar.declined .ui-progressbar-value, .ui-progressbar.accepted.declined {
+	background-color: hsl(0, 78%, 70%);
+}
+
+.tooltip-icon.comment {
+	margin-top: -1px;
+	display: inline-block;
+	position: relative;
+	top: 3px;
 }

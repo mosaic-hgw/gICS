@@ -1,21 +1,32 @@
 package org.emau.icmvc.ganimed.ttp.cm2.internal;
 
-/*
+/*-
  * ###license-information-start###
  * gICS - a Generic Informed Consent Service
  * __
- * Copyright (C) 2014 - 2018 The MOSAIC Project - Institut fuer Community
- * 							Medicine of the University Medicine Greifswald -
- * 							mosaic-projekt@uni-greifswald.de
+ * Copyright (C) 2014 - 2022 Trusted Third Party of the University Medicine Greifswald -
+ * 							kontakt-ths@uni-greifswald.de
  * 
  * 							concept and implementation
- * 							l.geidel
+ * 							l.geidel, c.hampf
  * 							web client
- * 							a.blumentritt, m.bialke
+ * 							a.blumentritt, m.bialke, f.m.moser
+ * 							fhir-api
+ * 							m.bialke
+ * 							docker
+ * 							r. schuldt
  * 
- * 							Selected functionalities of gICS were developed as part of the MAGIC Project (funded by the DFG HO 1937/5-1).
+ * 							The gICS was developed by the University Medicine Greifswald and published
+ *  							in 2014 as part of the research project "MOSAIC" (funded by the DFG HO 1937/2-1).
+ *  
+ * 							Selected functionalities of gICS were developed as
+ * 							part of the following research projects:
+ * 							- MAGIC (funded by the DFG HO 1937/5-1)
+ * 							- MIRACUM (funded by the German Federal Ministry of Education and Research 01ZZ1801M)
+ * 							- NUM-CODEX (funded by the German Federal Ministry of Education and Research 01KX2021)
  * 
  * 							please cite our publications
+ * 							https://doi.org/10.1186/s12967-020-02457-y
  * 							http://dx.doi.org/10.3414/ME14-01-0133
  * 							http://dx.doi.org/10.1186/s12967-015-0545-6
  * 							http://dx.doi.org/10.3205/17gmds146
@@ -47,15 +58,23 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import javax.persistence.EntityManager;
 import javax.persistence.Query;
+import javax.persistence.TypedQuery;
 import javax.persistence.criteria.CriteriaBuilder;
 import javax.persistence.criteria.CriteriaQuery;
 import javax.persistence.criteria.Root;
 
-import org.apache.log4j.Logger;
-import org.emau.icmvc.ganimed.ttp.cm2.dto.SignerIdDTO;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
 import org.emau.icmvc.ganimed.ttp.cm2.dto.enums.ConsentStatus;
-import org.emau.icmvc.ganimed.ttp.cm2.model.PolicyKey;
+import org.emau.icmvc.ganimed.ttp.cm2.exceptions.UnknownPolicyException;
+import org.emau.icmvc.ganimed.ttp.cm2.model.Consent;
+import org.emau.icmvc.ganimed.ttp.cm2.model.ConsentKey;
+import org.emau.icmvc.ganimed.ttp.cm2.model.ConsentTemplate;
+import org.emau.icmvc.ganimed.ttp.cm2.model.ConsentTemplateKey;
+import org.emau.icmvc.ganimed.ttp.cm2.model.QC;
 import org.emau.icmvc.ganimed.ttp.cm2.model.SignedPolicy;
+import org.emau.icmvc.ganimed.ttp.cm2.model.SignedPolicyKey;
+import org.emau.icmvc.ganimed.ttp.cm2.model.SignerIdKey;
 import org.emau.icmvc.ganimed.ttp.cm2.model.VirtualPerson;
 import org.emau.icmvc.ganimed.ttp.cm2.model.VirtualPersonSignerId;
 
@@ -65,65 +84,145 @@ import org.emau.icmvc.ganimed.ttp.cm2.model.VirtualPersonSignerId;
  * @author geidell
  *
  */
-public class ConsentCache {
-
-	private static final Logger logger = Logger.getLogger(ConsentCache.class);
-	private static final int SIGNED_POLICIES_PAGE_SIZE = 100000;
-	private static boolean initialised = false;
+public class ConsentCache
+{
+	private static final Logger LOGGER = LogManager.getLogger(ConsentCache.class);
+	private static final int SIGNED_POLICIES_PAGE_SIZE = 10000;
+	private static volatile boolean INITIALISED = false;
+	private static final ReentrantReadWriteLock CACHE_RWL = new ReentrantReadWriteLock();
 	// domain -> signerId -> signedPolicies
-	private static final ReentrantReadWriteLock cacheRWL = new ReentrantReadWriteLock();
-	private static final Map<String, Map<SignerIdDTO, List<CachedSignedPolicy>>> signerCache = new HashMap<String, Map<SignerIdDTO, List<CachedSignedPolicy>>>();
-	private static final Map<String, Map<Long, List<CachedSignedPolicy>>> vpCache = new HashMap<String, Map<Long, List<CachedSignedPolicy>>>();
+	private static final Map<String, Map<SignerIdKey, List<CachedSignedPolicy>>> SIGNER_CACHE = new HashMap<>();
+	private static final Map<String, Map<Long, List<CachedSignedPolicy>>> VP_CACHE = new HashMap<>();
+	private static final ConsentCache INSTANCE = new ConsentCache();
 
-	public boolean isInitialised() {
-		return initialised;
+	private ConsentCache()
+	{}
+
+	public static boolean isInitialised()
+	{
+		CACHE_RWL.readLock().lock();
+		try
+		{
+			return INITIALISED;
+		}
+		finally
+		{
+			CACHE_RWL.readLock().unlock();
+		}
 	}
 
-	public void init(EntityManager em) {
-		cacheRWL.writeLock().lock();
-		try {
-			if (initialised) {
+	public static void init(EntityManager em)
+	{
+		CACHE_RWL.writeLock().lock();
+		try
+		{
+			if (INITIALISED)
+			{
 				return;
 			}
 			List<VirtualPersonSignerId> signerIds = getAllSignerIds(em);
 			em.clear(); // wichtig! eclipselink laedt sonst die ganzen objekte (vor allem consents) nach
-			if (logger.isDebugEnabled()) {
-				logger.debug("found " + signerIds.size() + " signer ids, sorting them now");
+			if (LOGGER.isDebugEnabled())
+			{
+				LOGGER.debug("found " + signerIds.size() + " signer ids, sorting them now");
 			}
-			Map<Long, Set<SignerIdDTO>> mappedSignerIds = mapSignerIds(signerIds);
-			if (logger.isDebugEnabled()) {
-				logger.debug("signer ids sorted, found entries for " + mappedSignerIds.size() + " virtual persons");
+			Map<Long, Set<SignerIdKey>> mappedSignerIds = mapSignerIds(signerIds);
+			if (LOGGER.isDebugEnabled())
+			{
+				LOGGER.debug("signer ids sorted, found entries for " + mappedSignerIds.size() + " virtual persons");
 			}
 			// signed policies chunked to save memory
 			long signedPoliciesCount = getSignedPoliciesCount(em);
-			if (logger.isDebugEnabled()) {
-				logger.debug("found " + signedPoliciesCount + " signed policies, sorting them now");
+			if (LOGGER.isDebugEnabled())
+			{
+				LOGGER.debug("found " + signedPoliciesCount + " signed policies, sorting them now");
 			}
-			for (int i = 0; i * SIGNED_POLICIES_PAGE_SIZE < signedPoliciesCount; i++) {
-				int nextPageSize = (int) ((i + 1) * SIGNED_POLICIES_PAGE_SIZE < signedPoliciesCount ? SIGNED_POLICIES_PAGE_SIZE
-						: signedPoliciesCount - (i) * SIGNED_POLICIES_PAGE_SIZE);
-				if (nextPageSize > 0) {
-					List<SignedPolicy> signedPolicies = getSignedPolicies(em, i * SIGNED_POLICIES_PAGE_SIZE, nextPageSize);
-					em.clear(); // wichtig! eclipselink laedt sonst die ganzen objekte (vor allem consents) nach
-					Map<Long, List<SignedPolicy>> mappedSignedPolicies = mapSignedPolicies(signedPolicies);
-					if (logger.isDebugEnabled()) {
-						logger.debug("signed policies sorted, found entries for " + mappedSignedPolicies.size() + " virtual persons");
+			List<ConsentTemplate> cts = getAllCTs(em);
+			Map<ConsentTemplateKey, ConsentTemplate> ctMap = new HashMap<>();
+			for (ConsentTemplate ct : cts)
+			{
+				ctMap.put(ct.getKey(), ct);
+			}
+			List<Consent> consents = getAllConsents(em);
+			Map<ConsentKey, ConsentDateValues> consentDates = new HashMap<>();
+			Map<ConsentKey, Long> gicsConsentDates = new HashMap<>(2);
+			Map<ConsentKey, Long> legalConsentDates = new HashMap<>(2);
+			for (Consent consent : consents)
+			{
+				if (!consent.getQc().isQcPassed())
+				{
+					continue;
+				}
+				ConsentDateValues consentDateValues = consent.getConsentDateValues();
+				consentDates.put(consent.getKey(), consentDateValues);
+				gicsConsentDates.put(consent.getKey(), consentDateValues.getGicsConsentTimestamp());
+				legalConsentDates.put(consent.getKey(), consentDateValues.getLegalConsentTimestamp());
+			}
+			for (int i = 0; i * SIGNED_POLICIES_PAGE_SIZE < signedPoliciesCount; i++)
+			{
+				int nextPageSize = (int) ((i + 1) * SIGNED_POLICIES_PAGE_SIZE < signedPoliciesCount ? SIGNED_POLICIES_PAGE_SIZE : signedPoliciesCount - i * SIGNED_POLICIES_PAGE_SIZE);
+				if (nextPageSize > 0)
+				{
+					if (LOGGER.isDebugEnabled())
+					{
+						LOGGER.debug("loading consent information " + i * SIGNED_POLICIES_PAGE_SIZE + " - " + (i * SIGNED_POLICIES_PAGE_SIZE + nextPageSize));
 					}
-					for (Entry<Long, Set<SignerIdDTO>> entry : mappedSignerIds.entrySet()) {
-						addConsent(entry.getKey(), entry.getValue(), mappedSignedPolicies.get(entry.getKey()));
+					List<SignedPolicy> signedPolicies = getSignedPolicies(em, i * SIGNED_POLICIES_PAGE_SIZE, nextPageSize);
+					// key = vpId
+					Map<Long, List<SignedPolicy>> mappedSignedPolicies = mapSignedPolicies(signedPolicies);
+					if (LOGGER.isDebugEnabled())
+					{
+						LOGGER.debug("sorted entries for " + mappedSignedPolicies.size() + " virtual persons");
+					}
+					long counter = 0;
+					for (Entry<Long, Set<SignerIdKey>> entry : mappedSignerIds.entrySet())
+					{
+						List<SignedPolicy> signedPoliciesToProcess = mappedSignedPolicies.get(entry.getKey());
+						if (signedPoliciesToProcess != null)
+						{
+							Map<SignedPolicy, Long> signedPoliciesWithExpiration = getSignedPoliciesWithExpirationDates(signedPoliciesToProcess, ctMap, consentDates);
+							addPolicies(entry.getKey(), entry.getValue(), signedPoliciesWithExpiration, gicsConsentDates, legalConsentDates);
+							counter += signedPoliciesWithExpiration.size();
+						}
+					}
+					if (LOGGER.isDebugEnabled())
+					{
+						LOGGER.debug("added " + counter + " consent information to cache");
 					}
 				}
 			}
-			if (logger.isDebugEnabled()) {
-				logger.debug("cache filled");
+			if (LOGGER.isDebugEnabled())
+			{
+				LOGGER.debug("cache filled with " + signedPoliciesCount + " consent informations");
 			}
-			initialised = true;
-		} finally {
-			cacheRWL.writeLock().unlock();
+			INITIALISED = true;
+		}
+		finally
+		{
+			CACHE_RWL.writeLock().unlock();
 		}
 	}
 
-	private List<VirtualPersonSignerId> getAllSignerIds(EntityManager em) {
+	private static List<ConsentTemplate> getAllCTs(EntityManager em)
+	{
+		CriteriaBuilder criteriaBuilder = em.getCriteriaBuilder();
+		CriteriaQuery<ConsentTemplate> criteriaQuery = criteriaBuilder.createQuery(ConsentTemplate.class);
+		Root<ConsentTemplate> root = criteriaQuery.from(ConsentTemplate.class);
+		criteriaQuery.select(root);
+		return em.createQuery(criteriaQuery).getResultList();
+	}
+
+	private static List<Consent> getAllConsents(EntityManager em)
+	{
+		CriteriaBuilder criteriaBuilder = em.getCriteriaBuilder();
+		CriteriaQuery<Consent> criteriaQuery = criteriaBuilder.createQuery(Consent.class);
+		Root<Consent> root = criteriaQuery.from(Consent.class);
+		criteriaQuery.select(root);
+		return em.createQuery(criteriaQuery).getResultList();
+	}
+
+	private static List<VirtualPersonSignerId> getAllSignerIds(EntityManager em)
+	{
 		CriteriaBuilder criteriaBuilder = em.getCriteriaBuilder();
 		CriteriaQuery<VirtualPersonSignerId> criteriaQuery = criteriaBuilder.createQuery(VirtualPersonSignerId.class);
 		Root<VirtualPersonSignerId> root = criteriaQuery.from(VirtualPersonSignerId.class);
@@ -131,23 +230,25 @@ public class ConsentCache {
 		return em.createQuery(criteriaQuery).getResultList();
 	}
 
-	private Map<Long, Set<SignerIdDTO>> mapSignerIds(List<VirtualPersonSignerId> virtualPersonSignerIds) {
-		Map<Long, Set<SignerIdDTO>> result = new HashMap<Long, Set<SignerIdDTO>>();
-		for (VirtualPersonSignerId virtualPersonSignerId : virtualPersonSignerIds) {
-			SignerIdDTO signerIdDTO = new SignerIdDTO(virtualPersonSignerId.getKey().getSignerIdKey().getSignerIdTypeKey().getName(),
-					virtualPersonSignerId.getKey().getSignerIdKey().getValue());
+	private static Map<Long, Set<SignerIdKey>> mapSignerIds(List<VirtualPersonSignerId> virtualPersonSignerIds)
+	{
+		Map<Long, Set<SignerIdKey>> result = new HashMap<>();
+		for (VirtualPersonSignerId virtualPersonSignerId : virtualPersonSignerIds)
+		{
 			Long vpId = virtualPersonSignerId.getKey().getVpId();
-			Set<SignerIdDTO> signerIdsForVP = result.get(vpId);
-			if (signerIdsForVP == null) {
-				signerIdsForVP = new HashSet<SignerIdDTO>();
+			Set<SignerIdKey> signerIdsForVP = result.get(vpId);
+			if (signerIdsForVP == null)
+			{
+				signerIdsForVP = new HashSet<>();
 				result.put(vpId, signerIdsForVP);
 			}
-			signerIdsForVP.add(signerIdDTO);
+			signerIdsForVP.add(virtualPersonSignerId.getKey().getSignerIdKey());
 		}
 		return result;
 	}
 
-	private long getSignedPoliciesCount(EntityManager em) {
+	private static long getSignedPoliciesCount(EntityManager em)
+	{
 		CriteriaBuilder criteriaBuilder = em.getCriteriaBuilder();
 		CriteriaQuery<Long> criteriaQuery = criteriaBuilder.createQuery(Long.class);
 		criteriaQuery.select(criteriaBuilder.count(criteriaQuery.from(SignedPolicy.class)));
@@ -155,25 +256,28 @@ public class ConsentCache {
 		return (long) query.getSingleResult();
 	}
 
-	@SuppressWarnings("unchecked")
-	private List<SignedPolicy> getSignedPolicies(EntityManager em, int startPosition, int maxResults) {
+	private static List<SignedPolicy> getSignedPolicies(EntityManager em, int startPosition, int maxResults)
+	{
 		CriteriaBuilder criteriaBuilder = em.getCriteriaBuilder();
 		CriteriaQuery<SignedPolicy> criteriaQuery = criteriaBuilder.createQuery(SignedPolicy.class);
 		Root<SignedPolicy> root = criteriaQuery.from(SignedPolicy.class);
 		criteriaQuery.select(root);
-		Query query = em.createQuery(criteriaQuery);
+		TypedQuery<SignedPolicy> query = em.createQuery(criteriaQuery);
 		query.setFirstResult(startPosition);
 		query.setMaxResults(maxResults);
 		return query.getResultList();
 	}
 
-	private Map<Long, List<SignedPolicy>> mapSignedPolicies(List<SignedPolicy> signedPolicies) {
-		Map<Long, List<SignedPolicy>> result = new HashMap<Long, List<SignedPolicy>>();
-		for (SignedPolicy signedPolicy : signedPolicies) {
+	private static Map<Long, List<SignedPolicy>> mapSignedPolicies(List<SignedPolicy> signedPolicies)
+	{
+		Map<Long, List<SignedPolicy>> result = new HashMap<>();
+		for (SignedPolicy signedPolicy : signedPolicies)
+		{
 			Long vpId = signedPolicy.getKey().getConsentKey().getVirtualPersonId();
 			List<SignedPolicy> signedPoliciesForVP = result.get(vpId);
-			if (signedPoliciesForVP == null) {
-				signedPoliciesForVP = new ArrayList<SignedPolicy>();
+			if (signedPoliciesForVP == null)
+			{
+				signedPoliciesForVP = new ArrayList<>();
 				result.put(vpId, signedPoliciesForVP);
 			}
 			signedPoliciesForVP.add(signedPolicy);
@@ -181,212 +285,366 @@ public class ConsentCache {
 		return result;
 	}
 
-	public void addConsent(Long vpId, Set<SignerIdDTO> signerIdDTOs, List<SignedPolicy> signedPolicies) {
-		if (signedPolicies == null || signedPolicies.isEmpty() || signerIdDTOs == null || signerIdDTOs.isEmpty()) {
+	private static Map<SignedPolicy, Long> getSignedPoliciesWithExpirationDates(List<SignedPolicy> signedPolicies, Map<ConsentTemplateKey, ConsentTemplate> ctMap,
+			Map<ConsentKey, ConsentDateValues> consentDates)
+	{
+		Map<SignedPolicy, Long> result = new HashMap<>();
+		for (SignedPolicy signedPolicy : signedPolicies)
+		{
+			ConsentKey consentKey = signedPolicy.getKey().getConsentKey();
+			// if no valid consentDate found (because of qcStatus), skip
+			if (!consentDates.containsKey(consentKey))
+			{
+				continue;
+			}
+			try
+			{
+				result.put(signedPolicy, consentDates.get(consentKey).getTimestampForPolicy(signedPolicy.getKey().getPolicyKey()));
+			}
+			catch (UnknownPolicyException impossible)
+			{
+				LOGGER.fatal("impossible exception while calculating signed policy expiration dates", impossible);
+			}
+		}
+		return result;
+	}
+
+	public static void addConsent(Long id, Set<SignerIdKey> signerIdKeys, Map<SignedPolicy, Long> signedPoliciesWithExpirationDates, Consent consent)
+	{
+		Map<ConsentKey, Long> gicsConsentDates = new HashMap<>(2);
+		Map<ConsentKey, Long> legalConsentDates = new HashMap<>(2);
+		gicsConsentDates.put(consent.getKey(), consent.getConsentDateValues().getGicsConsentTimestamp());
+		legalConsentDates.put(consent.getKey(), consent.getConsentDateValues().getLegalConsentTimestamp());
+		addPolicies(id, signerIdKeys, signedPoliciesWithExpirationDates, gicsConsentDates, legalConsentDates);
+	}
+
+	public static void addPolicies(Long vpId, Set<SignerIdKey> signerIdKeys, Map<SignedPolicy, Long> signedPoliciesWithExpirationDates, Map<ConsentKey, Long> gicsConsentDates,
+			Map<ConsentKey, Long> legalConsentDates)
+	{
+		if (signedPoliciesWithExpirationDates == null || signedPoliciesWithExpirationDates.isEmpty() || signerIdKeys == null || signerIdKeys.isEmpty())
+		{
 			return;
 		}
-		String domainName = signedPolicies.get(0).getKey().getPolicyKey().getDomainName();
-		cacheRWL.writeLock().lock();
-		try {
-			Map<SignerIdDTO, List<CachedSignedPolicy>> domainSignerCache = signerCache.get(domainName);
-			if (domainSignerCache == null) {
-				domainSignerCache = new HashMap<SignerIdDTO, List<CachedSignedPolicy>>();
-				signerCache.put(domainName, domainSignerCache);
+		CACHE_RWL.writeLock().lock();
+		try
+		{
+			// QC
+			SignedPolicy firstPolicyKey = signedPoliciesWithExpirationDates.keySet().iterator().next();
+			QC qc = firstPolicyKey.getConsent().getQc();
+			if (!qc.isQcPassed())
+			{
+				return;
 			}
-			for (SignerIdDTO signerId : signerIdDTOs) {
-				if (domainSignerCache.get(signerId) == null) {
-					domainSignerCache.put(signerId, new ArrayList<CachedSignedPolicy>());
+			String domainName = firstPolicyKey.getKey().getPolicyKey().getDomainName();
+			Map<SignerIdKey, List<CachedSignedPolicy>> domainSignerCache = SIGNER_CACHE.get(domainName);
+			if (domainSignerCache == null)
+			{
+				domainSignerCache = new HashMap<>();
+				SIGNER_CACHE.put(domainName, domainSignerCache);
+			}
+			for (SignerIdKey signerIdKey : signerIdKeys)
+			{
+				if (domainSignerCache.get(signerIdKey) == null)
+				{
+					domainSignerCache.put(signerIdKey, new ArrayList<>());
 				}
 			}
-			Map<Long, List<CachedSignedPolicy>> domainVPCache = vpCache.get(domainName);
-			if (domainVPCache == null) {
-				domainVPCache = new HashMap<Long, List<CachedSignedPolicy>>();
-				vpCache.put(domainName, domainVPCache);
+			Map<Long, List<CachedSignedPolicy>> domainVPCache = VP_CACHE.get(domainName);
+			if (domainVPCache == null)
+			{
+				domainVPCache = new HashMap<>();
+				VP_CACHE.put(domainName, domainVPCache);
 			}
 			List<CachedSignedPolicy> vpSignedPolicies = domainVPCache.get(vpId);
-			if (vpSignedPolicies == null) {
-				vpSignedPolicies = new ArrayList<CachedSignedPolicy>();
+			if (vpSignedPolicies == null)
+			{
+				vpSignedPolicies = new ArrayList<>();
 				domainVPCache.put(vpId, vpSignedPolicies);
 			}
 			// objekte nur einmal erzeugen, deswegen neue schleife
-			for (SignedPolicy signedPolicy : signedPolicies) {
-				PolicyKey policyKey = signedPolicy.getKey().getPolicyKey();
-				CachedSignedPolicy cachedSignedPolicy = new CachedSignedPolicy(policyKey.getName(), policyKey.getVersion(),
-						signedPolicy.getKey().getConsentKey().getConsentDate().getTime(), signedPolicy.getStatus());
-				for (SignerIdDTO signerId : signerIdDTOs) {
-					domainSignerCache.get(signerId).add(cachedSignedPolicy);
+			for (Entry<SignedPolicy, Long> entry : signedPoliciesWithExpirationDates.entrySet())
+			{
+				ConsentKey consentKey = entry.getKey().getKey().getConsentKey();
+				if (entry.getValue() != null)
+				{
+					CachedSignedPolicy cachedSignedPolicy = INSTANCE.new CachedSignedPolicy(entry.getKey().getKey(), gicsConsentDates.get(consentKey), legalConsentDates.get(consentKey),
+							entry.getKey().getStatus(), entry.getValue());
+					for (SignerIdKey signerId : signerIdKeys)
+					{
+						domainSignerCache.get(signerId).add(cachedSignedPolicy);
+					}
+					vpSignedPolicies.add(cachedSignedPolicy);
 				}
-				vpSignedPolicies.add(cachedSignedPolicy);
+				else
+				{
+					LOGGER.fatal("inconsistent data - signed policy isn't part of template: " + entry.getKey());
+				}
 			}
-		} finally {
-			cacheRWL.writeLock().unlock();
+		}
+		finally
+		{
+			CACHE_RWL.writeLock().unlock();
 		}
 	}
 
-	public List<CachedSignedPolicy> getCachedPoliciesForSigner(String domain, SignerIdDTO signerIdDTO, String policyName) {
-		List<CachedSignedPolicy> result = new ArrayList<CachedSignedPolicy>();
-		cacheRWL.readLock().lock();
-		try {
-			if (signerCache.get(domain) != null && signerCache.get(domain).get(signerIdDTO) != null) {
-				for (CachedSignedPolicy cachedSignedPolicy : signerCache.get(domain).get(signerIdDTO)) {
-					if (cachedSignedPolicy.getName().equals(policyName)) {
+	public static void removeConsent(Consent consent, Set<SignerIdKey> signerIdKeys, Map<SignedPolicy, Long> signedPoliciesWithExpirationDates, String domainName)
+	{
+		if (signedPoliciesWithExpirationDates == null || signedPoliciesWithExpirationDates.isEmpty() || signerIdKeys == null || signerIdKeys.isEmpty())
+		{
+			return;
+		}
+		CACHE_RWL.writeLock().lock();
+		try
+		{
+			Map<SignerIdKey, List<CachedSignedPolicy>> domainSignerCache = SIGNER_CACHE.get(domainName);
+			Map<Long, List<CachedSignedPolicy>> domainVPCache = VP_CACHE.get(domainName);
+			List<CachedSignedPolicy> vpSignedPolicies = domainVPCache.get(consent.getVirtualPerson().getId());
+			for (Entry<SignedPolicy, Long> entry : signedPoliciesWithExpirationDates.entrySet())
+			{
+				if (entry.getValue() != null)
+				{
+					CachedSignedPolicy cachedSignedPolicy = INSTANCE.new CachedSignedPolicy(entry.getKey().getKey(), consent.getConsentDateValues().getGicsConsentTimestamp(),
+							consent.getConsentDateValues().getLegalConsentTimestamp(), entry.getKey().getStatus(), entry.getValue());
+					for (SignerIdKey signerIdKey : signerIdKeys)
+					{
+						domainSignerCache.get(signerIdKey).remove(cachedSignedPolicy);
+					}
+					vpSignedPolicies.remove(cachedSignedPolicy);
+				}
+				else
+				{
+					LOGGER.fatal("inconsistent data - signed policy isn't part of template: " + entry.getKey());
+				}
+			}
+		}
+		finally
+		{
+			CACHE_RWL.writeLock().unlock();
+		}
+	}
+
+	public static List<CachedSignedPolicy> getCachedPoliciesForSigner(String domain, SignerIdKey signerIdKey, String policyName)
+	{
+		List<CachedSignedPolicy> result = new ArrayList<>();
+		CACHE_RWL.readLock().lock();
+		try
+		{
+			if (SIGNER_CACHE.get(domain) != null && SIGNER_CACHE.get(domain).get(signerIdKey) != null)
+			{
+				for (CachedSignedPolicy cachedSignedPolicy : SIGNER_CACHE.get(domain).get(signerIdKey))
+				{
+					if (cachedSignedPolicy.getName().equals(policyName))
+					{
 						result.add(cachedSignedPolicy);
 					}
 				}
 			}
-		} finally {
-			cacheRWL.readLock().unlock();
+		}
+		finally
+		{
+			CACHE_RWL.readLock().unlock();
 		}
 		return result;
 	}
 
-	public List<CachedSignedPolicy> getCachedPoliciesForSigner(String domain, SignerIdDTO signerIdDTO, String policyName, int versionFrom,
-			int versionTo) {
-		List<CachedSignedPolicy> result = new ArrayList<CachedSignedPolicy>();
-		cacheRWL.readLock().lock();
-		try {
-			if (signerCache.get(domain) != null && signerCache.get(domain).get(signerIdDTO) != null) {
-				for (CachedSignedPolicy cachedSignedPolicy : signerCache.get(domain).get(signerIdDTO)) {
+	public static List<CachedSignedPolicy> getCachedPoliciesForSigner(String domain, SignerIdKey signerIdKey, String policyName, int versionFrom,
+			int versionTo)
+	{
+		List<CachedSignedPolicy> result = new ArrayList<>();
+		CACHE_RWL.readLock().lock();
+		try
+		{
+			if (SIGNER_CACHE.get(domain) != null && SIGNER_CACHE.get(domain).get(signerIdKey) != null)
+			{
+				for (CachedSignedPolicy cachedSignedPolicy : SIGNER_CACHE.get(domain).get(signerIdKey))
+				{
 					if (cachedSignedPolicy.getName().equals(policyName) && cachedSignedPolicy.getVersion() >= versionFrom
-							&& cachedSignedPolicy.getVersion() <= versionTo) {
+							&& cachedSignedPolicy.getVersion() <= versionTo)
+					{
 						result.add(cachedSignedPolicy);
 					}
 				}
 			}
-		} finally {
-			cacheRWL.readLock().unlock();
+		}
+		finally
+		{
+			CACHE_RWL.readLock().unlock();
 		}
 		return result;
 	}
 
-	public List<CachedSignedPolicy> getCachedPoliciesForVP(String domain, VirtualPerson vp, String policyName) {
-		List<CachedSignedPolicy> result = new ArrayList<CachedSignedPolicy>();
-		cacheRWL.readLock().lock();
-		try {
-			if (vpCache.get(domain) != null && vpCache.get(domain).get(vp.getId()) != null) {
-				for (CachedSignedPolicy cachedSignedPolicy : vpCache.get(domain).get(vp.getId())) {
-					if (cachedSignedPolicy.getName().equals(policyName)) {
+	public static List<CachedSignedPolicy> getCachedPoliciesForVP(String domain, VirtualPerson vp, String policyName)
+	{
+		List<CachedSignedPolicy> result = new ArrayList<>();
+		CACHE_RWL.readLock().lock();
+		try
+		{
+			if (VP_CACHE.get(domain) != null && VP_CACHE.get(domain).get(vp.getId()) != null)
+			{
+				for (CachedSignedPolicy cachedSignedPolicy : VP_CACHE.get(domain).get(vp.getId()))
+				{
+					if (cachedSignedPolicy.getName().equals(policyName))
+					{
 						result.add(cachedSignedPolicy);
 					}
 				}
 			}
-		} finally {
-			cacheRWL.readLock().unlock();
+		}
+		finally
+		{
+			CACHE_RWL.readLock().unlock();
 		}
 		return result;
 	}
 
-	public List<CachedSignedPolicy> getCachedPoliciesForVP(String domain, VirtualPerson vp, String policyName, int versionFrom, int versionTo) {
-		List<CachedSignedPolicy> result = new ArrayList<CachedSignedPolicy>();
-		cacheRWL.readLock().lock();
-		try {
-			if (vpCache.get(domain) != null && vpCache.get(domain).get(vp.getId()) != null) {
-				for (CachedSignedPolicy cachedSignedPolicy : vpCache.get(domain).get(vp.getId())) {
+	public static List<CachedSignedPolicy> getCachedPoliciesForVP(String domain, VirtualPerson vp, String policyName, int versionFrom,
+			int versionTo)
+	{
+		List<CachedSignedPolicy> result = new ArrayList<>();
+		CACHE_RWL.readLock().lock();
+		try
+		{
+			if (VP_CACHE.get(domain) != null && VP_CACHE.get(domain).get(vp.getId()) != null)
+			{
+				for (CachedSignedPolicy cachedSignedPolicy : VP_CACHE.get(domain).get(vp.getId()))
+				{
 					if (cachedSignedPolicy.getName().equals(policyName) && cachedSignedPolicy.getVersion() >= versionFrom
-							&& cachedSignedPolicy.getVersion() <= versionTo) {
+							&& cachedSignedPolicy.getVersion() <= versionTo)
+					{
 						result.add(cachedSignedPolicy);
 					}
 				}
 			}
-		} finally {
-			cacheRWL.readLock().unlock();
+		}
+		finally
+		{
+			CACHE_RWL.readLock().unlock();
 		}
 		return result;
 	}
 
-	public class CachedSignedPolicy {
-
-		private final String name;
-		private final int version;
-		private final long consentDate;
+	public class CachedSignedPolicy
+	{
+		private final SignedPolicyKey spKey;
+		private final long gicsConsentDate;
+		private final long legalConsentDate;
 		private final ConsentStatus consentStatus;
+		private final long consentExpirationDate;
 
-		public CachedSignedPolicy(String name, int version, long consentDate, ConsentStatus consentStatus) {
+		public CachedSignedPolicy(SignedPolicyKey spKey, long gicsConsentDate, long legalConsentDate, ConsentStatus consentStatus, long consentExpirationDate)
+		{
 			super();
-			this.name = name;
-			this.version = version;
-			this.consentDate = consentDate;
+			this.spKey = spKey;
+			this.gicsConsentDate = gicsConsentDate;
+			this.legalConsentDate = legalConsentDate;
 			this.consentStatus = consentStatus;
+			this.consentExpirationDate = consentExpirationDate;
 		}
 
-		public String getName() {
-			return name;
+		public SignedPolicyKey getSPKey()
+		{
+			return spKey;
 		}
 
-		public int getVersion() {
-			return version;
+		public long getGicsConsentDate()
+		{
+			return gicsConsentDate;
 		}
 
-		public long getConsentDate() {
-			return consentDate;
+		public long getLegalConsentDate()
+		{
+			return legalConsentDate;
 		}
 
-		public ConsentStatus getConsentStatus() {
+		public ConsentStatus getConsentStatus()
+		{
 			return consentStatus;
 		}
 
+		public long getConsentExpirationDate()
+		{
+			return consentExpirationDate;
+		}
+
+		public String getName()
+		{
+			return spKey.getPolicyKey().getName();
+		}
+
+		public int getVersion()
+		{
+			return spKey.getPolicyKey().getVersion();
+		}
+
 		@Override
-		public int hashCode() {
+		public int hashCode()
+		{
 			final int prime = 31;
 			int result = 1;
-			result = prime * result + getOuterType().hashCode();
-			result = prime * result + (int) (consentDate ^ (consentDate >>> 32));
-			result = prime * result + ((consentStatus == null) ? 0 : consentStatus.hashCode());
-			result = prime * result + ((name == null) ? 0 : name.hashCode());
-			result = prime * result + version;
+			result = prime * result + (int) (consentExpirationDate ^ consentExpirationDate >>> 32);
+			result = prime * result + (consentStatus == null ? 0 : consentStatus.hashCode());
+			result = prime * result + (int) (gicsConsentDate ^ gicsConsentDate >>> 32);
+			result = prime * result + (int) (legalConsentDate ^ legalConsentDate >>> 32);
+			result = prime * result + (spKey == null ? 0 : spKey.hashCode());
 			return result;
 		}
 
 		@Override
-		public boolean equals(Object obj) {
-			if (this == obj) {
+		public boolean equals(Object obj)
+		{
+			if (this == obj)
+			{
 				return true;
 			}
-			if (obj == null) {
+			if (obj == null)
+			{
 				return false;
 			}
-			if (getClass() != obj.getClass()) {
+			if (getClass() != obj.getClass())
+			{
 				return false;
 			}
 			CachedSignedPolicy other = (CachedSignedPolicy) obj;
-			if (!getOuterType().equals(other.getOuterType())) {
+			if (consentExpirationDate != other.consentExpirationDate)
+			{
 				return false;
 			}
-			if (consentDate != other.consentDate) {
+			if (consentStatus != other.consentStatus)
+			{
 				return false;
 			}
-			if (consentStatus != other.consentStatus) {
+			if (gicsConsentDate != other.gicsConsentDate)
+			{
 				return false;
 			}
-			if (name == null) {
-				if (other.name != null) {
+			if (legalConsentDate != other.legalConsentDate)
+			{
+				return false;
+			}
+			if (spKey == null)
+			{
+				if (other.spKey != null)
+				{
 					return false;
 				}
-			} else if (!name.equals(other.name)) {
-				return false;
 			}
-			if (version != other.version) {
+			else if (!spKey.equals(other.spKey))
+			{
 				return false;
 			}
 			return true;
 		}
 
-		private ConsentCache getOuterType() {
-			return ConsentCache.this;
-		}
-
 		@Override
-		public String toString() {
-			StringBuilder sb = new StringBuilder("cache signed policy with name '");
-			sb.append(name);
-			sb.append("', in version '");
-			sb.append(version);
-			sb.append("' and date ");
-			sb.append(new Date(consentDate));
+		public String toString()
+		{
+			StringBuilder sb = new StringBuilder("cache signed policy for signed policy with '");
+			sb.append(spKey);
+			sb.append(", with expiration date ");
+			sb.append(new Date(consentExpirationDate));
 			sb.append(" is consented with consent state: ");
 			sb.append(consentStatus);
 			return sb.toString();
 		}
 	}
-
 }

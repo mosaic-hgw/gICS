@@ -2,18 +2,29 @@
   ###license-information-start###
   gICS - a Generic Informed Consent Service
   __
-  Copyright (C) 2014 - 2018 The MOSAIC Project - Institut fuer Community
-  							Medicine of the University Medicine Greifswald -
-  							mosaic-projekt@uni-greifswald.de
+  Copyright (C) 2014 - 2022 Trusted Third Party of the University Medicine Greifswald -
+  							kontakt-ths@uni-greifswald.de
   
   							concept and implementation
-  							l.geidel
+  							l.geidel, c.hampf
   							web client
-  							a.blumentritt, m.bialke
+  							a.blumentritt, m.bialke, f.m.moser
+  							fhir-api
+  							m.bialke
+  							docker
+  							r. schuldt
   
-  							Selected functionalities of gICS were developed as part of the MAGIC Project (funded by the DFG HO 1937/5-1).
+  							The gICS was developed by the University Medicine Greifswald and published
+   							in 2014 as part of the research project "MOSAIC" (funded by the DFG HO 1937/2-1).
+   
+  							Selected functionalities of gICS were developed as
+  							part of the following research projects:
+  							- MAGIC (funded by the DFG HO 1937/5-1)
+  							- MIRACUM (funded by the German Federal Ministry of Education and Research 01ZZ1801M)
+  							- NUM-CODEX (funded by the German Federal Ministry of Education and Research 01KX2021)
   
   							please cite our publications
+  							https://doi.org/10.1186/s12967-020-02457-y
   							http://dx.doi.org/10.3414/ME14-01-0133
   							http://dx.doi.org/10.1186/s12967-015-0545-6
   							http://dx.doi.org/10.3205/17gmds146
@@ -33,384 +44,385 @@
   ###license-information-end###
   -->
 
-<!-- author: Arne Blumentritt -->
-
-<html xmlns="http://www.w3.org/1999/xhtml" xmlns:h="http://java.sun.com/jsf/html"
-	xmlns:f="http://java.sun.com/jsf/core" xmlns:ui="http://java.sun.com/jsf/facelets"
-	xmlns:jstl="http://java.sun.com/jsp/jstl/functions" xmlns:p="http://primefaces.org/ui"
-	xmlns:c="http://java.sun.com/jsp/jstl/core"
-	xmlns:component="http://java.sun.com/jsf/composite/components">
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:components="http://java.sun.com/jsf/composite/components" xmlns:f="http://java.sun.com/jsf/core"
+	  xmlns:h="http://java.sun.com/jsf/html" xmlns:p="http://primefaces.org/ui" xmlns:ui="http://java.sun.com/jsf/facelets">
 
 <body>
-	<ui:composition template="/resources/templates/gics.xhtml">
-		<ui:define name="js">
-			<script type="text/javascript">
-				function start() {
-					PF('statusDialogExport').show();
-				}
+<ui:composition template="/resources/templates/gics.xhtml">
+	<ui:define name="header_title">
+		<h:outputFormat value="#{msg['page.domains.title']}" />
+	</ui:define>
 
-				function stop() {
-					PF('statusDialogExport').hide();
-				}
-			</script>
-		</ui:define>
+	<ui:define name="title">
+		<h:outputText value="#{msg['page.domains.title']}" />
+	</ui:define>
 
-		<ui:define name="header_title">
-			<h:outputFormat value="#{msg['domain.titleHeader']}" />
-		</ui:define>
+	<ui:define name="help">
+		<h:outputText escape="false" value="#{msg['page.domains.help']}" />
+	</ui:define>
 
-		<ui:define name="title">
-			<h:outputText value="#{msg['domain.title']}"
-				rendered="#{!domainController.editMode and !domainController.importMode and !domainController.exportMode}" />
-			<h:outputText value="#{msg['domain.title.new']}"
-				rendered="#{domainController.editMode and empty domainController.editDomain.name}" />
-			<h:outputText value="#{msg['domain.title.edit']}"
-				rendered="#{domainController.editMode and ! empty domainController.editDomain.name}" />
-			<h:outputText value="#{msg['domain.title.import']}" rendered="#{domainController.importMode}" />
-			<h:outputText value="#{msg['domain.title.export']}" rendered="#{domainController.exportMode}" />
-		</ui:define>
+	<ui:define name="content">
+		<h:form id="main" onkeypress="if (event.keyCode === 13) { return false; }">
+			<p:panel>
+				<h4>
+					<h:outputText value="#{msg['page.domains.new']}" />
+				</h4>
+				<p:commandButton actionListener="#{domainController.onNew}" icon="mdi mdi-plus" oncomplete="PF('new_dialog').show();" update="new_dialog"
+								 value="#{cmsg['ui.button.create']}" />
+			</p:panel>
+			<p:panel style="margin-top: 15px;">
+				<h4>
+					<h:outputFormat id="domainsCounter" value="#{msg['page.domains.domains']}">
+						<f:param value="#{domainController.domains.size()}" />
+					</h:outputFormat>
+				</h4>
+				<p:dataTable id="domains" currentPageReportTemplate="{startRecord}-{endRecord} #{cmsg['ui.table.of']} {totalRecords}"
+							 emptyMessage="#{cmsg['ui.table.empty']}" globalFilter="#{domainController.globalFilter}"
+							 pageLinks="3" paginator="true" paginatorPosition="bottom"
+							 paginatorTemplate="{CurrentPageReport} {FirstPageLink} {PreviousPageLink} {PageLinks} {NextPageLink} {LastPageLink}"
+							 rowKey="#{domainController.convertKey(_domain.name)}" rows="10" selection="#{domainController.selectedDomain}" selectionMode="single"
+							 value="#{domainController.domains}" var="_domain" widgetVar="domains">
+					<p:ajax event="contextMenu" ignoreAutoUpdate="true" update="main:domains_menu" />
+					<p:ajax event="filter" ignoreAutoUpdate="true" />
 
-		<ui:define name="help">
-			<h:outputText value="#{msg['domain.help']}" escape="false" />
-		</ui:define>
+					<f:facet name="header">
+						<p:inputText id="globalFilter" onkeyup="PF('domains').filter()" placeholder="#{cmsg['ui.table.filter']}" value="#{domainController.globalFilter}" />
+					</f:facet>
 
-		<ui:define name="content">
-			<h:form id="main">
+					<p:column filterBy="#{_domain.label}" filterMatchMode="contains" filterStyle="display: none"
+							  headerText="#{msg['model.domain.label']}" sortBy="#{_domain.label}" sortOrder="asc" width="25%">
+						#{_domain.label} #{domainSelector.selectedDomain.name eq _domain.name ? msg['page.domains.active'] : ''}
+					</p:column>
 
-				<ui:fragment
-					rendered="#{!domainController.editMode and !domainController.importMode and !domainController.exportMode}">
+					<p:column filterBy="#{_domain.comment}" filterMatchMode="contains" filterStyle="display: none"
+							  headerText="#{msg['model.domain.comment']}" width="50%">
+						<h:outputText value="#{_domain.comment}" />
+					</p:column>
 
-					<p:panel>
-						<h4>
-							<h:outputText value="#{msg['domain.label.new']}" />
-						</h4>
-						<p:commandButton actionListener="#{domainController.onNewDomain}" update="@form, :title"
-							value="#{msg['common.button.add']}" />
-						<p:commandButton id="importButton" actionListener="#{domainController.onImportDomain}"
-							update="@form, import, title" oncomplete="PF('importTooltip').hide();"
-							value="#{msg['common.button.import']}" />
-						<p:tooltip widgetVar="importTooltip" for="importButton" value="#{msg['domain.importHelp']}" />
+					<p:column headerText="#{msg['consent.title.type_CONSENT']}" styleClass="width: 1px;">
+						<h:outputText value="#{domainController.countConsents(_domain.name, 'CONSENT')}" />
+					</p:column>
 
-						<p:commandButton id="exportButton" actionListener="#{domainController.onExportDomain}"
-							update="@form, export, title" oncomplete="PF('exportTooltip').hide();"
-							value="#{msg['common.button.export']}" disabled="#{domainSelector.selectedDomain == null}" />
-						<p:tooltip widgetVar="exportTooltip" for="exportButton" value="#{msg['domain.exportHelp']}"
-							rendered="#{domainSelector.selectedDomain != null}" />
-					</p:panel>
+					<p:column headerText="#{msg['consent.title.type_REVOCATION']}" styleClass="width: 1px;">
+						<h:outputText value="#{domainController.countConsents(_domain.name, 'REVOCATION')}" />
+					</p:column>
 
-					<p:panel>
-						<h4>
-							<h:outputFormat value="#{msg['domain.label.found']}">
-								<f:param value="#{domainController.domains.size()}" />
-							</h:outputFormat>
-						</h4>
-						<p:dataTable id="domains" widgetVar="domains" selection="#{domainController.selectedDomain}"
-							selectionMode="single" rowKey="#{_domain.name}" paginator="true" paginatorPosition="bottom"
-							paginatorTemplate="{CurrentPageReport} {FirstPageLink} {PreviousPageLink} {PageLinks} {NextPageLink} {LastPageLink}"
-							currentPageReportTemplate="{startRecord}-{endRecord} #{cmsg['ui.table.of']} {totalRecords}"
-							rows="10" pageLinks="1" value="#{domainController.domains}" var="_domain">
-							<p:ajax event="rowSelect" update="@form" />
+					<p:column headerText="#{msg['consent.title.type_REFUSAL']}" styleClass="width: 1px;">
+						<h:outputText value="#{domainController.countConsents(_domain.name, 'REFUSAL')}" />
+					</p:column>
 
-							<f:facet name="header">
-								<p:inputText id="globalFilter" onkeyup="PF('domains').filter()"
-									placeholder="#{cmsg['ui.table.search']}" />
-							</f:facet>
+					<p:column headerText="#{msg['template.templates']}" styleClass="width: 1px;">
+						<h:outputText value="#{domainController.countTemplates(_domain.name)}" />
+					</p:column>
 
-							<p:column headerText="#{msg['domain.name']}">
-			 					#{_domain.label} #{domainSelector.selectedDomain.name eq _domain.name ? msg['domain.label.active'] : ''}
-				 			</p:column>
-							<p:column headerText="#{msg['domain.comment']}">
-				 				#{_domain.comment}
-				 			</p:column>
-							<p:column headerText="#{msg['domain.versionFormatting']}" styleClass="break-word"
-								style="min-width: 100px;">
-								Policy: #{ClassPathProvider.convertClassPath(_domain.policyVersionConverter)}<br />
-				 				Module: #{ClassPathProvider.convertClassPath(_domain.moduleVersionConverter)}<br />
-				 				Template: #{ClassPathProvider.convertClassPath(_domain.ctVersionConverter)}
-				 			</p:column>
-							<p:column headerText="#{msg['domain.signerTypes']}">
-								<ui:repeat var="signerType" value="#{domain.signerIdTypes}" varStatus="status">
-									<h:outputText value="#{signerType}" />
-									<h:outputText rendered="#{not status.last}" value=", " />
+					<p:column headerText="#{msg['module.modules']}" styleClass="width: 1px;">
+						<h:outputText value="#{domainController.countModules(_domain.name)}" />
+					</p:column>
+
+					<p:column headerText="#{msg['policy.policies']}" styleClass="width: 1px;">
+						<h:outputText value="#{domainController.countPolicies(_domain.name)}" />
+					</p:column>
+
+					<p:column styleClass="small-icons">
+						<p:commandButton actionListener="#{domainController.onShowDetails(_domain)}" alt="#{msg['page.domains.dialog.READ']}"
+										 icon="mdi mdi-information-outline" oncomplete="PF('new_dialog').show();" title="#{msg['page.domains.dialog.READ']}" update="new_dialog" />
+					</p:column>
+				</p:dataTable>
+				<components:rightclick />
+
+				<p:contextMenu id="domains_menu" for="domains">
+					<p:menuitem actionListener="#{domainController.onShowDetails(domainController.selectedDomain)}" icon="mdi mdi-information-outline"
+								oncomplete="PF('new_dialog').show();" update="new_dialog" value="#{msg['page.domains.dialog.READ']}" />
+					<p:separator />
+
+					<p:menuitem actionListener="#{domainSelector.setSelectedDomain(domainController.selectedDomain)}" icon="mdi mdi-cursor-pointer"
+								value="#{msg['page.domains.activate']}" />
+					<p:separator />
+
+					<p:menuitem actionListener="#{domainController.onEdit(domainController.selectedDomain)}" icon="mdi mdi-pencil-outline"
+								oncomplete="PF('new_dialog').show()" update="@this, new_dialog"
+								value="#{cmsg['ui.button.edit']} #{domainController.selectedDomain.finalised ? msg['page.domains.limited'] : ''}">
+					</p:menuitem>
+					<p:separator />
+
+					<p:menuitem disabled="#{domainController.selectedDomain ne null and not (domainController.isDeletable(domainController.selectedDomain))}"
+								icon="mdi mdi-delete-empty" ignoreAutoUpdate="true" oncomplete="PF('confirmDelete_dialog').show();" update="confirmDelete_dialog:message"
+								value="#{cmsg['ui.button.delete']}">
+					</p:menuitem>
+				</p:contextMenu>
+			</p:panel>
+		</h:form>
+
+		<components:confirm_dialog id="confirmDelete_dialog" action="#{domainController.onDelete}"
+								   message="#{domainController.formatMessage('page.domains.delete.confirmation', [domainController.selectedDomain.name])}"
+								   onyes="PF('domains').filter()" update="main:domains, main:domainsCounter, @widgetVar(projectMenu), :domainSelector" />
+
+		<p:dialog id="new_dialog" blockScroll="true" header="#{msg['page.domains.dialog.'.concat(domainController.pageMode.name())]}" modal="true"
+				  responsive="true" widgetVar="new_dialog" closeOnEscape="true">
+			<p:ajax event="close" ignoreAutoUpdate="true" listener="#{domainController.onCancel}" update="new_dialog" />
+			<h:form onkeypress="if (event.keyCode === 13) { return false; }">
+				<p:focus context="@form" />
+				<p:messages escape="false" />
+				<div class="ui-g">
+
+					<div class="ui-g-12 ui-lg-6">
+
+						<!-- General info -->
+						<p:panelGrid columnClasses="ui-grid-col-6,ui-grid-col-6" columns="2" layout="grid"
+									 styleClass="#{domainController.pageMode == 'READ' ? 'mimic-datatable' : ''}">
+
+							<!-- Title -->
+							<p:outputLabel for="name" value="#{msg['model.domain.label']}" />
+							<p:inputText id="name" rendered="#{domainController.pageMode != 'READ'}" required="true" value="#{domainController.selectedDomain.label}" />
+							<h:outputText rendered="#{domainController.pageMode == 'READ'}" value="#{domainController.selectedDomain.label}" />
+
+							<!-- Comment -->
+							<p:outputLabel for="comment" value="#{msg['model.domain.comment']}" />
+							<p:inputTextarea id="comment" counter="comment_counter" counterTemplate="#{cmsg['ui.text.charsRemaining']}" maxlength="255"
+											 rendered="#{domainController.pageMode != 'READ'}" rows="3" value="#{domainController.selectedDomain.comment}" />
+							<p:column rendered="#{domainController.pageMode != 'READ'}" />
+							<h:outputText id="comment_counter" rendered="#{domainController.pageMode != 'READ'}" styleClass="textCounter" />
+							<h:outputText rendered="#{domainController.pageMode == 'READ'}" value="#{domainController.selectedDomain.comment}" />
+
+							<!-- Signer Ids -->
+							<p:outputLabel for="signerIdTypes" value="#{msg['page.domains.signerIds']} #{domainController.pageMode != 'READ' ? '*' : ''}" />
+							<h:panelGroup id="signerIdTypes" layout="block" >
+								<!-- EDIT and NEW -->
+								<p:dataTable id="signerIdTypesTable" styleClass="no-header" rowIndexVar="_rowIndex" draggableRows="#{!domainController.selectedDomain.finalised}"
+											 rendered="#{domainController.pageMode != 'READ' and not empty domainController.selectedDomain.signerIdTypes}"
+											 style="width: 230px;"
+											 value="#{domainController.selectedDomain.signerIdTypes}" var="_signerIdType" varStatus="_var" widgetVar="_table">
+									<p:column>
+										<h:outputText value="#{_signerIdType}"/>
+									</p:column>
+									<p:column styleClass="icons" rendered="#{!domainController.selectedDomain.finalised}">
+										<p:commandButton actionListener="#{domainController.removeSignerIdType(_rowIndex)}" icon="mdi mdi-minus" process="@form:signerIdTypes"
+														 styleClass="secondary" update="@form:signerIdTypes" />
+									</p:column>
+								</p:dataTable>
+								<!-- READ -->
+								<ui:repeat value="#{domainController.selectedDomain.signerIdTypes}" var="_signerIdType" varStatus="_var"
+										   rendered="#{domainController.pageMode == 'READ'}" >
+									<div class="list-item">
+										<h:outputText value="#{_signerIdType}" />
+									</div>
 								</ui:repeat>
-							</p:column>
-							<p:column headerText="#{msg['domain.properties']}" styleClass="break-word"
-								style="min-width: 200px;">
-								<ui:repeat value="#{jstl:split(_domain.properties,';')}" var="property">
-									<h:outputText value="#{property}" />
-									<br />
-								</ui:repeat>
-							</p:column>
-							<p:column headerText="#{msg['common.button.actions']}" styleClass="icons">
-								<p:commandButton action="#{domainController.onEditDomain(_domain)}" update="@form, :title"
-									icon="mdi mdi-pencil" alt="#{msg['common.button.edit']}"
-									title="#{msg['common.button.edit']}" />
-								<p:commandButton action="#{domainController.onDeleteDomain(_domain)}" update="@form, menu"
-									icon="mdi mdi-delete-empty" alt="#{msg['common.button.delete']}"
-									title="#{msg['common.button.delete']}">
-									<p:confirm header="#{msg['common.confirmation']}"
-										message="#{msg['domain.label.confirmDelete']}" icon="mdi mdi-alert-outline" />
-								</p:commandButton>
-								<p:confirmDialog global="true">
-									<p:commandButton value="#{msg['common.button.yes']}" type="button"
-										styleClass="ui-confirmdialog-yes" />
-									<p:commandButton value="#{msg['common.button.no']}" type="button"
-										styleClass="ui-confirmdialog-no" />
-								</p:confirmDialog>
-							</p:column>
-						</p:dataTable>
 
-						<p:contextMenu for="domains" event="contextmenu touchend">
-							<p:menuitem value="#{msg['domain.button.activate']}" icon="mdi mdi-cursor-pointer"
-								actionListener="#{domainSelector.setSelectedDomain(domainController.selectedDomain)}"
-								update="@form, :title" />
-							<p:separator />
-							<p:menuitem value="#{msg['common.button.edit']}" icon="mdi mdi-pencil"
-								actionListener="#{domainController.onEditDomain(domainController.selectedDomain)}"
-								update="@form, :title" />
-							<p:separator />
-							<p:menuitem value="#{msg['common.button.delete']}" icon="mdi mdi-delete-empty"
-								actionListener="#{domainController.onDeleteDomain(domainController.selectedDomain)}"
-								update="@form">
-								<p:confirm header="#{msg['common.confirmation']}"
-									message="#{msg['domain.label.confirmDelete']}" icon="mdi mdi-alert-outline" />
-							</p:menuitem>
-						</p:contextMenu>
-					</p:panel>
-				</ui:fragment>
-
-				<ui:fragment rendered="#{domainController.editMode}">
-					<p:panel>
-						<h4>
-							<h:outputText value="#{msg['domain.label.description']}" />
-						</h4>
-						<p:panelGrid columns="2" columnClasses="ui-grid-col-4,ui-grid-col-8" layout="grid">
-							<p:outputLabel value="#{msg['domain.name']}" for="domain_name_input" />
-							<p:inputText id="domain_name_input" label="#{msg['domain.name']}" required="true"
-								value="#{domainController.editDomain.label}" />
-							<!-- ************************************************************** -->
-							<p:outputLabel for="comment" value="#{msg['domain.comment']}" style="vertical-align: top;" />
-							<p:inputTextarea id="comment" value="#{domainController.editDomain.comment}" maxlength="255"
-								counter="comment_counter" counterTemplate="#{msg['common.characters.remaining']}"
-								style="width: 100%" />
-							<p:column />
-							<h:outputText id="comment_counter" styleClass="textCounter" />
-							<!-- ************************************************************** -->
-							<p:outputLabel for="signer_input" value="#{msg['domain.signerTypes']}" />
-							<p:inputText id="signer_input" required="true" style="width:100%;"
-								value="#{domainController.signerTypes}"
-								disabled="#{!empty domainController.editDomain.name}"></p:inputText>
-							<!-- TODO	<custom:helpButton id="signer_help" helptext="#{msg['domain.signerHelp']}" show="true"></custom:helpButton> -->
-							<p:watermark value="#{msg['domain.signerWatermark']}" for="signer_input" />
+								<h:panelGroup id="newSignerIdType" layout="block"
+											  rendered="#{domainController.pageMode != 'READ' and !domainController.selectedDomain.finalised}">
+									<p:inputText style="width: 172px;" value="#{domainController.newSignerIdType}" />
+									<p:commandButton id="addSignerId" actionListener="#{domainController.onNewSignerIdType}" icon="mdi mdi-plus"
+													 process="@form:newSignerIdType" styleClass="secondary" style="margin-left: 5px;"
+													 update="@form:signerIdTypes" title="#{msg['page.domains.signerIds.add']}" />
+								</h:panelGroup>
+							</h:panelGroup>
 						</p:panelGrid>
-					</p:panel>
+					</div>
 
-					<!--  MAGIC  -->
-					<p:panel id="logoPanel">
+					<!-- Logo -->
+					<h:panelGroup id="logo" class="ui-g-12 ui-lg-6" layout="block">
 						<h4>
-							<h:outputText value="#{msg['domain.logo.heading']}" />
+							<h:outputText value="#{msg['page.domains.logo']}" />
 						</h4>
-						<p:fileUpload id="file_upload_logo" label="#{msg['domain.logo.browse']}"
-							cancelLabel="#{msg['domain.logo.cancel']}" uploadLabel="#{msg['domain.logo.upload']}"
-							mode="advanced" allowTypes="/(\.|\/)(png)$/" value="#{domainController.logoFile}"
-							auto="false" multiple="false" fileLimit="1"
-							fileUploadListener="#{domainController.onUploadLogo}" update=":title, menu, logoPanel">
+						<p:fileUpload allowTypes="/(\.|\/)(png|jpg|jpeg|PNG|JPG|JPEG)$/" auto="true" cancelLabel="#{cmsg['ui.file.cancel']}"
+									  listener="#{domainController.onUploadLogo}" invalidFileMessage="#{cmsg['ui.file.format.notPNG']}" label="#{cmsg['ui.file.choose']}"
+									  multiple="false" process="@this" rendered="#{domainController.pageMode != 'READ' and empty domainController.selectedDomain.logo}"
+									  update="logo" uploadLabel="#{cmsg['ui.file.upload']}">
 						</p:fileUpload>
-						<h:graphicImage value="#{domainController.domainLogo}"
-							rendered="#{domainController.hasDomainLogo()}" height="100" />
+
+						<p:graphicImage cache="false" rendered="#{not empty domainController.selectedDomain.logo}" stream="false"
+										value="#{domainController.getImageStreamFromBase64(domainController.selectedDomain.logo, 'png', 'logo')}"
+										style="max-width: 600px; max-height: 100px;;" />
 						<br />
-						<p:commandButton value="#{msg['common.button.delete']}"
-							rendered="#{domainController.hasDomainLogo()}"
-							actionListener="#{domainController.onRemoveLogo}" update=":title logoPanel" immediate="true" />
-					</p:panel>
-
-					<p:panel>
-						<h4>
-							<h:outputText value="#{msg['domain.versionFormatting']}" />
-						</h4>
-
-						<p:panelGrid columns="2" columnClasses="ui-grid-col-4,ui-grid-col-8" layout="grid">
-							<p:outputLabel value="#{msg['domain.ctVersionConverter']}"></p:outputLabel>
-							<p:selectOneMenu style="width:100%" label="#{msg['domain.ctVersionConverter']}"
-								widgetVar="ctVersion_select" id="ctversion_select"
-								value="#{domainController.editDomain.ctVersionConverter}" required="true"
-								disabled="#{!empty domainController.editDomain.name}">
-								<f:selectItems value="#{ClassPathProvider.versionMap}" />
-							</p:selectOneMenu>
-							<p:outputLabel value="#{msg['domain.moduleVersionConverter']}"></p:outputLabel>
-							<p:selectOneMenu style="width:100%" label="#{msg['domain.moduleVersionConverter']}"
-								widgetVar="moduleVersion_select" id="moduleversion_select"
-								value="#{domainController.editDomain.moduleVersionConverter}" required="true"
-								disabled="#{!empty domainController.editDomain.name}">
-								<f:selectItems value="#{ClassPathProvider.versionMap}" />
-							</p:selectOneMenu>
-							<p:outputLabel value="#{msg['domain.policyVersionConverter']}"></p:outputLabel>
-							<p:selectOneMenu style="width:100%" label="#{msg['domain.policyVersionConverter']}"
-								widgetVar="policyVersion_select" id="policyversion_select"
-								value="#{domainController.editDomain.policyVersionConverter}" required="true"
-								disabled="#{!empty domainController.editDomain.name}">
-								<f:selectItems value="#{ClassPathProvider.versionMap}" />
-							</p:selectOneMenu>
-						</p:panelGrid>
-					</p:panel>
-					<p:panel>
-						<h4>
-							<h:outputText value="#{msg['domain.properties']}" />
-						</h4>
-
-						<p:panelGrid columns="2" columnClasses="ui-grid-col-4,ui-grid-col-8" layout="grid">
-							<c:forEach items="#{domainController.properties}" var="_property">
-								<h:column>
-									<h:outputText value="#{msg['domain.properties.'.concat(_property.label)]}" />
-								</h:column>
-								<h:column>
-									<p:inputText value="#{_property.value}"
-										disabled="#{!empty domainController.editDomain.name}" />
-								</h:column>
-							</c:forEach>
-						</p:panelGrid>
-					</p:panel>
-					<p:panel>
-						<p:commandButton value="#{msg['common.button.add']}"
-							rendered="#{empty domainController.editDomain.name}"
-							actionListener="#{domainController.onSaveDomain(true)}" update="@form, :title, menu" />
-						<p:commandButton value="#{msg['common.button.save']}"
-							rendered="#{!empty domainController.editDomain.name}"
-							actionListener="#{domainController.onSaveDomain(false)}" update="@form, :title, menu" />
-						<p:commandButton value="#{msg['common.button.cancel']}"
-							actionListener="#{domainController.onCancel}" update="@form, :title" immediate="true"
-							styleClass="grey" />
-					</p:panel>
-				</ui:fragment>
-			</h:form>
-
-			<!--  MAGIC  Import -->
-			<h:form id="import" enctype="multipart/form-data">
-				<p:panel rendered="#{domainController.importMode}">
-					<h4>
-						<h:outputText value="#{msg['domain.label.import']}" />
-					</h4>
-					<p:selectBooleanCheckbox id="ignoreHeader" itemLabel="#{msg['domain.importAllowUpdates']}"
-						value="#{domainController.importAllowUpdates}">
-						<p:ajax process="@this" ignoreAutoUpdate="true" />
-					</p:selectBooleanCheckbox>
-
-					<p:fileUpload id="file_upload" label="Browse" uploadLabel="#{msg['domain.import']}"
-						mode="advanced" allowTypes="/(\.|\/)(xml)$/" value="#{domainController.importFile}"
-						auto="false" multiple="false" fileLimit="1"
-						fileUploadListener="#{domainController.onUploadDomain}" update="@form, main, title, menu">
-					</p:fileUpload>
-					<p:commandButton value="#{msg['common.button.cancel']}"
-						actionListener="#{domainController.onCancel}" update="@form, main, title" immediate="true" />
-				</p:panel>
-			</h:form>
-
-			<!--  MAGIC  Export -->
-			<h:form id="export">
-				<ui:fragment rendered="#{domainController.exportMode}">
-					<p:panel>
-						<h4>
-							<h:outputText value="#{msg['domain.label.export']}" />
-						</h4>
-						<p:selectOneMenu id="exportMode" itemLabel="#{msg['domain.label.exportmode']}"
-							value="#{domainController.selectedExportMode}" style="width:200px">
-							<p:ajax listener="#{domainController.onExportModeChange}" update="specify" />
-							<f:selectItem itemLabel="#{msg['domain.label.exportmode.select']}" itemValue=""
-								noSelectionOption="true" />
-							<f:selectItems value="#{domainController.exportModes}" />
-						</p:selectOneMenu>
-						<br />
-
-						<p:selectBooleanCheckbox itemLabel="#{msg['domain.exportLogo']}"
-							value="#{domainController.exportLogo}">
-							<p:ajax process="@this" ignoreAutoUpdate="true" />
-						</p:selectBooleanCheckbox>
-					</p:panel>
-
-					<h:panelGroup layout="block" id="specify">
-						<p:panel id="exportPoliciesPanel"
-							rendered="#{domainController.selectedExportMode == 'POLICIES'}">
-							<h4>
-								<h:outputText value="#{msg['module.label.policies']}" />
-							</h4>
-							<p:pickList id="policyPicker" widgetVar="policyPicker"
-								value="#{domainController.policyPickItems}" var="_policy" itemLabel="#{_policy.key}"
-								itemValue="#{_policy}" converter="policyConverter" showTargetControls="true"
-								addLabel="#{msg['module.policy.add']}" addAllLabel="#{msg['module.policy.addAll']}"
-								removeLabel="#{msg['module.policy.remove']}"
-								removeAllLabel="#{msg['module.policy.removeAll']}" moveUpLabel="#{msg['common.moveUp']}"
-								moveDownLabel="#{msg['common.moveDown']}" moveTopLabel="#{msg['common.moveTop']}"
-								moveBottomLabel="#{msg['common.moveBottom']}" responsive="true" showSourceFilter="true"
-								showTargetFilter="true" filterMatchMode="contains">
-								<p:ajax event="transfer" update="@this" partialSubmit="true" ignoreAutoUpdate="true" />
-								<f:facet name="sourceCaption">#{msg['module.label.policies.available']} (#{domainController.policyPickItems.source.size()})</f:facet>
-								<f:facet name="targetCaption">#{msg['module.label.policies.selected']} (#{domainController.policyPickItems.target.size()})</f:facet>
-								<p:column>#{_policy.key.name}</p:column>
-								<p:column style="text-align: right;" styleClass="lightgrey">#{msg['policy.version.short']} #{_policy.key.version}</p:column>
-							</p:pickList>
-						</p:panel>
-						<p:panel id="exportModulesPanel"
-							rendered="#{domainController.selectedExportMode == 'MODULES'}">
-							<h4>
-								<h:outputText value="#{msg['template.label.modules']}" />
-							</h4>
-							<p:pickList id="modulePicker" widgetVar="modulePicker"
-								value="#{domainController.modulePickItems}" var="_module" itemLabel="#{_module.key}"
-								itemValue="#{_module}" converter="moduleConverter" showTargetControls="true"
-								addLabel="#{msg['template.module.add']}" addAllLabel="#{msg['template.module.addAll']}"
-								removeLabel="#{msg['template.module.remove']}"
-								removeAllLabel="#{msg['template.module.removeAll']}" moveUpLabel="#{msg['common.moveUp']}"
-								moveDownLabel="#{msg['common.moveDown']}" moveTopLabel="#{msg['common.moveTop']}"
-								moveBottomLabel="#{msg['common.moveBottom']}" responsive="true" showSourceFilter="true"
-								showTargetFilter="true" filterMatchMode="contains">
-								<p:ajax event="transfer" update="@this" partialSubmit="true" ignoreAutoUpdate="true" />
-								<f:facet name="sourceCaption">#{msg['template.label.modules.available']} (#{domainController.modulePickItems.source.size()})</f:facet>
-								<f:facet name="targetCaption">#{msg['template.label.modules.selected']} (#{domainController.modulePickItems.target.size()})</f:facet>
-								<p:column>#{_module.key.name}</p:column>
-								<p:column style="text-align: right;" styleClass="lightgrey">#{msg['module.version.short']} #{_module.key.version}</p:column>
-							</p:pickList>
-						</p:panel>
-
-						<p:panel id="exportTemplatesPanel"
-							rendered="#{domainController.selectedExportMode == 'TEMPLATES'}">
-							<h4>
-								<h:outputText value="#{msg['domain.label.templates']}" />
-							</h4>
-							<p:pickList id="templatePicker" widgetVar="templatePicker"
-								value="#{domainController.templatePickItems}" var="_template" itemLabel="#{_template.key}"
-								itemValue="#{_template}" converter="#{templateConverter}" showTargetControls="true"
-								addLabel="#{msg['domain.label.templates.add']}"
-								addAllLabel="#{msg['domain.label.templates.addAll']}"
-								removeLabel="#{msg['domain.label.templates.remove']}"
-								removeAllLabel="#{msg['domain.label.templates.removeAll']}"
-								moveUpLabel="#{msg['common.moveUp']}" moveDownLabel="#{msg['common.moveDown']}"
-								moveTopLabel="#{msg['common.moveTop']}" moveBottomLabel="#{msg['common.moveBottom']}"
-								responsive="true" showSourceFilter="true" showTargetFilter="true" filterMatchMode="contains">
-								<p:ajax event="transfer" update="@this" partialSubmit="true" ignoreAutoUpdate="true" />
-								<f:facet name="sourceCaption">#{msg['domain.label.templates.available']} (#{domainController.templatePickItems.source.size()})</f:facet>
-								<f:facet name="targetCaption">#{msg['domain.label.templates.selected']} (#{domainController.templatePickItems.target.size()})</f:facet>
-								<p:column>#{_template.key.name}</p:column>
-								<p:column style="text-align: right;" styleClass="lightgrey">#{msg['module.version.short']} #{_template.key.version}</p:column>
-							</p:pickList>
-						</p:panel>
+						<p:commandButton actionListener="#{domainController.onDeleteLogo()}" icon="mdi mdi-delete-empty" immediate="true"
+										 rendered="#{domainController.pageMode != 'READ' and not empty domainController.selectedDomain.logo}" update="logo"
+										 value="#{msg['page.domains.logo.delete']}">
+						</p:commandButton>
 					</h:panelGroup>
 
-					<p:panel>
-						<p:commandButton value="#{msg['domain.export']}" ajax="false"
-							onclick="PrimeFaces.monitorDownload(start, stop);">
-							<p:fileDownload id="fileExport" value="#{domainController.exportFile}" />
-						</p:commandButton>
-						<p:commandButton value="#{msg['common.button.cancel']}"
-							actionListener="#{domainController.onCancel}" update="@form, main, title" immediate="true"
-							styleClass="grey" />
-					</p:panel>
-					<p:dialog modal="true" widgetVar="statusDialogExport" header="Status" draggable="false"
-						closable="false" resizable="false">
-					</p:dialog>
+					<!-- Other Settings -->
+					<div class="ui-g-12 ui-lg-6">
+						<h4>
+							<h:outputText value="#{msg['page.domains.options']}" />
+						</h4>
+						<p:panelGrid columnClasses="ui-grid-col-6,ui-grid-col-6" columns="2" layout="grid"
+									 styleClass="#{domainController.pageMode == 'READ' ? 'mimic-datatable' : ''}">
+
+							<!-- Scan is mandatory -->
+							<p:outputLabel value="#{msg['page.domains.scans.mandatory']}" />
+							<p:selectBooleanCheckbox disabled="#{domainController.selectedDomain.finalised}" rendered="#{domainController.pageMode != 'READ'}"
+													 value="#{domainController.scanMandatory}" />
+							<h:outputText rendered="#{domainController.pageMode == 'READ'}" value="#{cmsg['ui.boolean.'.concat(domainController.scanMandatory)]}" />
+
+							<!-- Scan size limit -->
+							<p:outputLabel value="#{msg['page.domains.scans.sizeLimit']}" />
+							<p:spinner disabled="#{domainController.selectedDomain.finalised}" min="1" rendered="#{domainController.pageMode != 'READ'}" suffix=" MB"
+									   value="#{domainController.scanSizeLimit}" />
+							<h:outputText rendered="#{domainController.pageMode == 'READ'}" value="#{domainController.scanSizeLimit} MB" />
+
+							<!-- Revoke is permanent -->
+							<h:panelGroup layout="block">
+								<p:outputLabel value="#{msg['page.domains.misc.revokeIsPermanent']}" />
+								<components:tooltip value="#{msg['page.domains.misc.revokeIsPermanent.hint']}" />
+							</h:panelGroup>
+							<p:selectBooleanCheckbox disabled="#{domainController.selectedDomain.finalised}" rendered="#{domainController.pageMode != 'READ'}"
+													 value="#{domainController.revokeIsPermanent}" />
+							<h:outputText rendered="#{domainController.pageMode == 'READ'}" value="#{cmsg['ui.boolean.'.concat(domainController.revokeIsPermanent)]}" />
+
+							<!-- Use latest version -->
+							<h:panelGroup layout="block">
+								<p:outputLabel value="#{msg['page.domains.misc.useLatestVersion']}" />
+								<components:tooltip value="#{msg['page.domains.misc.useLatestVersion.hint']}" />
+							</h:panelGroup>
+							<p:selectBooleanCheckbox disabled="#{domainController.selectedDomain.finalised}" rendered="#{domainController.pageMode != 'READ'}"
+													 value="#{domainController.useLatestVersion}" />
+							<h:outputText rendered="#{domainController.pageMode == 'READ'}" value="#{cmsg['ui.boolean.'.concat(domainController.useLatestVersion)]}" />
+
+							<!-- Use notification service -->
+							<h:panelGroup layout="block">
+								<p:outputLabel value="#{msg['page.domains.misc.sendNotificationsWeb']}" />
+								<components:tooltip value="#{msg['page.domains.misc.sendNotificationsWeb.hint']}" />
+							</h:panelGroup>
+							<p:selectBooleanCheckbox disabled="#{domainController.selectedDomain.finalised}" rendered="#{domainController.pageMode != 'READ'}"
+													 value="#{domainController.sendNotificationsWeb}" />
+							<h:outputText rendered="#{domainController.pageMode == 'READ'}" value="#{cmsg['ui.boolean.'.concat(domainController.sendNotificationsWeb)]}" />
+
+							<!-- External properties -->
+							<p:outputLabel for="extern_properties" value="#{msg['model.domain.externProperties']}" />
+							<p:inputTextarea id="extern_properties" counter="extern_properties_counter" counterTemplate="#{cmsg['ui.text.charsRemaining']}"
+											 maxlength="4095" rendered="#{domainController.pageMode != 'READ'}" rows="3" value="#{domainController.selectedDomain.externProperties}" />
+							<p:column rendered="#{domainController.pageMode != 'READ'}" />
+							<h:outputText id="extern_properties_counter" rendered="#{domainController.pageMode != 'READ'}" styleClass="textCounter" />
+							<h:outputText rendered="#{domainController.pageMode == 'READ'}" value="#{domainController.selectedDomain.externProperties}" />
+							
+							<!-- Expiration Properties -->
+							<h:outputText value="#{msg['model.domain.expirationProperties']}" />
+							<components:expiration checkboxLabel="false" dialog="true" disabled="#{domainController.selectedDomain.finalised}" expiration="#{domainController.expiration.editExpiration}" ontoggle="PF('new_dialog').resetPosition();" />
+						</p:panelGrid>
+					</div>
+
+					<div class="ui-g-12 ui-lg-6">
+						<!-- Versioning -->
+						<h4>
+							<h:outputText value="#{msg['page.domains.versionLevel']}" />
+							<components:tooltip value="#{msg['page.domains.versionLevel.hint']}" />
+						</h4>
+						<h:panelGroup id="versionLevelSimple" layout="block"
+									  rendered="#{domainController.pageMode != 'READ' and !domainController.selectedDomain.finalised}">
+							<p:panelGrid columnClasses="ui-grid-col-6,ui-grid-col-6" columns="2" layout="grid" rendered="#{!domainController.versionLevelDetailed}">
+
+								<!-- General versionLevel -->
+								<p:outputLabel value="#{msg['page.domains.versionLevel.general']}" />
+								<p:selectOneMenu value="#{domainController.selectedDomain.ctVersionConverter}" disabled="#{domainController.selectedDomain.finalised}">
+									<f:selectItems value="#{Versions.versionMap.keySet()}" var="_version"
+												   itemLabel="#{msg['domain.versionLevel.'.concat(Versions.label(_version))]}" />
+								</p:selectOneMenu>
+
+								<p:commandButton id="enableVersionLevelDetailed" actionListener="#{domainController.setVersionLevelDetailed(true)}" icon="mdi mdi-menu-down"
+												 process="@this" styleClass="secondary" update="@form:versionLevelSimple, @form:versionLevelDetailed"
+												 value="#{msg['page.domains.versionLevel.detailed']}" />
+							</p:panelGrid>
+						</h:panelGroup>
+
+						<h:panelGroup id="versionLevelDetailed" layout="block">
+							<p:panelGrid columnClasses="ui-grid-col-6,ui-grid-col-6" columns="2" layout="grid"
+										 rendered="#{domainController.versionLevelDetailed or domainController.pageMode == 'READ' or domainController.selectedDomain.finalised}"
+										 styleClass="#{domainController.pageMode == 'READ' ? 'mimic-datatable' : ''}">
+
+								<!-- Template versionLevel -->
+								<p:outputLabel value="#{msg['template.templates']}" />
+								<p:selectOneMenu rendered="#{domainController.pageMode != 'READ'}" disabled="#{domainController.selectedDomain.finalised}"
+												 value="#{domainController.selectedDomain.ctVersionConverter}">
+									<f:selectItems value="#{Versions.versionMap.keySet()}" var="_version"
+												   itemLabel="#{msg['domain.versionLevel.'.concat(Versions.label(_version))]}" />
+								</p:selectOneMenu>
+								<h:outputText rendered="#{domainController.pageMode == 'READ'}"
+											  value="#{msg['domain.versionLevel.'.concat(Versions.label(domainController.selectedDomain.ctVersionConverter))]}" />
+
+								<!-- Module versionLevel -->
+								<p:outputLabel value="#{msg['module.modules']}" />
+								<p:selectOneMenu rendered="#{domainController.pageMode != 'READ'}" disabled="#{domainController.selectedDomain.finalised}"
+												 value="#{domainController.selectedDomain.moduleVersionConverter}">
+									<f:selectItems value="#{Versions.versionMap.keySet()}" var="_version"
+												   itemLabel="#{msg['domain.versionLevel.'.concat(Versions.label(_version))]}" />
+								</p:selectOneMenu>
+								<h:outputText rendered="#{domainController.pageMode == 'READ'}"
+											  value="#{msg['domain.versionLevel.'.concat(Versions.label(domainController.selectedDomain.moduleVersionConverter))]}" />
+
+								<!-- Policy versionLevel -->
+								<p:outputLabel value="#{msg['policy.policies']}" />
+								<p:selectOneMenu rendered="#{domainController.pageMode != 'READ'}" disabled="#{domainController.selectedDomain.finalised}"
+												 value="#{domainController.selectedDomain.policyVersionConverter}">
+									<f:selectItems value="#{Versions.versionMap.keySet()}" var="_version"
+												   itemLabel="#{msg['domain.versionLevel.'.concat(Versions.label(_version))]}" />
+								</p:selectOneMenu>
+								<h:outputText rendered="#{domainController.pageMode == 'READ'}"
+											  value="#{msg['domain.versionLevel.'.concat(Versions.label(domainController.selectedDomain.policyVersionConverter))]}" />
+
+								<p:commandButton id="enableVersionLevelSimple" actionListener="#{domainController.setVersionLevelDetailed(false)}" icon="mdi mdi-menu-up"
+												 process="@this" rendered="#{domainController.pageMode != 'READ' and !domainController.selectedDomain.finalised}" styleClass="secondary"
+												 update="@form:versionLevelSimple, @form:versionLevelDetailed" value="#{msg['page.domains.versionLevel.simple']}" />
+							</p:panelGrid>
+						</h:panelGroup>
+
+						<!-- Quality control -->
+						<h4>
+							<h:outputText value="#{msg['page.domains.qualityControl']}" />
+						</h4>
+						<p:panelGrid columnClasses="ui-grid-col-6,ui-grid-col-6" columns="2" layout="grid"
+									 styleClass="#{domainController.pageMode == 'READ' ? 'mimic-datatable' : ''}">
+
+							<!-- Qualicty control is optional -->
+							<p:outputLabel value="#{msg['page.domains.qualityControl.optional']}" />
+							<p:selectBooleanCheckbox rendered="#{domainController.pageMode != 'READ'}" disabled="#{domainController.selectedDomain.finalised}"
+													 value="#{domainController.qualityControlOptional}" />
+							<h:outputText rendered="#{domainController.pageMode == 'READ'}" value="#{cmsg['ui.boolean.'.concat(domainController.qualityControlOptional)]}" />
+						</p:panelGrid>
+
+						<!-- Statistic -->
+						<h4>
+							<h:outputText value="#{msg['page.domains.statistic']}" />
+						</h4>
+						<p:panelGrid columnClasses="ui-grid-col-6,ui-grid-col-6" columns="2" layout="grid"
+									 styleClass="#{domainController.pageMode == 'READ' ? 'mimic-datatable' : ''}">
+
+							<!-- Calculate document details -->
+							<h:panelGroup layout="block">
+								<p:outputLabel value="#{msg['page.domains.statistic.document_details']}" />
+								<components:tooltip value="#{msg['page.domains.statistic.document_details.hint']}" />
+							</h:panelGroup>
+							<p:selectBooleanCheckbox disabled="#{domainController.selectedDomain.finalised}" rendered="#{domainController.pageMode != 'READ'}"
+													 value="#{domainController.statisticDocumentDetails}" />
+							<h:outputText rendered="#{domainController.pageMode == 'READ'}" value="#{cmsg['ui.boolean.'.concat(domainController.statisticDocumentDetails)]}" />
+
+							<!-- Calculate policy details -->
+							<h:panelGroup layout="block">
+								<p:outputLabel value="#{msg['page.domains.statistic.policy_details']}" />
+								<components:tooltip value="#{msg['page.domains.statistic.policy_details.hint']}" />
+							</h:panelGroup>
+							<p:selectBooleanCheckbox disabled="#{domainController.selectedDomain.finalised}" rendered="#{domainController.pageMode != 'READ'}"
+													 value="#{domainController.statisticPolicyDetails}" />
+							<h:outputText rendered="#{domainController.pageMode == 'READ'}" value="#{cmsg['ui.boolean.'.concat(domainController.statisticPolicyDetails)]}" />
+						</p:panelGrid>
+					</div>
+				</div>
+
+				<ui:fragment rendered="#{domainController.pageMode != 'READ'}">
+					<p:commandButton id="save" actionListener="#{domainController.onSave}" ajax="true" icon="mdi mdi-check"
+									 oncomplete="if (args &amp;&amp; !args.validationFailed) PF('new_dialog').hide(); PF('domains').filter();"
+									 update="@form, main:domains, main:domainsCounter, @widgetVar(projectMenu), :domainSelector"
+									 value="#{domainController.pageMode.name() == 'NEW' ? cmsg['ui.button.create'] : cmsg['ui.button.save']}" />
+					<p:commandButton id="cancel" icon="mdi mdi-close" immediate="true" onclick="PF('new_dialog').hide();" styleClass="secondary"
+									 value="#{cmsg['ui.button.cancel']}" />
+				</ui:fragment>
+				<ui:fragment rendered="#{domainController.pageMode == 'READ'}">
+					<p:commandButton id="close" icon="mdi mdi-close" immediate="true" onclick="PF('new_dialog').hide();" styleClass="secondary"
+									 value="#{cmsg['ui.button.close']}" />
 				</ui:fragment>
 			</h:form>
+		</p:dialog>
 
-		</ui:define>
-	</ui:composition>
+	</ui:define>
+</ui:composition>
 </body>
 </html>

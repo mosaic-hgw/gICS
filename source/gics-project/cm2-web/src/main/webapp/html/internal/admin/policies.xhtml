@@ -2,18 +2,29 @@
   ###license-information-start###
   gICS - a Generic Informed Consent Service
   __
-  Copyright (C) 2014 - 2018 The MOSAIC Project - Institut fuer Community
-  							Medicine of the University Medicine Greifswald -
-  							mosaic-projekt@uni-greifswald.de
+  Copyright (C) 2014 - 2022 Trusted Third Party of the University Medicine Greifswald -
+  							kontakt-ths@uni-greifswald.de
   
   							concept and implementation
-  							l.geidel
+  							l.geidel, c.hampf
   							web client
-  							a.blumentritt, m.bialke
+  							a.blumentritt, m.bialke, f.m.moser
+  							fhir-api
+  							m.bialke
+  							docker
+  							r. schuldt
   
-  							Selected functionalities of gICS were developed as part of the MAGIC Project (funded by the DFG HO 1937/5-1).
+  							The gICS was developed by the University Medicine Greifswald and published
+   							in 2014 as part of the research project "MOSAIC" (funded by the DFG HO 1937/2-1).
+   
+  							Selected functionalities of gICS were developed as
+  							part of the following research projects:
+  							- MAGIC (funded by the DFG HO 1937/5-1)
+  							- MIRACUM (funded by the German Federal Ministry of Education and Research 01ZZ1801M)
+  							- NUM-CODEX (funded by the German Federal Ministry of Education and Research 01KX2021)
   
   							please cite our publications
+  							https://doi.org/10.1186/s12967-020-02457-y
   							http://dx.doi.org/10.3414/ME14-01-0133
   							http://dx.doi.org/10.1186/s12967-015-0545-6
   							http://dx.doi.org/10.3205/17gmds146
@@ -33,105 +44,49 @@
   ###license-information-end###
   -->
 
-<!-- author: Arne Blumentritt -->
-
 <html xmlns="http://www.w3.org/1999/xhtml" xmlns:h="http://java.sun.com/jsf/html"
-	xmlns:f="http://java.sun.com/jsf/core" xmlns:ui="http://java.sun.com/jsf/facelets"
-	xmlns:jstl="http://java.sun.com/jsp/jstl/functions" xmlns:p="http://primefaces.org/ui"
-	xmlns:components="http://java.sun.com/jsf/composite/components">
+	  xmlns:ui="http://java.sun.com/jsf/facelets" xmlns:p="http://primefaces.org/ui"
+	  xmlns:policy="http://java.sun.com/jsf/composite/components/policy">
 
 <body>
-	<ui:composition template="/resources/templates/gics.xhtml">
-		<ui:define name="header_title">
-			<h:outputText value="#{msg['policy.titleHeader']}" />
-		</ui:define>
+<ui:composition template="/resources/templates/gics.xhtml">
+	<ui:define name="header_title">
+		<h:outputText value="#{msg['policy.title.'.concat(policyController.pageMode)]}" />
+	</ui:define>
 
-		<ui:define name="title">
-			<h:outputText value="#{msg['policy.title']}" rendered="#{!policyController.editMode}" />
-			<h:outputText value="#{msg['policy.new.title']}" rendered="#{policyController.editMode}" />
-		</ui:define>
+	<ui:define name="title">
+		<h:outputText value="#{msg['policy.title.'.concat(policyController.pageMode)]}" />
+	</ui:define>
 
-		<ui:define name="help">
-			<h:outputText value="#{msg['policy.help']}" escape="false" />
-		</ui:define>
-		<ui:define name="content">
-			<h:panelGroup layout="block" id="listPolicies">
-				<h:form onkeypress="if (event.keyCode == 13) { return false; }"
-					rendered="#{!policyController.editMode}">
-					<p:panel>
-						<h4>
-							<h:outputText value="#{msg['policy.label.new']}" />
-						</h4>
-						<p:commandButton actionListener="#{policyController.onNewPolicy}"
-							update="listPolicies, newPolicy, title" value="#{msg['common.button.add']}" />
-					</p:panel>
+	<ui:define name="help">
+		<h:outputText value="#{msg['policy.help.'.concat(policyController.pageMode)]}" escape="false" />
+	</ui:define>
 
-					<p:panel>
-						<h4>
-							<h:outputFormat value="#{msg['policy.label.found']}">
-								<f:param value="#{policyController.policies.size()}" />
-							</h:outputFormat>
-						</h4>
+	<ui:define name="content">
 
-						<p:dataTable id="policies" widgetVar="policies" value="#{policyController.policies}"
-							var="_policy" rowKey="#{_policy.key}" paginator="true" paginatorPosition="bottom"
-							paginatorTemplate="{CurrentPageReport} {FirstPageLink} {PreviousPageLink} {PageLinks} {NextPageLink} {LastPageLink}"
-							currentPageReportTemplate="{startRecord}-{endRecord} #{cmsg['ui.table.of']} {totalRecords}"
-							rows="10" pageLinks="1" sortBy="#{_policy.key.name}" selectionMode="single"
-							selection="#{policyController.selectedPolicy}">
+		<h:panelGroup id="newPolicyButton">
+			<p:panel rendered="#{policyController.pageMode == 'READ'}" style="margin-bottom: 15px;">
+				<h4>
+					<h:outputText value="#{msg['policy.label.new']}" />
+				</h4>
 
-							<f:facet name="header">
-								<p:inputText id="globalFilter" onkeyup="PF('policies').filter()"
-									placeholder="#{cmsg['ui.table.search']}" />
-							</f:facet>
-
-							<p:column headerText="#{msg['policy.name']}" sortBy="#{_policy.key.name}"
-								filterBy="#{_policy.key.name}" filterable="false" width="50%">
-								<h:outputText value="#{_policy.key.name}" />
-							</p:column>
-							<p:column headerText="#{msg['policy.version']}" sortBy="#{_policy.key.version}"
-								filterBy="#{_policy.key.version}" filterable="false">
-								<h:outputText value="#{_policy.key.version}" />
-							</p:column>
-							<p:column headerText="#{msg['policy.comment']}" sortBy="#{_policy.comment}"
-								filterBy="#{_policy.comment}" filterable="false" width="50%" style="min-width: 150px;">
-								<h:outputText value="#{_policy.comment}" styleClass="ellipsis" />
-							</p:column>
-
-							<p:column headerText="#{msg['common.button.actions']}" styleClass="icons">
-								<p:commandButton action="#{policyController.onDeletePolicy(_policy)}" update="@form"
-									icon="mdi mdi-delete-empty" alt="#{msg['common.button.delete']}"
-									title="#{msg['common.button.delete']}">
-									<p:confirm header="#{msg['common.confirmation']}"
-										message="#{msg['policy.label.confirmDelete']}" icon="mdi mdi-alert-outline" />
-								</p:commandButton>
-								<p:confirmDialog global="true">
-									<p:commandButton value="#{msg['common.button.yes']}" type="button"
-										styleClass="ui-confirmdialog-yes" />
-									<p:commandButton value="#{msg['common.button.no']}" type="button"
-										styleClass="ui-confirmdialog-no" />
-								</p:confirmDialog>
-							</p:column>
-						</p:dataTable>
-
-						<p:contextMenu for="policies" event="contextmenu touchend">
-							<p:menuitem value="#{msg['common.button.delete']}" icon="mdi mdi-delete-empty"
-								actionListener="#{policyController.onDeletePolicy(policyController.selectedPolicy)}"
-								update="@form">
-								<p:confirm header="#{msg['common.confirmation']}"
-									message="#{msg['policy.label.confirmDelete']}" icon="mdi mdi-alert-outline" />
-							</p:menuitem>
-						</p:contextMenu>
-					</p:panel>
+				<h:form>
+					<p:commandButton actionListener="#{policyController.onNewPolicy}" update="title, help, newPolicyButton, listPolicies, newPolicyForm"
+									 value="#{cmsg['ui.button.create']}" icon="mdi mdi-plus" />
 				</h:form>
-			</h:panelGroup>
+			</p:panel>
+		</h:panelGroup>
 
-			<h:panelGroup layout="block" id="newPolicy">
-				<components:new_policy policyController="#{policyController}"
-					update="listPolicies, newPolicy, title" rendered="#{policyController.editMode}" />
-			</h:panelGroup>
+		<h:panelGroup id="newPolicyForm">
+			<policy:new rendered="#{policyController.pageMode != 'READ'}" update="title, help, newPolicyButton, listPolicies, newPolicyForm"
+						onSubmitFunction="if (args &amp;&amp; !args.validationFailed) PF('policies').filter();" />
+		</h:panelGroup>
 
-		</ui:define>
-	</ui:composition>
+		<h:panelGroup id="listPolicies">
+			<policy:list rendered="#{policyController.pageMode == 'READ'}" update="title, help, newPolicyButton, listPolicies, newPolicyForm" />
+		</h:panelGroup>
+
+	</ui:define>
+</ui:composition>
 </body>
 </html>
