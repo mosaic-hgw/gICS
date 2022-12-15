@@ -1,0 +1,244 @@
+<!--
+  ###license-information-start###
+  gICS - a Generic Informed Consent Service
+  __
+  Copyright (C) 2014 - 2022 Trusted Third Party of the University Medicine Greifswald -
+  							kontakt-ths@uni-greifswald.de
+  
+  							concept and implementation
+  							l.geidel, c.hampf
+  							web client
+  							a.blumentritt, m.bialke, f.m.moser
+  							fhir-api
+  							m.bialke
+  							docker
+  							r. schuldt
+  
+  							The gICS was developed by the University Medicine Greifswald and published
+   							in 2014 as part of the research project "MOSAIC" (funded by the DFG HO 1937/2-1).
+   
+  							Selected functionalities of gICS were developed as
+  							part of the following research projects:
+  							- MAGIC (funded by the DFG HO 1937/5-1)
+  							- MIRACUM (funded by the German Federal Ministry of Education and Research 01ZZ1801M)
+  							- NUM-CODEX (funded by the German Federal Ministry of Education and Research 01KX2021)
+  
+  							please cite our publications
+  							https://doi.org/10.1186/s12967-020-02457-y
+  							http://dx.doi.org/10.3414/ME14-01-0133
+  							http://dx.doi.org/10.1186/s12967-015-0545-6
+  							http://dx.doi.org/10.3205/17gmds146
+  __
+  This program is free software: you can redistribute it and/or modify
+  it under the terms of the GNU Affero General Public License as published by
+  the Free Software Foundation, either version 3 of the License, or
+  (at your option) any later version.
+  
+  This program is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  GNU General Public License for more details.
+  
+  You should have received a copy of the GNU Affero General Public License
+  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+  ###license-information-end###
+  -->
+
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:components="http://java.sun.com/jsf/composite/components" xmlns:h="http://java.sun.com/jsf/html"
+	  xmlns:f="http://java.sun.com/jsf/core" xmlns:ui="http://java.sun.com/jsf/facelets" xmlns:p="http://primefaces.org/ui">
+
+<body>
+<ui:composition template="/resources/templates/gics.xhtml">
+	<ui:define name="header_title">
+		<h:outputFormat value="#{msg['page.batch.title']}" />
+	</ui:define>
+
+	<ui:define name="title">
+		<h:outputText value="#{msg['page.batch.title']}" />
+	</ui:define>
+
+	<ui:define name="help">
+		<h:outputText value="#{msg['page.batch.help']}" escape="false" />
+	</ui:define>
+
+	<ui:define name="content">
+		<h:form id="main">
+			<p:panel style="margin-bottom: 15px;">
+				<p:steps activeIndex="#{batchController.currentStep - 1}">
+					<p:menuitem value="#{msg['page.batch.chooseAction']}" />
+					<p:menuitem rendered="#{batchController.batchPageMode == 'IMPORT'}" value="#{msg['page.batch.import.chooseFile']}" />
+					<p:menuitem rendered="#{batchController.batchPageMode == 'IMPORT'}" value="#{msg['page.batch.import.preview']}" />
+					<p:menuitem rendered="#{batchController.batchPageMode == 'IMPORT'}" value="#{msg['page.batch.import.result']}" />
+					<p:menuitem rendered="#{batchController.batchPageMode == 'EXPORT'}" value="#{msg['page.batch.export.chooseDomain']}" />
+					<p:menuitem rendered="#{batchController.batchPageMode == 'EXPORT'}" value="#{msg['page.batch.export.download']}" />
+				</p:steps>
+			</p:panel>
+			<p:panel rendered="#{batchController.currentStep == 1}">
+				<h:outputText value="#{msg['page.batch.introduction']}" />
+				<br />
+				<br />
+				<p:commandButton actionListener="#{batchController.onNewImport}" update="@form" value="#{cmsg['ui.button.import']}" icon="mdi mdi-cloud-upload"
+								 styleClass="#{batchController.batchPageMode == 'IMPORT' ? '' : 'secondary'}" />
+				<h:outputText value="#{cmsg['ui.button.or']}" styleClass="or" />
+				<p:commandButton actionListener="#{batchController.onNewExport}" update="@form" value="#{cmsg['ui.button.export']}" icon="mdi mdi-cloud-download"
+								 styleClass="#{batchController.batchPageMode == 'EXPORT' ? '' : 'secondary'}" />
+			</p:panel>
+
+			<ui:fragment rendered="#{batchController.batchPageMode == 'IMPORT'}">
+				<p:panel rendered="#{batchController.currentStep == 2}">
+					<h:outputText value="#{msg['page.batch.import.upload.hint']}" />
+					<ui:fragment rendered="#{batchController.importFile.fileName == null}">
+						<p:fileUpload label="#{cmsg['ui.file.choose']}" uploadLabel="#{cmsg['ui.file.upload']}" cancelLabel="#{cmsg['ui.file.cancel']}"
+									  invalidFileMessage="#{msg['page.batch.import.file.wrongType']}" mode="advanced" allowTypes="/(\.|\/)(xml|json|XML|JSON)$/" auto="true"
+									  multiple="false" fileLimit="1" listener="#{batchController.onUpload}" update="@form">
+						</p:fileUpload>
+					</ui:fragment>
+					<ui:fragment rendered="#{batchController.importFile != null}">
+						<h:outputFormat value="#{msg['page.batch.import.file.details']}" escape="false" style="padding: 3px 0 7px; display: block;">
+							<f:param value="#{batchController.getUTF8String(batchController.importFile.fileName)}" />
+						</h:outputFormat>
+
+						<p:commandButton value="#{msg['page.batch.import.file.discard']}" icon="mdi mdi-delete-empty" actionListener="#{batchController.onNewImport}"
+										 update="main" styleClass="secondary" process="@this" />
+					</ui:fragment>
+					<components:step_buttons restart="#{batchController.init}" stepPrev="#{batchController.stepPrev}" stepNext="#{batchController.stepNext}"
+											 stepNextAvailable="#{not empty batchController.importFile}" />
+				</p:panel>
+
+				<p:panel rendered="#{batchController.currentStep == 3 or batchController.currentStep == 4}">
+					<h4>
+						<h:outputFormat value="#{msg['page.batch.import.found'.concat(batchController.currentStep == 3 ? '.preview' : '')]}">
+							<f:param value="#{batchController.importedObjects.size()}" />
+						</h:outputFormat>
+					</h4>
+
+					<p:selectBooleanCheckbox value="#{batchController.importAllowUpdates}" rendered="#{batchController.currentStep == 3}">
+						<p:ajax listener="#{batchController.onPreview}" update="importedObjects" />
+					</p:selectBooleanCheckbox>
+					<p:outputLabel value="#{msg['page.batch.import.allowUpdates']}" rendered="#{batchController.currentStep == 3}" />
+
+					<p:dataTable id="importedObjects" widgetVar="importedObjects" value="#{batchController.importedObjects}" var="_object" paginator="true"
+								 paginatorPosition="bottom" paginatorTemplate="{CurrentPageReport} {FirstPageLink} {PreviousPageLink} {PageLinks} {NextPageLink} {LastPageLink}"
+								 currentPageReportTemplate="{startRecord}-{endRecord} #{cmsg['ui.table.of']} {totalRecords}" rows="10" pageLinks="3"
+								 sortBy="#{_object.type.toString().concat(_object.name).concat(_object.version)}" emptyMessage="#{cmsg['ui.table.empty']}">
+						<p:ajax event="filter" ignoreAutoUpdate="true" />
+
+						<f:facet name="header">
+							<p:inputText id="globalFilter" onkeyup="PF('importedObjects').filter()" placeholder="#{cmsg['ui.table.filter']}" />
+						</f:facet>
+
+						<p:column headerText="#{msg['page.batch.import.objects.type']}" sortBy="#{_object.type}" filterBy="#{_object.type}" filterable="false">
+							<h:outputText value="#{msg['page.batch.import.objects.type.'.concat(_object.type)]}" />
+						</p:column>
+						<p:column headerText="#{msg['page.batch.import.objects.name']}" sortBy="#{_object.name}" filterBy="#{_object.name}" filterable="false"
+								  width="100%">
+							<h:outputText value="#{_object.name}" />
+						</p:column>
+						<p:column headerText="#{msg['page.batch.import.objects.version']}" sortBy="#{_object.version}" filterBy="#{_object.version}" filterable="false">
+							<h:outputText value="#{_object.version}" />
+						</p:column>
+						<p:column
+								headerText="#{batchController.currentStep == 3 ? msg['page.batch.import.objects.status.preview'] : msg['page.batch.import.objects.status']}"
+								sortBy="#{_object.status}" filterBy="#{_object.status}" filterable="false">
+							<h:outputText
+									value="#{msg['page.batch.import.objects.status.'.concat(batchController.currentStep == 3 ? 'preview.' : '').concat(_object.status)]}" />
+						</p:column>
+					</p:dataTable>
+
+					<components:step_buttons rendered="#{batchController.currentStep == 3 and not empty batchController.importedObjects}"
+											 restart="#{batchController.init}" stepPrev="#{batchController.stepPrev}"
+											 stepNext="#{batchController.onImport}" stepNextIcon="mdi-check" stepNextLabel="#{msg['page.batch.import.start']}"
+											 stepNextUpdate="@widgetVar(projectMenu), :domainSelector" />
+					<components:step_buttons rendered="#{batchController.currentStep == 3 and empty batchController.importedObjects}"
+											 restart="#{batchController.init}" stepPrev="#{batchController.stepPrev}"/>
+					<components:step_buttons rendered="#{batchController.currentStep == 4 }" stepNext="#{batchController.init}" stepNextIcon="mdi-check"
+											 stepNextLabel="#{cmsg['ui.button.finish']}" />
+				</p:panel>
+			</ui:fragment>
+
+			<ui:fragment rendered="#{batchController.batchPageMode == 'EXPORT'}">
+				<p:panel rendered="#{batchController.currentStep == 2}">
+					<p:panelGrid columns="2" columnClasses="ui-grid-col-3,ui-grid-col-9" layout="grid">
+						<p:outputLabel value="#{msg['domain.logo']}" rendered="#{not empty domainSelector.selectedDomain.logo}" />
+						<p:selectBooleanCheckbox value="#{batchController.exportLogo}" rendered="#{not empty domainSelector.selectedDomain.logo}" />
+
+						<!-- Elements -->
+						<p:outputLabel for="exportMode" value="#{msg['page.batch.export.mode']}" />
+						<p:selectOneMenu id="exportMode" value="#{batchController.exportMode}" required="true">
+							<f:selectItem noSelectionOption="true" itemLabel="#{cmsg['ui.select.pleaseSelect']}" itemDisabled="true" />
+							<f:selectItems value="#{batchController.exportModes}" var="_mode" itemLabel="#{msg['page.batch.export.mode.'.concat(_mode)]}" />
+							<p:ajax event="itemSelect" update="exportMode,exportContentOptions" process="@this" listener="#{batchController.loadItems}" />
+						</p:selectOneMenu>
+					</p:panelGrid>
+
+					<h:panelGroup id="exportContentOptions" layout="block">
+						<ui:fragment rendered="#{batchController.exportMode == 'POLICIES'}">
+							<h4>
+								<h:outputText value="#{msg['page.batch.export.choosePolicies']}" />
+							</h4>
+							<p:pickList value="#{batchController.policies}" var="_policy" itemLabel="#{_policy.key}" itemValue="#{_policy}" converter="genericConverter"
+										showTargetControls="true" addLabel="#{msg['module.policy.add']}" addAllLabel="#{msg['module.policy.addAll']}"
+										removeLabel="#{msg['module.policy.remove']}" removeAllLabel="#{msg['module.policy.removeAll']}" moveUpLabel="#{msg['common.moveUp']}"
+										moveDownLabel="#{msg['common.moveDown']}" moveTopLabel="#{msg['common.moveTop']}" moveBottomLabel="#{msg['common.moveBottom']}"
+										responsive="true" showSourceFilter="true" showTargetFilter="true" filterMatchMode="contains">
+								<f:facet name="sourceCaption">#{msg['module.label.policies.available']}</f:facet>
+								<f:facet name="targetCaption">#{msg['module.label.policies.selected']}</f:facet>
+								<p:column>#{_policy.label}</p:column>
+								<p:column style="text-align: right;" styleClass="lightgrey">#{msg['policy.version.short']} #{_policy.key.version}</p:column>
+							</p:pickList>
+						</ui:fragment>
+
+						<!-- Items: Templates -->
+						<ui:fragment rendered="#{batchController.exportMode == 'MODULES'}">
+							<h4>
+								<h:outputText value="#{msg['page.batch.export.chooseModules']}" />
+							</h4>
+							<p:pickList value="#{batchController.modules}" var="_module" itemLabel="#{_module.key}" itemValue="#{_module}" converter="genericConverter"
+										showTargetControls="true" addLabel="#{msg['template.module.add']}" addAllLabel="#{msg['template.module.addAll']}"
+										removeLabel="#{msg['template.module.remove']}" removeAllLabel="#{msg['template.module.removeAll']}" moveUpLabel="#{msg['common.moveUp']}"
+										moveDownLabel="#{msg['common.moveDown']}" moveTopLabel="#{msg['common.moveTop']}" moveBottomLabel="#{msg['common.moveBottom']}"
+										responsive="true" showSourceFilter="true" showTargetFilter="true" filterMatchMode="contains">
+								<f:facet name="sourceCaption">#{msg['page.batch.export.modules.available']}</f:facet>
+								<f:facet name="targetCaption">#{msg['page.batch.export.modules.selected']}</f:facet>
+								<p:column>#{_module.label}</p:column>
+								<p:column style="text-align: right;" styleClass="lightgrey">#{msg['module.version.short']} #{_module.key.version}</p:column>
+							</p:pickList>
+						</ui:fragment>
+
+						<!-- Items: Modules -->
+						<ui:fragment rendered="#{batchController.exportMode == 'TEMPLATES'}">
+							<h4>
+								<h:outputText value="#{msg['page.batch.export.chooseTemplates']}" />
+							</h4>
+							<p:pickList value="#{batchController.templates}" var="_template" itemLabel="#{_template.key}" itemValue="#{_template}"
+										converter="genericConverter" showTargetControls="true" addLabel="#{msg['template.list.add']}" addAllLabel="#{msg['template.list.addAll']}"
+										removeLabel="#{msg['template.list.remove']}" removeAllLabel="#{msg['template.list.removeAll']}" moveUpLabel="#{msg['common.moveUp']}"
+										moveDownLabel="#{msg['common.moveDown']}" moveTopLabel="#{msg['common.moveTop']}" moveBottomLabel="#{msg['common.moveBottom']}"
+										responsive="true" showSourceFilter="true" showTargetFilter="true" filterMatchMode="contains">
+								<f:facet name="sourceCaption">#{msg['page.batch.export.templates.available']}</f:facet>
+								<f:facet name="targetCaption">#{msg['page.batch.export.templates.selected']}</f:facet>
+								<p:column>#{_template.label}</p:column>
+								<p:column style="text-align: right;" styleClass="lightgrey">#{msg['template.version.short']} #{_template.versionLabelAndVersion}</p:column>
+							</p:pickList>
+						</ui:fragment>
+						<components:step_buttons restart="#{batchController.init}" stepPrev="#{batchController.stepPrev}" stepNext="#{batchController.stepNext}"
+												 stepNextAvailable="#{not empty batchController.exportMode}" />
+					</h:panelGroup>
+				</p:panel>
+
+				<!-- Download -->
+				<p:panel rendered="#{batchController.currentStep == 3}">
+					<h:outputText value="#{msg['page.batch.export.download.hint']}" />
+					<p:selectOneRadio value="#{batchController.exportFormat}" layout="grid" columns="1">
+						<f:selectItems value="#{batchController.exportFormats}" />
+					</p:selectOneRadio>
+					<components:step_buttons restart="#{batchController.init}" stepPrev="#{batchController.stepPrev}" stepNext="#{batchController.onDownload}"
+											 stepNextDownload="#{batchController.exportFile}" stepNextIcon="mdi-check" stepNextLabel="#{msg['page.batch.export.download']}" />
+				</p:panel>
+			</ui:fragment>
+		</h:form>
+
+	</ui:define>
+</ui:composition>
+</body>
+</html>

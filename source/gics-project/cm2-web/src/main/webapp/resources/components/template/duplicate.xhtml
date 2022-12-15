@@ -1,0 +1,98 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+		"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<!--
+  ###license-information-start###
+  gICS - a Generic Informed Consent Service
+  __
+  Copyright (C) 2014 - 2022 Trusted Third Party of the University Medicine Greifswald -
+  							kontakt-ths@uni-greifswald.de
+  
+  							concept and implementation
+  							l.geidel, c.hampf
+  							web client
+  							a.blumentritt, m.bialke, f.m.moser
+  							fhir-api
+  							m.bialke
+  							docker
+  							r. schuldt
+  
+  							The gICS was developed by the University Medicine Greifswald and published
+   							in 2014 as part of the research project "MOSAIC" (funded by the DFG HO 1937/2-1).
+   
+  							Selected functionalities of gICS were developed as
+  							part of the following research projects:
+  							- MAGIC (funded by the DFG HO 1937/5-1)
+  							- MIRACUM (funded by the German Federal Ministry of Education and Research 01ZZ1801M)
+  							- NUM-CODEX (funded by the German Federal Ministry of Education and Research 01KX2021)
+  
+  							please cite our publications
+  							https://doi.org/10.1186/s12967-020-02457-y
+  							http://dx.doi.org/10.3414/ME14-01-0133
+  							http://dx.doi.org/10.1186/s12967-015-0545-6
+  							http://dx.doi.org/10.3205/17gmds146
+  __
+  This program is free software: you can redistribute it and/or modify
+  it under the terms of the GNU Affero General Public License as published by
+  the Free Software Foundation, either version 3 of the License, or
+  (at your option) any later version.
+  
+  This program is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  GNU General Public License for more details.
+  
+  You should have received a copy of the GNU Affero General Public License
+  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+  ###license-information-end###
+  -->
+
+
+<!-- author: Arne Blumentritt -->
+
+<html xmlns:h="http://java.sun.com/jsf/html"
+	  xmlns:p="http://primefaces.org/ui"
+	  xmlns:cc="http://java.sun.com/jsf/composite"
+	  xmlns:composite="http://java.sun.com/jsf/composite">
+
+<!-- INTERFACE -->
+<composite:interface>
+	<cc:attribute name="update" type="java.lang.String" required="false" default="" />
+</composite:interface>
+
+<!-- IMPLEMENTATION -->
+<composite:implementation>
+	<p:dialog widgetVar="duplicateDialog" modal="true" blockScroll="true" header="#{msg['template.duplicate']}" style="max-width: 700px;">
+		<h:panelGroup id="duplicateDialog" layout="block">
+			<h:form rendered="#{not empty templateController.selectedTemplate}">
+				<p:focus for="@form" />
+				<p:messages escape="false" />
+				<h:outputText value="#{msg['template.duplicate.modules.question']}" />
+				<br />
+				<br />
+				<div class="ui-g">
+					<div class="ui-g-12 ui-md-6" style="border-right: 1px solid #CCC; position: relative">
+						<p:commandButton action="#{templateController.onDuplicateTemplate(templateController.selectedTemplate, false)}" ajax="false"
+										 icon="mdi mdi-file-replace-outline" immediate="true"
+										 style="position: absolute; bottom: 5px;" value="#{msg['template.duplicate.modules.reference']}" />
+					</div>
+					<div class="ui-g-12 ui-md-6">
+						<p:panelGrid columns="1" columnClasses="ui-grid-col-12" layout="grid" style="margin: -10px 0 -5px 0">
+							<!-- Version -->
+							<p:outputLabel for="module_version" value="#{msg['template.duplicate.modules.version']}" />
+							<p:column>
+								<p:inputText id="module_version" required="true" value="#{templateController.modulesDuplicateVersion}" />
+								<p:watermark for="module_version"
+											 value="#{msg['domain.versionLevel.'.concat(Versions.label(domainSelector.selectedDomain.moduleVersionConverter))]}" />
+							</p:column>
+							<p:commandButton actionListener="#{templateController.onDuplicateTemplate(templateController.selectedTemplate, true)}"
+											 icon="mdi mdi-content-copy" oncomplete="if (args &amp;&amp; !args.validationFailed) PF('duplicateDialog').hide();"
+											 update="#{cc.attrs.update}, @form" value="#{msg['template.duplicate.modules.duplicate']}" />
+						</p:panelGrid>
+					</div>
+				</div>
+			</h:form>
+		</h:panelGroup>
+	</p:dialog>
+</composite:implementation>
+
+</html>

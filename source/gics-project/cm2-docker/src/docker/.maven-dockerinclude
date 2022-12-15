@@ -1,0 +1,6 @@
+deployments/**
+jboss/**
+Dockerfile
+LICENSE.txt
+ReleaseNotes.md
+README.md

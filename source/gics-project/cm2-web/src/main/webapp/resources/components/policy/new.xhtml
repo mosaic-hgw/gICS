@@ -1,0 +1,116 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+		"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<!--
+  ###license-information-start###
+  gICS - a Generic Informed Consent Service
+  __
+  Copyright (C) 2014 - 2022 Trusted Third Party of the University Medicine Greifswald -
+  							kontakt-ths@uni-greifswald.de
+  
+  							concept and implementation
+  							l.geidel, c.hampf
+  							web client
+  							a.blumentritt, m.bialke, f.m.moser
+  							fhir-api
+  							m.bialke
+  							docker
+  							r. schuldt
+  
+  							The gICS was developed by the University Medicine Greifswald and published
+   							in 2014 as part of the research project "MOSAIC" (funded by the DFG HO 1937/2-1).
+   
+  							Selected functionalities of gICS were developed as
+  							part of the following research projects:
+  							- MAGIC (funded by the DFG HO 1937/5-1)
+  							- MIRACUM (funded by the German Federal Ministry of Education and Research 01ZZ1801M)
+  							- NUM-CODEX (funded by the German Federal Ministry of Education and Research 01KX2021)
+  
+  							please cite our publications
+  							https://doi.org/10.1186/s12967-020-02457-y
+  							http://dx.doi.org/10.3414/ME14-01-0133
+  							http://dx.doi.org/10.1186/s12967-015-0545-6
+  							http://dx.doi.org/10.3205/17gmds146
+  __
+  This program is free software: you can redistribute it and/or modify
+  it under the terms of the GNU Affero General Public License as published by
+  the Free Software Foundation, either version 3 of the License, or
+  (at your option) any later version.
+  
+  This program is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  GNU General Public License for more details.
+  
+  You should have received a copy of the GNU Affero General Public License
+  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+  ###license-information-end###
+  -->
+
+
+<!-- author: Arne Blumentritt -->
+
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:h="http://java.sun.com/jsf/html" xmlns:f="http://java.sun.com/jsf/core"
+	  xmlns:p="http://primefaces.org/ui" xmlns:cc="http://java.sun.com/jsf/composite">
+
+<!-- INTERFACE -->
+<cc:interface>
+	<cc:attribute name="update" type="java.lang.String" required="false" default="" />
+	<cc:attribute name="onSubmitFunction" type="java.lang.String" required="false" default="" />
+	<cc:attribute name="onCancelFunction" type="java.lang.String" required="false" default="" />
+	<cc:attribute name="onSubmitAction" type="java.lang.String" required="false" default="" />
+	<cc:attribute name="dialog" type="java.lang.Boolean" required="false" default="false" />
+</cc:interface>
+
+<!-- IMPLEMENTATION -->
+<cc:implementation>
+	<h:form id="editPolicyForm">
+		<p:panel>
+			<h4>
+				<h:outputText value="#{msg['policy.title.'.concat(policyController.pageMode)]}" />
+			</h4>
+			<p:focus for="label" rendered="#{policyController.pageMode == 'NEW'}" />
+			<p:panelGrid columns="2" columnClasses="#{cc.attrs.dialog ? 'ui-grid-col-6,ui-grid-col-6' : 'ui-grid-col-3,ui-grid-col-9'}" layout="grid">
+
+				<!-- Label -->
+				<p:outputLabel for="label" value="#{msg['policy.label']}" />
+				<p:inputTextarea id="label" value="#{policyController.editPolicy.label}" required="true" counter="label_counter"
+								 counterTemplate="#{msg['common.characters.remaining']}" maxlength="100" rows="1" />
+				<p:column />
+				<h:outputText id="label_counter" styleClass="textCounter" />
+
+				<!-- Name -->
+				<p:outputLabel for="name" rendered="#{policyController.pageMode == 'EDIT'}" value="#{msg['policy.name']}" />
+				<p:inputText id="name" disabled="true" rendered="#{policyController.pageMode == 'EDIT'}" required="true" value="#{policyController.editPolicy.key.name}" />
+
+				<!-- Version -->
+				<p:outputLabel for="version" value="#{msg['policy.version']}" />
+				<p:column>
+					<p:inputText id="version" value="#{policyController.editPolicy.key.version}" required="true" disabled="#{policyController.pageMode == 'EDIT'}" />
+					<p:watermark for="version" value="#{msg['domain.versionLevel.'.concat(Versions.label(domainSelector.selectedDomain.policyVersionConverter))]}" />
+				</p:column>
+
+				<!-- Comment -->
+				<p:outputLabel for="comment" value="#{msg['policy.comment']}" />
+				<p:inputTextarea id="comment" value="#{policyController.editPolicy.comment}" maxlength="255" counter="comment_counter"
+								 counterTemplate="#{msg['common.characters.remaining']}" />
+				<p:column />
+				<h:outputText id="comment_counter" styleClass="textCounter" />
+
+				<!-- Extern Properties -->
+				<p:outputLabel for="extern_properties" value="#{msg['policy.externProperties']}" />
+				<p:inputTextarea id="extern_properties" value="#{policyController.editPolicy.externProperties}" maxlength="255" counter="externProperties_counter"
+								 counterTemplate="#{msg['common.characters.remaining']}" />
+				<p:column />
+				<h:outputText id="externProperties_counter" styleClass="textCounter" />
+			</p:panelGrid>
+			<p:commandButton id="save" actionListener="#{policyController.onSavePolicy(!cc.attrs.dialog)}" icon="mdi mdi-check"
+							 ignoreAutoUpdate="#{cc.attrs.dialog}" oncomplete="#{cc.attrs.onSubmitFunction}" update="#{cc.attrs.update}"
+							 value="#{cmsg['ui.button.save.'.concat(policyController.pageMode)]}">
+				<f:actionListener binding="#{cc.attrs.onSubmitAction}" />
+			</p:commandButton>
+			<p:commandButton id="cancel" actionListener="#{policyController.onCancel}" icon="mdi mdi-close" ignoreAutoUpdate="#{cc.attrs.dialog}"
+							 onclick="#{cc.attrs.onCancelFunction}" process="@this" styleClass="secondary" update="#{cc.attrs.update}" value="#{cmsg['ui.button.cancel']}" />
+		</p:panel>
+	</h:form>
+</cc:implementation>
+</html>

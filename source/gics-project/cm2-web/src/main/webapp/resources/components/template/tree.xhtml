@@ -1,0 +1,172 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+		"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<!--
+  ###license-information-start###
+  gICS - a Generic Informed Consent Service
+  __
+  Copyright (C) 2014 - 2022 Trusted Third Party of the University Medicine Greifswald -
+  							kontakt-ths@uni-greifswald.de
+  
+  							concept and implementation
+  							l.geidel, c.hampf
+  							web client
+  							a.blumentritt, m.bialke, f.m.moser
+  							fhir-api
+  							m.bialke
+  							docker
+  							r. schuldt
+  
+  							The gICS was developed by the University Medicine Greifswald and published
+   							in 2014 as part of the research project "MOSAIC" (funded by the DFG HO 1937/2-1).
+   
+  							Selected functionalities of gICS were developed as
+  							part of the following research projects:
+  							- MAGIC (funded by the DFG HO 1937/5-1)
+  							- MIRACUM (funded by the German Federal Ministry of Education and Research 01ZZ1801M)
+  							- NUM-CODEX (funded by the German Federal Ministry of Education and Research 01KX2021)
+  
+  							please cite our publications
+  							https://doi.org/10.1186/s12967-020-02457-y
+  							http://dx.doi.org/10.3414/ME14-01-0133
+  							http://dx.doi.org/10.1186/s12967-015-0545-6
+  							http://dx.doi.org/10.3205/17gmds146
+  __
+  This program is free software: you can redistribute it and/or modify
+  it under the terms of the GNU Affero General Public License as published by
+  the Free Software Foundation, either version 3 of the License, or
+  (at your option) any later version.
+  
+  This program is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  GNU General Public License for more details.
+  
+  You should have received a copy of the GNU Affero General Public License
+  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+  ###license-information-end###
+  -->
+
+
+<!-- author: Arne Blumentritt -->
+
+<html xmlns:h="http://java.sun.com/jsf/html" xmlns:p="http://primefaces.org/ui" xmlns:composite="http://java.sun.com/jsf/composite">
+
+<!-- INTERFACE -->
+<composite:interface>
+</composite:interface>
+
+<!-- IMPLEMENTATION -->
+<composite:implementation>
+	<h:form id="templateTreeForm">
+		<p:tree id="templateTreeTree" value="#{templateController.templateTree.tree}" var="_node" dynamic="true" orientation="horizontal"
+				rendered="#{not empty templateController.templateTree}" escape="false" styleClass="templateTree noToggler small-icons">
+			<p:treeNode>
+				<p:panelGrid styleClass="tree-table">
+					<!-- Template -->
+					<p:row rendered="#{_node.type == 'TEMPLATE'}">
+						<p:column>
+							<i class="mdi mdi-file-outline" title="#{msg['template']}" />
+						</p:column>
+						<p:column>
+							<h:outputText value="#{_node.label}" />
+							<h:outputText styleClass="grey" value=" #{_node.versionLabel}" />
+							<i class="#{templateController.templateTree.showDraft and ! _node.finalised ? 'mdi mdi-file-edit-outline' : ''}"
+							   title="#{msg['common.notFinalised']}" />
+						</p:column>
+					</p:row>
+
+					<!-- Module -->
+					<p:row rendered="#{_node.type == 'MODULE'}">
+						<p:column>
+							<i class="#{_node.mandatory ? 'mdi mdi-checkbox-marked' : 'mdi mdi-checkbox-outline'}"
+							   title="#{_node.mandatory ? msg['module.mandatoryModule'] : msg['module.optionalModule']}" />
+						</p:column>
+						<p:column>
+							<h:outputText value="#{_node.label}" />
+							<h:outputText styleClass="grey" value=" #{_node.key.version}" />
+							<i class="#{templateController.templateTree.showDraft and ! _node.finalised ? 'mdi mdi-file-edit-outline' : ''}"
+							   title="#{msg['common.notFinalised']}" />
+						</p:column>
+					</p:row>
+
+					<!-- Policy -->
+					<p:row rendered="#{_node.type == 'POLICY'}">
+						<p:column>
+							<i class="mdi mdi-shield-half-full" title="#{msg['policy']}" />
+						</p:column>
+						<p:column>
+							<h:outputText value="#{_node.label}" />
+							<h:outputText styleClass="grey" value=" #{_node.key.version}" />
+						</p:column>
+					</p:row>
+
+					<!-- External Properties -->
+					<p:row rendered="#{templateController.templateTree.showExternProperties and not empty _node.externProperties}" styleClass="grey">
+						<p:column>
+							<i class="mdi mdi-tag-text-outline" title="#{msg['consent.externProperties']}" />
+						</p:column>
+						<p:column>
+							<h:outputText value="#{_node.externProperties}" />
+						</p:column>
+					</p:row>
+
+					<!-- Expiration -->
+					<p:row rendered="#{templateController.templateTree.showExpiration and not empty _node.expiration}" styleClass="grey">
+						<p:column>
+							<i class="mdi mdi-progress-clock" title="#{msg['common.expiration']}" />
+						</p:column>
+						<p:column>
+							<h:outputText value="#{_node.expiration}" />
+						</p:column>
+					</p:row>
+
+					<!-- Comment -->
+					<p:row rendered="#{templateController.templateTree.showComment and not empty _node.comment}" styleClass="grey">
+						<p:column>
+							<i class="mdi mdi-comment-text-outline" title="#{msg['common.comment']}" />
+						</p:column>
+						<p:column>
+							<h:outputText value="#{_node.comment}" />
+						</p:column>
+					</p:row>
+				</p:panelGrid>
+			</p:treeNode>
+		</p:tree>
+
+		<div class="legend">
+			<i class="mdi mdi-file-outline" />
+			<h:outputText value=" #{msg['template']}" />
+			<br />
+			<i class="mdi mdi-checkbox-marked" />
+			<h:outputText value=" #{msg['module.mandatoryModule']}" />
+			<i class="mdi mdi-checkbox-outline" style="margin-left: 10px;" />
+			<h:outputText value=" #{msg['module.optionalModule']}" />
+			<br />
+			<i class="mdi mdi-shield-half-full" />
+			<h:outputText value=" #{msg['policy']}" />
+			<br />
+			<br />
+			<i class="mdi mdi-tag-text-outline" />
+			<h:outputText value=" #{msg['consent.externProperties']} " />
+			<p:commandLink action="#{templateController.templateTree.setShowExternProperties(!templateController.templateTree.showExternProperties)}"
+						   update="@form" value="(#{templateController.templateTree.showExternProperties ? cmsg['ui.button.hide'] : cmsg['ui.button.show']})" />
+			<br />
+			<i class="mdi mdi-progress-clock" />
+			<h:outputText value=" #{msg['common.expiration']} " />
+			<p:commandLink action="#{templateController.templateTree.setShowExpiration(!templateController.templateTree.showExpiration)}" update="@form"
+						   value="(#{templateController.templateTree.showExpiration ? cmsg['ui.button.hide'] : cmsg['ui.button.show']})" />
+			<br />
+			<i class="mdi mdi-comment-text-outline" />
+			<h:outputText value=" #{msg['common.comment']} " />
+			<p:commandLink action="#{templateController.templateTree.setShowComment(!templateController.templateTree.showComment)}" update="@form"
+						   value="(#{templateController.templateTree.showComment ? cmsg['ui.button.hide'] : cmsg['ui.button.show']})" />
+			<br />
+			<i class="mdi mdi-file-edit-outline" />
+			<h:outputText value=" #{msg['common.draftStatus']} " />
+			<p:commandLink action="#{templateController.templateTree.setShowDraft(!templateController.templateTree.showDraft)}" update="@form"
+						   value="(#{templateController.templateTree.showDraft ? cmsg['ui.button.hide'] : cmsg['ui.button.show']})" />
+		</div>
+	</h:form>
+</composite:implementation>
+
+</html>

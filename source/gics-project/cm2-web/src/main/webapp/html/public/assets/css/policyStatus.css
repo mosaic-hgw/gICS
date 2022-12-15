@@ -1,0 +1,85 @@
+/*-
+ * ###license-information-start###
+ * gICS - a Generic Informed Consent Service
+ * __
+ * Copyright (C) 2014 - 2022 Trusted Third Party of the University Medicine Greifswald -
+ * 							kontakt-ths@uni-greifswald.de
+ * 
+ * 							concept and implementation
+ * 							l.geidel, c.hampf
+ * 							web client
+ * 							a.blumentritt, m.bialke, f.m.moser
+ * 							fhir-api
+ * 							m.bialke
+ * 							docker
+ * 							r. schuldt
+ * 
+ * 							The gICS was developed by the University Medicine Greifswald and published
+ *  							in 2014 as part of the research project "MOSAIC" (funded by the DFG HO 1937/2-1).
+ *  
+ * 							Selected functionalities of gICS were developed as
+ * 							part of the following research projects:
+ * 							- MAGIC (funded by the DFG HO 1937/5-1)
+ * 							- MIRACUM (funded by the German Federal Ministry of Education and Research 01ZZ1801M)
+ * 							- NUM-CODEX (funded by the German Federal Ministry of Education and Research 01KX2021)
+ * 
+ * 							please cite our publications
+ * 							https://doi.org/10.1186/s12967-020-02457-y
+ * 							http://dx.doi.org/10.3414/ME14-01-0133
+ * 							http://dx.doi.org/10.1186/s12967-015-0545-6
+ * 							http://dx.doi.org/10.3205/17gmds146
+ * __
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ * 
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ * 
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ * ###license-information-end###
+ */
+/* Styles for batch page */
+th:nth-child(1).hl-1, th:nth-child(2).hl-2, th:nth-child(3).hl-3, th:nth-child(4).hl-4, th:nth-child(5).hl-5, th:nth-child(6).hl-6, th:nth-child(7).hl-7,
+th:nth-child(8).hl-8, th:nth-child(9).hl-9
+th:nth-child(10).hl-10, th:nth-child(11).hl-11, th:nth-child(12).hl-12
+th:nth-child(13).hl-13, th:nth-child(14).hl-14, th:nth-child(15).hl-15
+th:nth-child(16).hl-16, th:nth-child(17).hl-17, th:nth-child(18).hl-18
+th:nth-child(19).hl-19, th:nth-child(20).hl-20 {
+	opacity: 1;
+	background-color: #309e59;
+	color: #FFF;
+}
+
+td:nth-child(1).hl-1, td:nth-child(2).hl-2, td:nth-child(3).hl-3, td:nth-child(4).hl-4, td:nth-child(5).hl-5, td:nth-child(6).hl-6, td:nth-child(7).hl-7,
+td:nth-child(8).hl-8, td:nth-child(9).hl-9
+td:nth-child(10).hl-10, td:nth-child(11).hl-11, td:nth-child(12).hl-12
+td:nth-child(13).hl-13, td:nth-child(14).hl-14, td:nth-child(15).hl-15
+td:nth-child(16).hl-16, td:nth-child(17).hl-17, td:nth-child(18).hl-18
+td:nth-child(19).hl-19, td:nth-child(20).hl-20 {
+	opacity: 1;
+	font-weight: bold;
+}
+
+th.relative {
+	padding: 0 !important;
+	height: 35px;
+}
+
+.relative > .ui-column-title {
+	position: relative;
+	display: block;
+}
+
+.thButton {
+	position: absolute;
+	width: 100%;
+	left: 0;
+	opacity: 0;
+	margin: -6px 0 0 0 !important;
+	height: 35px !important;
+}

@@ -1,0 +1,135 @@
+# add datasource for gics
+set gicsDbHost=${GICS_DB_HOST}
+if (outcome != "success") of :resolve-expression(expression=${env.GICS_DB_HOST})
+	set gicsDbHost=mysql
+end-if
+set gicsDbPort=${GICS_DB_PORT}
+if (outcome != "success") of :resolve-expression(expression=${env.GICS_DB_PORT})
+	set gicsDbPort=3306
+end-if
+set gicsDbName=${GICS_DB_NAME}
+if (outcome != "success") of :resolve-expression(expression=${env.GICS_DB_NAME})
+	set gicsDbName=gics
+end-if
+set gicsDbUser=${GICS_DB_USER}
+if (outcome != "success") of :resolve-expression(expression=${env.GICS_DB_USER})
+	set gicsDbUser=gics_user
+end-if
+set gicsDbPass=${GICS_DB_PASS}
+if (outcome != "success") of :resolve-expression(expression=${env.GICS_DB_PASS})
+	set gicsDbPass=gics_password
+end-if
+
+if (outcome != "success") of /subsystem=datasources/data-source=gicsDS:read-resource
+	try
+		echo \>\>\> add datasources gicsDS
+		data-source add \
+			--name=CM12SqlDS \
+			--driver-name=mysql \
+			--jndi-name=java:jboss/datasources/gicsDS \	
+			--connection-url=jdbc:mysql://$gicsDbHost:$gicsDbPort/$gicsDbName?useSSL=false&allowPublicKeyRetrieval=true&useJDBCCompliantTimezoneShift=true&useLegacyDatetimeCode=false&serverTimezone=Europe/Berlin \
+			--user-name=$gicsDbUser \
+			--password=$gicsDbPass \
+			--use-ccm=true \
+			--min-pool-size=0 \
+			--max-pool-size=20 \
+			--flush-strategy=FailingConnectionOnly \
+			--use-java-context=true \
+			--jta=false \
+			--enabled=true
+	catch
+		echo \<\<\< FAILED add datasources gicsDS
+		data-source remove --name=CM12SqlDS
+	end-try
+end-if
+
+
+# add logger for gics
+set gicsLogLevel=${GICS_LOG_LEVEL}
+if (result ~= "(TRACE|DEBUG|INFO|WARN|ERROR|FATAL)") of :resolve-expression(expression=$gicsLogLevel)
+	echo \>\>\> set gics-log-level to $gicsLogLevel
+else
+	set gicsLogLevel="INFO"
+end-if
+set gicsFileLog=${GICS_FILE_LOG}
+if (result ~= "(?i)(on|true|yes|1)") of :resolve-expression(expression=$gicsFileLog)
+	echo \>\>\> add gics-logger as separate file
+	/subsystem=logging/size-rotating-file-handler=gics-handler:add(file={"relative-to"=>"jboss.server.log.dir", "path"=>"gics.log"})
+	/subsystem=logging/logger=org.emau.icmvc.ttp.gics:add(use-parent-handlers=false,handlers=["gics-handler"])
+	/subsystem=logging/logger=org.emau.icmvc.ttp.gics:write-attribute(name=level,value=$gicsLogLevel)
+	/subsystem=logging/logger=org.emau.icmv.ganimed.ttp.cm2:add(use-parent-handlers=false,handlers=["gics-handler"])
+	/subsystem=logging/logger=org.emau.icmv.ganimed.ttp.cm2:write-attribute(name=level,value=$gicsLogLevel)
+	/subsystem=logging/logger=org.emau.icmvc.ganimed.ttp.cm2:add(use-parent-handlers=false,handlers=["gics-handler"])
+	/subsystem=logging/logger=org.emau.icmvc.ganimed.ttp.cm2:write-attribute(name=level,value=$gicsLogLevel)
+else
+	echo \>\>\> add gics-logger to console-logger
+	/subsystem=logging/logger=org.emau.icmvc.ttp.gics:add(use-parent-handlers=false,handlers=["CONSOLE"])
+	/subsystem=logging/logger=org.emau.icmvc.ttp.gics:write-attribute(name=level,value=$gicsLogLevel)
+	/subsystem=logging/logger=org.emau.icmv.ganimed.ttp.cm2:add(use-parent-handlers=false,handlers=["CONSOLE"])
+	/subsystem=logging/logger=org.emau.icmv.ganimed.ttp.cm2:write-attribute(name=level,value=$gicsLogLevel)
+	/subsystem=logging/logger=org.emau.icmvc.ganimed.ttp.cm2:add(use-parent-handlers=false,handlers=["CONSOLE"])
+	/subsystem=logging/logger=org.emau.icmvc.ganimed.ttp.cm2:write-attribute(name=level,value=$gicsLogLevel)
+end-if
+
+
+set authMode=${GICS_AUTH_MODE}
+# gRAS-Authentication
+if (result ~= "(?i)(gras)") of :resolve-expression(expression=$authMode)
+	try
+		echo \>\>\> install gics-Authentication for $authMode-Authentication
+		deployment-overlay add \
+			--name=gicsGrasAuth \
+			--content=/WEB-INF/web.xml=/entrypoint-wildfly-cli/gics_gras_web.xml,/WEB-INF/jboss-web.xml=/entrypoint-wildfly-cli/gics_gras_jboss-web.xml \
+			--deployments=gics-web-*.war \
+			--redeploy-affected
+	catch
+		echo \<\<\< FAILED install gics-Authentication for $authMode-Authentication
+		deployment-overlay remove \
+			--name=gicsGrasAuth \
+			--redeploy-affected
+	end-try
+end-if
+
+# KeyCloak-Authentication
+if (result ~= "(?i)(keycloak-json)") of :resolve-expression(expression=$authMode)
+	try
+		echo \>\>\> install gics-Authentication for $authMode-Authentication
+		deployment-overlay add \
+			--name=gicsKeycloakAuth \
+			--content=/WEB-INF/web.xml=/entrypoint-wildfly-cli/gics_keycloak_web.xml,/WEB-INF/keycloak.json=/entrypoint-wildfly-cli/keycloak.json \
+			--deployments=gics-web-*.war \
+			--redeploy-affected
+	catch
+		echo \<\<\< FAILED install gics-Authentication for $authMode-Authentication
+		deployment-overlay remove \
+			--name=gicsKeycloakAuth \
+			--redeploy-affected
+	end-try
+end-if
+
+# KeyCloak-Authentication (alternative Methode)
+if (result ~= "(?i)(keycloak)") of :resolve-expression(expression=$authMode)
+	try
+		echo \>\>\> install gics-Authentication for $authMode-Authentication
+		deployment-overlay add \
+			--name=gicsKeycloakAuth \
+			--content=/WEB-INF/web.xml=/entrypoint-wildfly-cli/gics_keycloak_web.xml \
+			--deployments=gics-web-*.war \
+			--redeploy-affected
+		set gicsVersion=${GICS_VERSION}
+		/subsystem=keycloak/secure-deployment=gics-web-$gicsVersion.war:add( \
+			realm=${env.KEYCLOAK_REALM}, \
+			resource=${env.KEYCLOAK_RESOURCE}, \
+			auth-server-url=${env.KEYCLOAK_SERVER_URL}, \
+			ssl-required=${env.KEYCLOAK_SSL_REQUIRED}, \
+			confidential-port=${env.KEYCLOAK_CONFIDENTIAL_PORT}, \
+			use-resource-role-mappings=${env.KEYCLOAK_USE_RESOURCE_ROLE_MAPPINGS} \
+		)
+		/subsystem=keycloak/secure-deployment=gics-web-$gicsVersion.war/credential=secret:add(value=${env.KEYCLOAK_CLIENT_SECRET})
+	catch
+		echo \<\<\< FAILED install gics-Authentication for $authMode-Authentication
+		deployment-overlay remove \
+			--name=gicsKeycloakAuth \
+			--redeploy-affected
+	end-try
+end-if

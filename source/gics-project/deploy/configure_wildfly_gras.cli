@@ -1,0 +1,56 @@
+set grasDbHost=${GRAS_DB_HOST}
+if (outcome != "success") of :resolve-expression(expression=${env.GRAS_DB_HOST})
+	set grasDbHost=mysql
+end-if
+set grasDbPort=${GRAS_DB_PORT}
+if (outcome != "success") of :resolve-expression(expression=${env.GRAS_DB_PORT})
+	set grasDbPort=3306
+end-if
+set grasDbName=${GRAS_DB_NAME}
+if (outcome != "success") of :resolve-expression(expression=${env.GRAS_DB_NAME})
+	set grasDbName=gras
+end-if
+set grasDbUser=${GRAS_DB_USER}
+if (outcome != "success") of :resolve-expression(expression=${env.GRAS_DB_USER})
+	set grasDbUser=gras_user
+end-if
+set grasDbPass=${GRAS_DB_PASS}
+if (outcome != "success") of :resolve-expression(expression=${env.GRAS_DB_PASS})
+	set grasDbPass=gras_password
+end-if
+
+if (outcome != "success") of /subsystem=datasources/data-source=grasDS:read-resource
+	try
+		echo \>\>\> add datasources grasDS
+		data-source add \
+			--name=grasDS \
+			--driver-name=mysql \
+			--jndi-name=java:jboss/datasources/grasDS \
+			--connection-url=jdbc:mysql://$grasDbHost:$grasDbPort/$grasDbName?useSSL=false&allowPublicKeyRetrieval=true \
+			--user-name=$grasDbUser \
+			--password=$grasDbPass \
+			--use-ccm=true \
+			--min-pool-size=0 \
+			--max-pool-size=20 \
+			--flush-strategy=FailingConnectionOnly \
+			--use-java-context=true \
+			--jta=true \
+			--enabled=true
+	
+		# add ttp-realm
+		echo \>\>\> add security-realm TtpRealm
+		/core-service=management/security-realm=TtpRealm:add
+		/core-service=management/security-realm=TtpRealm/authentication=local:add(default-user="$local",allowed-users="*")
+		/core-service=management/security-realm=TtpRealm/authentication=jaas:add(name="ttp-security-domain")
+	
+		#add security-domain
+		echo \>\>\> add security-domain ttp-security-domain
+		/subsystem=security/security-domain=ttp-security-domain:add(cache-type=default)
+		/subsystem=security/security-domain=ttp-security-domain/authentication=classic:add
+		/subsystem=security/security-domain=ttp-security-domain/authentication=classic/login-module=Database:add(code=Database,flag=required,module-options={unauthenticatedIdentity=guest,dsJndiName=java:jboss/datasources/grasDS,principalsQuery="SELECT PASSWORD FROM domainuser_password d WHERE d.domainuser=?",rolesQuery="SELECT role, 'Roles' FROM domainuser_role d WHERE d.domainuser = ?",hashAlgorithm=SHA-256,hashEncoding=HEX})
+		/subsystem=security/security-domain=ttp-security-domain/authentication=classic/login-module=Remoting:add(code=Remoting,flag=optional,module-options={password-stacking=useFirstPass})
+	catch
+		echo \<\<\< FAILED add datasources grasDS
+		data-source remove --name=grasDS
+	end-try
+end-if

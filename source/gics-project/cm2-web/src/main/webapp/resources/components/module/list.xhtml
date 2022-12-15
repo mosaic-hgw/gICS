@@ -1,0 +1,154 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+		"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<!--
+  ###license-information-start###
+  gICS - a Generic Informed Consent Service
+  __
+  Copyright (C) 2014 - 2022 Trusted Third Party of the University Medicine Greifswald -
+  							kontakt-ths@uni-greifswald.de
+  
+  							concept and implementation
+  							l.geidel, c.hampf
+  							web client
+  							a.blumentritt, m.bialke, f.m.moser
+  							fhir-api
+  							m.bialke
+  							docker
+  							r. schuldt
+  
+  							The gICS was developed by the University Medicine Greifswald and published
+   							in 2014 as part of the research project "MOSAIC" (funded by the DFG HO 1937/2-1).
+   
+  							Selected functionalities of gICS were developed as
+  							part of the following research projects:
+  							- MAGIC (funded by the DFG HO 1937/5-1)
+  							- MIRACUM (funded by the German Federal Ministry of Education and Research 01ZZ1801M)
+  							- NUM-CODEX (funded by the German Federal Ministry of Education and Research 01KX2021)
+  
+  							please cite our publications
+  							https://doi.org/10.1186/s12967-020-02457-y
+  							http://dx.doi.org/10.3414/ME14-01-0133
+  							http://dx.doi.org/10.1186/s12967-015-0545-6
+  							http://dx.doi.org/10.3205/17gmds146
+  __
+  This program is free software: you can redistribute it and/or modify
+  it under the terms of the GNU Affero General Public License as published by
+  the Free Software Foundation, either version 3 of the License, or
+  (at your option) any later version.
+  
+  This program is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  GNU General Public License for more details.
+  
+  You should have received a copy of the GNU Affero General Public License
+  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+  ###license-information-end###
+  -->
+
+
+<!-- author: Arne Blumentritt -->
+
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:cc="http://java.sun.com/jsf/composite"
+	  xmlns:components="http://java.sun.com/jsf/composite/components" xmlns:f="http://java.sun.com/jsf/core" xmlns:h="http://java.sun.com/jsf/html"
+	  xmlns:p="http://primefaces.org/ui">
+
+<!-- INTERFACE -->
+<cc:interface>
+	<cc:attribute default="" name="update" required="false" type="java.lang.String" />
+</cc:interface>
+
+<!-- IMPLEMENTATION -->
+<cc:implementation>
+	<h:form onkeypress="if (event.keyCode === 13) { return false; }">
+		<p:panel>
+			<h4>
+				<h:outputFormat value="#{msg['module.label.found']}">
+					<f:param value="#{moduleController.modules.size()}" />
+				</h:outputFormat>
+			</h4>
+
+			<p:dataTable id="modules"
+						 currentPageReportTemplate="#{props.currentPageReport}"
+						 emptyMessage="#{cmsg['ui.table.empty']}"
+						 globalFilter="#{moduleController.globalFilter}"
+						 pageLinks="3" paginator="true" paginatorPosition="bottom" paginatorTemplate="#{props.paginatorTemplate}"
+						 rowKey="#{moduleController.convertKey(_module.key)}" rows="10"
+						 selection="#{moduleController.selectedModule}" selectionMode="single"
+						 value="#{moduleController.modules}"
+						 var="_module" widgetVar="modules">
+				<p:ajax event="contextMenu" ignoreAutoUpdate="true" update="@form:modules_menu" />
+				<p:ajax event="filter" ignoreAutoUpdate="true" />
+
+				<f:facet name="header">
+					<p:inputText id="globalFilter" onkeyup="PF('modules').filter()" placeholder="#{cmsg['ui.table.filter']}" value="#{moduleController.globalFilter}" />
+				</f:facet>
+
+				<p:column filterBy="#{_module.label}" filterMatchMode="contains" filterStyle="display: none"
+						  headerText="#{msg['module.label']}" sortBy="#{_module.label}"
+						  width="100%">
+					<h:outputText rendered="#{!_module.finalised}" style="margin-right: 8px;" styleClass="tag tag_lightgrey" value="#{msg['common.notFinalised']}" />
+					<h:outputText value="#{_module.label} " />
+					<h:outputText id="comment-icon" rendered="#{not empty _module.comment}" styleClass="mdi mdi-comment-text-outline tooltip-icon comment" />
+					<p:tooltip for="comment-icon" rendered="#{not empty _module.comment}" value="#{_module.comment}" escape="false" />
+				</p:column>
+				<p:column filterBy="#{_module.key.version}" filterMatchMode="contains" filterStyle="display: none"
+						  headerText="#{msg['module.version']}" sortBy="#{_module.key.version}">
+					<h:outputText value="#{_module.key.version}" />
+				</p:column>
+				<p:column filterBy="#{_module.creationDate}" filterMatchMode="contains" filterStyle="display: none"
+						  headerText="#{cmsg['ui.date.created']}" sortBy="#{_module.creationDate}"
+						  style="min-width: 160px;">
+					<h:outputText value="#{_module.creationDate}" converter="datetime"/>
+				</p:column>
+				<p:column filterBy="#{_module.updateDate}" filterMatchMode="contains" filterStyle="display: none"
+						  headerText="#{cmsg['ui.date.edited']}" sortBy="#{_module.updateDate}" sortOrder="desc"
+						  style="min-width: 160px;">
+					<h:outputText value="#{_module.updateDate}" converter="datetime"/>
+				</p:column>
+
+				<p:column headerText="#{msg['common.button.actions']}" styleClass="icons">
+					<p:commandButton action="#{moduleController.onFinalise(_module)}"
+									 alt="#{_module.finalised ? msg['common.final.already'] : msg['common.finalise']}" disabled="#{_module.finalised}" icon="mdi mdi-spellcheck"
+									 oncomplete="PF('modules').filter()" styleClass="secondary" title="#{_module.finalised ? msg['common.final.already'] : msg['common.finalise']}"
+									 update="@form">
+						<p:confirm escape="false" header="#{msg['common.confirmation']}" icon="mdi mdi-spellcheck" message="#{msg['module.label.confirmFinalise']}" />
+					</p:commandButton>
+					<p:commandButton action="#{moduleController.onEditModule(_module)}" ajax="false" alt="#{cmsg['ui.button.edit']}" icon="mdi mdi-pencil"
+									 styleClass="secondary" title="#{cmsg['ui.button.edit']}" />
+					<p:commandButton action="#{moduleController.onDeleteModule(_module)}" alt="#{cmsg['ui.button.delete']}" icon="mdi mdi-delete-empty"
+									 oncomplete="PF('modules').filter()" styleClass="secondary" title="#{cmsg['ui.button.delete']}" update="@form">
+						<p:confirm header="#{msg['common.confirmation']}" icon="mdi mdi-alert-outline" message="#{msg['module.label.confirmDelete']}" />
+					</p:commandButton>
+					<p:confirmDialog closeOnEscape="true" global="true">
+						<p:commandButton icon="mdi mdi-check" styleClass="ui-confirmdialog-yes" type="button" value="#{cmsg['ui.button.yes']}" />
+						<p:commandButton icon="mdi mdi-close" styleClass="ui-confirmdialog-no" type="button" value="#{cmsg['ui.button.no']}" />
+						<h:outputText />
+					</p:confirmDialog>
+				</p:column>
+			</p:dataTable>
+			<components:rightclick />
+
+			<p:contextMenu for="modules" id="modules_menu">
+				<p:menuitem actionListener="#{moduleController.onFinalise(moduleController.selectedModule)}" icon="mdi mdi-spellcheck"
+							oncomplete="PF('modules').filter()" rendered="#{!moduleController.selectedModule.finalised}" update="#{cc.attrs.update}"
+							value="#{msg['common.finalise']}">
+					<p:confirm escape="false" header="#{msg['common.confirmation']}" icon="mdi mdi-spellcheck" message="#{msg['module.label.confirmFinalise']}" />
+				</p:menuitem>
+				<p:separator rendered="#{!moduleController.selectedModule.finalised}" />
+				<p:menuitem action="#{moduleController.onEditModule(moduleController.selectedModule)}" ajax="false" icon="mdi mdi-pencil-outline"
+							update="#{cc.attrs.update}" value="#{cmsg['ui.button.edit']}" />
+				<p:separator />
+				<p:menuitem action="#{moduleController.onDuplicateModule(moduleController.selectedModule)}" ajax="false" icon="mdi mdi-content-copy"
+							update="#{cc.attrs.update}" value="#{cmsg['ui.button.duplicate']}" />
+				<p:separator />
+				<p:menuitem actionListener="#{moduleController.onDeleteModule(moduleController.selectedModule)}" icon="mdi mdi-delete-empty"
+							oncomplete="PF('modules').filter()" update="@form" value="#{cmsg['ui.button.delete']}">
+					<p:confirm header="#{msg['common.confirmation']}" icon="mdi mdi-alert-outline" message="#{msg['module.label.confirmDelete']}" />
+				</p:menuitem>
+			</p:contextMenu>
+		</p:panel>
+	</h:form>
+</cc:implementation>
+
+</html>

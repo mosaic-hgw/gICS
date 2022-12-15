@@ -1,0 +1,271 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+		"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<!--
+  ###license-information-start###
+  gICS - a Generic Informed Consent Service
+  __
+  Copyright (C) 2014 - 2022 Trusted Third Party of the University Medicine Greifswald -
+  							kontakt-ths@uni-greifswald.de
+  
+  							concept and implementation
+  							l.geidel, c.hampf
+  							web client
+  							a.blumentritt, m.bialke, f.m.moser
+  							fhir-api
+  							m.bialke
+  							docker
+  							r. schuldt
+  
+  							The gICS was developed by the University Medicine Greifswald and published
+   							in 2014 as part of the research project "MOSAIC" (funded by the DFG HO 1937/2-1).
+   
+  							Selected functionalities of gICS were developed as
+  							part of the following research projects:
+  							- MAGIC (funded by the DFG HO 1937/5-1)
+  							- MIRACUM (funded by the German Federal Ministry of Education and Research 01ZZ1801M)
+  							- NUM-CODEX (funded by the German Federal Ministry of Education and Research 01KX2021)
+  
+  							please cite our publications
+  							https://doi.org/10.1186/s12967-020-02457-y
+  							http://dx.doi.org/10.3414/ME14-01-0133
+  							http://dx.doi.org/10.1186/s12967-015-0545-6
+  							http://dx.doi.org/10.3205/17gmds146
+  __
+  This program is free software: you can redistribute it and/or modify
+  it under the terms of the GNU Affero General Public License as published by
+  the Free Software Foundation, either version 3 of the License, or
+  (at your option) any later version.
+  
+  This program is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  GNU General Public License for more details.
+  
+  You should have received a copy of the GNU Affero General Public License
+  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+  ###license-information-end###
+  -->
+
+
+<!-- author: Arne Blumentritt -->
+
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:h="http://java.sun.com/jsf/html" xmlns:f="http://java.sun.com/jsf/core"
+	  xmlns:p="http://primefaces.org/ui" xmlns:cc="http://java.sun.com/jsf/composite"
+	  xmlns:components="http://java.sun.com/jsf/composite/components" xmlns:policy="http://java.sun.com/jsf/composite/components/policy">
+
+<!-- INTERFACE -->
+<cc:interface>
+	<cc:attribute name="update" type="java.lang.String" required="false" default="" />
+	<cc:attribute name="onSubmitFunction" type="java.lang.String" required="false" default="" />
+	<cc:attribute name="onCancelFunction" type="java.lang.String" required="false" default="" />
+	<cc:attribute name="onSubmitAction" type="java.lang.String" required="false" default="" />
+	<cc:attribute name="dialog" type="java.lang.Boolean" required="false" default="false" />
+</cc:interface>
+
+<!-- IMPLEMENTATION -->
+<cc:implementation>
+	<h:form id="editModuleForm">
+		<p:panel>
+			<h4>
+				<h:outputText value="#{msg['module.title.'.concat(moduleController.pageMode)]}" />
+			</h4>
+
+			<p:focus for="module_label" rendered="#{moduleController.pageMode == 'NEW'}" />
+			<p:panelGrid columns="2" columnClasses="ui-grid-col-3,ui-grid-col-9" layout="grid">
+
+				<!-- Label -->
+				<p:outputLabel for="module_label" value="#{msg['module.label']}" />
+				<p:inputTextarea id="module_label" value="#{moduleController.editModule.label}" required="true" counter="module_label_counter"
+								 counterTemplate="#{msg['common.characters.remaining']}" maxlength="100" rows="1" />
+				<p:column />
+				<h:outputText id="module_label_counter" styleClass="textCounter" />
+
+				<!-- Name -->
+				<p:outputLabel for="module_name" rendered="#{moduleController.pageMode == 'EDIT'}" value="#{msg['module.name']}" />
+				<p:inputText id="module_name" disabled="true" rendered="#{moduleController.pageMode == 'EDIT'}" required="true" value="#{moduleController.editModule.key.name}" />
+
+				<!-- Version -->
+				<p:outputLabel for="module_version" value="#{msg['module.version']}" />
+				<p:column>
+					<p:inputText id="module_version" value="#{moduleController.editModule.key.version}" required="true"
+								 disabled="#{moduleController.pageMode == 'EDIT'}" />
+					<p:watermark for="module_version"
+								 value="#{msg['domain.versionLevel.'.concat(Versions.label(domainSelector.selectedDomain.moduleVersionConverter))]}" />
+				</p:column>
+
+				<!-- Shorttext -->
+				<p:outputLabel for="shortText" value="#{msg['model.module.shortText']}" />
+				<p:inputTextarea id="shortText" value="#{moduleController.editModule.shortText}" counter="shortText_counter"
+								 counterTemplate="#{msg['common.characters.remaining']}" maxlength="100" rows="1" />
+				<p:column />
+				<h:outputText id="shortText_counter" styleClass="textCounter" />
+
+				<!-- Title -->
+				<p:column style="vertical-align: top;">
+					<p:outputLabel for="module_title" value="#{msg['model.module.title']}" />
+				</p:column>
+				<components:text_editor id="module_title" disabled="#{moduleController.editModule.finalised}" value="#{moduleController.editModule.title}"
+										small="true" />
+
+				<!-- Text -->
+				<p:column style="vertical-align: top;">
+					<p:outputLabel for="module_text" value="#{msg['module.text']}" />
+				</p:column>
+				<components:text_editor id="module_text" disabled="#{moduleController.editModule.finalised}" value="#{moduleController.editModule.text}" />
+			</p:panelGrid>
+		</p:panel>
+
+		<!-- Assigned Policies -->
+		<p:panel style="margin-top: 15px;">
+			<h4>
+				<h:outputText value="#{moduleController.editModule.assignedPolicies.size()} #{msg['module.policies']}" />
+				<components:tooltip value="#{msg['module.hint.policies']}" />
+			</h4>
+			<p:dataTable id="policyOptions" value="#{moduleController.assignedPoliciesSorted}" var="_assignedPolicy" rowIndexVar="_i"
+						 emptyMessage="#{msg['module.policies.noneSelected']}">
+				<p:column headerText="#{msg['policy.label']}">
+					<h:outputText value="#{_assignedPolicy.policy.label}" />
+					<br />
+					<h:outputText styleClass="lightgrey" value="#{msg['policy.version']} #{_assignedPolicy.policy.key.version}" />
+				</p:column>
+				<p:column headerText="#{msg['module.policy.options']}" styleClass="icons">
+					<!-- Expiration -->
+					<p:badge id="expirationBadge" severity="danger" visible="#{moduleController.policyExpirations.get(_assignedPolicy.policy.key).savedExpiration.expires}">
+						<p:commandButton actionListener="#{moduleController.policyExpirations.get(_assignedPolicy.policy.key).loadExpiration}"
+										 oncomplete="PF('expiration_properties_dialog_#{_i}').show();" icon="mdi mdi-progress-clock" process="@this"
+										 title="#{msg['module.policy.expiration']}" styleClass="secondary"
+										 update="#{cc.clientId}:editModuleForm:policyOptions:#{_i}:policyExpirationDialog">
+							<p:resetInput target="#{cc.clientId}:editModuleForm:policyOptions:#{_i}:policyExpirationDialog" />
+						</p:commandButton>
+					</p:badge>
+					<p:dialog id="policyExpirationDialog" closeOnEscape="true" widgetVar="expiration_properties_dialog_#{_i}" modal="#{!cc.attrs.dialog}" blockScroll="true"
+							  header="#{msg['module.policy.expiration']}" style="text-align:left;">
+						<components:expiration disabled="#{moduleController.editModule.finalised}" expiration="#{moduleController.policyExpirations.get(_assignedPolicy.policy.key).editExpiration}" dialog="true" />
+						<p:commandButton actionListener="#{moduleController.policyExpirations.get(_assignedPolicy.policy.key).saveExpiration}" icon="mdi mdi-check"
+										 value="#{moduleController.editModule.finalised ? cmsg['ui.button.close'] : cmsg['ui.button.save']}"
+										 onclick="PF('expiration_properties_dialog_#{_i}').hide();" process="@parent" update="@parent:@parent:expirationBadge" />
+						<p:commandButton value="#{cmsg['ui.button.cancel']}" icon="mdi mdi-close" immediate="true"
+										 onclick="PF('expiration_properties_dialog_#{_i}').hide();" styleClass="secondary" />
+					</p:dialog>
+
+					<!-- Extern properties -->
+					<p:badge id="externPropertiesBadge" severity="danger" visible="#{not empty _assignedPolicy.externProperties}">
+						<p:commandButton onclick="PF('extern_properties_dialog_#{_i}').show();" update="extern_properties" icon="mdi mdi-tag-text-outline"
+										 styleClass="secondary" process="@this" title="#{msg['consent.externProperties']}">
+							<p:resetInput target="#{cc.clientId}:editModuleForm:policyOptions:#{_i}:extern_properties" />
+						</p:commandButton>
+					</p:badge>
+
+					<p:dialog closeOnEscape="true" widgetVar="extern_properties_dialog_#{_i}" modal="#{!cc.attrs.dialog}" blockScroll="true"
+							  header="#{msg['consent.externProperties']}" style="text-align:left;">
+						<p:panelGrid columns="1" columnClasses="ui-grid-col-12" layout="grid">
+							<p:inputTextarea id="extern_properties" value="#{_assignedPolicy.externProperties}" counter="extern_properties_counter"
+											 counterTemplate="#{msg['common.characters.remaining']}" maxlength="4095" rows="3" />
+							<h:outputText id="extern_properties_counter" styleClass="textCounter" />
+						</p:panelGrid>
+						<p:commandButton icon="mdi mdi-check" value="#{cmsg['ui.button.save']}" onclick="PF('extern_properties_dialog_#{_i}').hide();"
+										 process="extern_properties" update="@parent:@parent:externPropertiesBadge" />
+						<p:commandButton value="#{cmsg['ui.button.cancel']}" icon="mdi mdi-close" immediate="true"
+										 onclick="PF('extern_properties_dialog_#{_i}').hide();" styleClass="secondary" />
+					</p:dialog>
+				</p:column>
+			</p:dataTable>
+			<div class="space"></div>
+			<!--Select and Sort Modules-->
+			<p:commandButton id="selectPoliciesButton" icon="mdi mdi-shield-search"
+							 styleClass="secondary" type="button" onclick="PF('selectPolicies').show();" rendered="#{!moduleController.editModule.finalised}"
+							 value="#{msg['module.policies.search']}" />
+		</p:panel>
+
+		<!-- Select Policies -->
+		<p:dialog widgetVar="selectPolicies" modal="#{!cc.attrs.dialog}" blockScroll="true" responsive="true" closeOnEscape="true"
+				  header="#{msg['module.policies.select']}">
+			<h:panelGroup layout="block" id="selectPolicies">
+				<h:outputText escape="false" value="#{msg['module.policies.select.hint']}" />
+				<p:messages id="selectPoliciesMessages" escape="false" for="policyPicker" style="margin-bottom: 10px;" />
+				<p:pickList id="policyPicker" widgetVar="policyPicker" value="#{moduleController.policies}" var="_policy" itemLabel="#{_policy.policy.key}"
+							itemValue="#{_policy}" converter="genericConverter" addLabel="#{msg['module.policy.add']}"
+							addAllLabel="#{msg['module.policy.addAll']}" removeLabel="#{msg['module.policy.remove']}"
+							removeAllLabel="#{msg['module.policy.removeAll']}" moveUpLabel="#{msg['common.moveUp']}" moveDownLabel="#{msg['common.moveDown']}"
+							moveTopLabel="#{msg['common.moveTop']}" moveBottomLabel="#{msg['common.moveBottom']}" responsive="true" showSourceFilter="true"
+							showTargetFilter="true" filterMatchMode="contains">
+					<p:ajax event="transfer" ignoreAutoUpdate="true" partialSubmit="true" />
+					<p:ajax event="reorder" ignoreAutoUpdate="true" partialSubmit="true" />
+					<f:facet name="sourceCaption">#{msg['module.policies.available']}</f:facet>
+					<f:facet name="targetCaption">#{msg['module.policies.selected']}</f:facet>
+					<p:column>
+						<h:outputText value="#{_policy.policy.label}" />
+					</p:column>
+					<p:column style="text-align: right;" styleClass="lightgrey">
+						<h:outputText value="#{msg['policy.version.short']} #{_policy.policy.key.version}" />
+					</p:column>
+				</p:pickList>
+				<br />
+				<br />
+
+				<!-- Apply selected policies Button -->
+				<p:commandButton actionListener="#{moduleController.onAssignPolicies}" icon="mdi mdi-check"
+								 oncomplete="if (args &amp;&amp; !args.validationFailed) PF('selectPolicies').hide();" process="@this"
+								 update="selectPoliciesMessages, policyOptions" value="#{msg['module.policies.applySelected']}" />
+
+				<!-- New Module Button -->
+				<p:commandButton actionListener="#{policyController.onNewPolicy}" icon="mdi mdi-shield-plus-outline" ignoreAutoUpdate="true" immediate="true"
+								 oncomplete="PF('newPolicyDialog').show();" styleClass="secondary" update="#{cc.clientId}:newPolicyDialog"
+								 value="#{msg['module.policy.create']}">
+					<p:resetInput target="#{cc.clientId}:newPolicyDialog" />
+				</p:commandButton>
+
+				<!-- Refresh Modules Button -->
+				<p:commandButton actionListener="#{moduleController.refreshAvailablePolicies}" icon="mdi mdi-refresh" process="@this" styleClass="secondary"
+								 update="selectPolicies" value="#{msg['module.policy.refreshAvailable']}" />
+			</h:panelGroup>
+		</p:dialog>
+
+		<!-- Misc -->
+		<p:accordionPanel multiple="true" activeIndex="-1">
+			<p:tab title="#{msg['module.label.misc']}">
+				<p:panelGrid columns="2" columnClasses="ui-grid-col-3,ui-grid-col-9" layout="grid">
+
+					<!-- Comment -->
+					<p:outputLabel for="module_comment" value="#{msg['module.comment']}" style="vertical-align: top;" />
+					<p:inputTextarea id="module_comment" value="#{moduleController.editModule.comment}" maxlength="255" counter="module_comment_counter"
+									 counterTemplate="#{msg['common.characters.remaining']}" style="width: 100%" />
+					<p:column />
+					<h:outputText id="module_comment_counter" styleClass="textCounter" style="width: 100%" />
+
+					<!-- Extern Properties -->
+					<p:outputLabel for="module_externProperties" value="#{msg['module.externProperties']}" style="vertical-align: top;" />
+					<p:inputTextarea id="module_externProperties" value="#{moduleController.editModule.externProperties}" maxlength="4095"
+									 counter="module_externProperties_counter" counterTemplate="#{msg['common.characters.remaining']}" style="width: 100%" />
+					<p:column />
+					<h:outputText id="module_externProperties_counter" styleClass="textCounter" style="width: 100%" />
+				</p:panelGrid>
+			</p:tab>
+		</p:accordionPanel>
+		<!-- Actions -->
+		<p:panel>
+			<p:commandButton id="save" actionListener="#{moduleController.onSaveModule(!cc.attrs.dialog)}" icon="mdi mdi-check"
+							 ignoreAutoUpdate="#{cc.attrs.dialog}" oncomplete="#{cc.attrs.onSubmitFunction}" update="#{cc.attrs.update}"
+							 value="#{cmsg['ui.button.save.'.concat(moduleController.pageMode)]}">
+				<f:actionListener binding="#{cc.attrs.onSubmitAction}" />
+			</p:commandButton>
+			<p:commandButton id="cancel" actionListener="#{moduleController.onCancel}" icon="mdi mdi-close" ignoreAutoUpdate="#{cc.attrs.dialog}"
+							 onclick="#{cc.attrs.onCancelFunction}" process="@this" styleClass="secondary" update="#{cc.attrs.update}" value="#{cmsg['ui.button.cancel']}" />
+		</p:panel>
+	</h:form>
+
+	<!-- New Policy -->
+	<p:dialog widgetVar="newPolicyDialog" modal="#{!cc.attrs.dialog}" blockScroll="true" closeOnEscape="true" showEffect="none"
+			  styleClass="no-title no-border-first-panel">
+		<p:ajax event="close" listener="#{policyController.onCancel()}" ignoreAutoUpdate="true" />
+		<h:panelGroup layout="block" id="newPolicyDialog">
+			<p:messages escape="false" rendered="#{policyController.pageMode == 'NEW'}" />
+			<policy:new id="newPolicyComponent" update="#{cc.clientId}:newPolicyDialog, #{cc.clientId}:editModuleForm:selectPolicies"
+						onSubmitAction="#{moduleController.addNewestPolicy()}"
+						onSubmitFunction="if (args &amp;&amp; !args.validationFailed) PF('newPolicyDialog').hide();" onCancelFunction="PF('newPolicyDialog').hide();"
+						dialog="true" rendered="#{policyController.pageMode == 'NEW'}" />
+		</h:panelGroup>
+
+	</p:dialog>
+</cc:implementation>
+</html>

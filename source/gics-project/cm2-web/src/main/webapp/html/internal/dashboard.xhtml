@@ -1,0 +1,387 @@
+<!--
+  ###license-information-start###
+  gICS - a Generic Informed Consent Service
+  __
+  Copyright (C) 2014 - 2022 Trusted Third Party of the University Medicine Greifswald -
+  							kontakt-ths@uni-greifswald.de
+  
+  							concept and implementation
+  							l.geidel, c.hampf
+  							web client
+  							a.blumentritt, m.bialke, f.m.moser
+  							fhir-api
+  							m.bialke
+  							docker
+  							r. schuldt
+  
+  							The gICS was developed by the University Medicine Greifswald and published
+   							in 2014 as part of the research project "MOSAIC" (funded by the DFG HO 1937/2-1).
+   
+  							Selected functionalities of gICS were developed as
+  							part of the following research projects:
+  							- MAGIC (funded by the DFG HO 1937/5-1)
+  							- MIRACUM (funded by the German Federal Ministry of Education and Research 01ZZ1801M)
+  							- NUM-CODEX (funded by the German Federal Ministry of Education and Research 01KX2021)
+  
+  							please cite our publications
+  							https://doi.org/10.1186/s12967-020-02457-y
+  							http://dx.doi.org/10.3414/ME14-01-0133
+  							http://dx.doi.org/10.1186/s12967-015-0545-6
+  							http://dx.doi.org/10.3205/17gmds146
+  __
+  This program is free software: you can redistribute it and/or modify
+  it under the terms of the GNU Affero General Public License as published by
+  the Free Software Foundation, either version 3 of the License, or
+  (at your option) any later version.
+  
+  This program is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  GNU General Public License for more details.
+  
+  You should have received a copy of the GNU Affero General Public License
+  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+  ###license-information-end###
+  -->
+
+<html xmlns="http://www.w3.org/1999/xhtml"
+	  xmlns:component="http://java.sun.com/jsf/composite/components"
+	  xmlns:f="http://java.sun.com/jsf/core"
+	  xmlns:h="http://java.sun.com/jsf/html"
+	  xmlns:p="http://primefaces.org/ui"
+	  xmlns:ui="http://java.sun.com/jsf/facelets">
+
+<body>
+<ui:composition template="/resources/templates/gics.xhtml">
+
+	<ui:define name="header_title">
+		<h:outputText value="#{msg['page.dashboard.title']}" />
+	</ui:define>
+
+	<ui:define name="title">
+		<h:outputText value="#{msg['page.dashboard.title']}" />
+	</ui:define>
+
+	<ui:define name="help">
+		<h:outputText value="#{cmsg['welcome.help']}" escape="false" styleClass="desktop-only" />
+		<h:outputText value="#{cmsg['welcome.help.mobile']}" escape="false" styleClass="mobile-only" />
+	</ui:define>
+
+	<ui:define name="content">
+		<h:form id="main">
+			<p:panel rendered="#{dashboardController.selectedDomain == null}">
+				<h:outputText value="#{msg['page.dashboard.noDomain']}" />
+			</p:panel>
+			<p:panel rendered="#{dashboardController.selectedDomain != null and !dashboardController.init}">
+				<h:outputText value="#{msg['page.dashboard.empty']}" />
+				<p:commandButton actionListener="#{dashboardController.updateStats}" icon="mdi mdi-refresh" styleClass="secondary" update="@form" value="#{cmsg['ui.button.refresh']}"
+								 onclick="PF('loading').show()" oncomplete="PF('loading').hide()" />
+			</p:panel>
+
+			<ui:fragment rendered="#{dashboardController.selectedDomain != null and dashboardController.init}">
+				<div class="p-grid">
+					<div class="p-col-12 section-heading">
+						<h:outputText value="#{msg['page.dashboard.allDomains']} (#{domainController.domains.size()})" />
+					</div>
+
+					<!-- All domains -->
+					<div class="p-col-12 p-md-8">
+						<p:panel>
+							<div class="overview p-d-flex p-flex-wrap">
+								<p:repeat value="#{dashboardController.getLatestStatsAllDomainsLabels(false).entrySet()}" var="_stat" varStatus="_i">
+									<div class="box">
+										<div>
+											<h:outputText styleClass="title p-d-block p-text-center" value="#{dashboardController.latestStats.mappedStatValue.get(_stat.key)}" />
+											<h:outputText styleClass="details p-d-block p-text-center" value="#{_stat.value}" />
+										</div>
+										<p:divider layout="vertical" />
+									</div>
+								</p:repeat>
+								<div class="box">
+									<div>
+										<p:commandButton ajax="false" icon="mdi mdi-download" styleClass="secondary title p-d-block p-text-center" value="#{cmsg['page.dashboard.export.current']}">
+											<p:fileDownload
+													value="#{dashboardController.latestStatsAllDomains}" />
+										</p:commandButton>
+									</div>
+									<p:divider layout="vertical" />
+								</div>
+								<div class="box">
+									<div>
+										<p:commandButton ajax="false" icon="mdi mdi-download" styleClass="secondary title p-d-block p-text-center" value="#{cmsg['page.dashboard.export.history']}">
+											<p:fileDownload
+													value="#{dashboardController.historyStatsAllDomains}" />
+										</p:commandButton>
+									</div>
+								</div>
+							</div>
+						</p:panel>
+					</div>
+
+					<!-- Meta -->
+					<div class="p-col-12 p-md-4">
+						<p:panel>
+							<div class="overview p-d-flex p-flex-wrap">
+								<div class="box">
+									<div>
+										<h:outputText styleClass="title p-d-block p-text-center" value="#{webUtil.showTimeInAutoFormat(dashboardController.latestStatsCalculationTime)}" />
+										<h:outputText styleClass="details p-d-block p-text-center" value="#{cmsg['page.dashboard.meta.calculation']}" />
+									</div>
+									<p:divider layout="vertical" />
+								</div>
+								<div class="box">
+									<div>
+										<h:outputText styleClass="toptitle p-d-block p-text-center" value="#{dashboardController.latestStatsDate}" />
+										<h:outputText styleClass="title p-d-block p-text-center" value="#{dashboardController.latestStatsTime}" />
+										<h:outputText styleClass="details p-d-block p-text-center" value="#{cmsg['page.dashboard.meta.latestDateTime']}" />
+									</div>
+									<p:divider layout="vertical" />
+								</div>
+								<div class="box">
+									<div>
+										<p:commandButton actionListener="#{dashboardController.updateStats}" icon="mdi mdi-refresh" styleClass="secondary title p-d-block p-text-center" update="@form"
+														 value="#{cmsg['ui.button.refresh']}" onclick="PF('loading').show();" oncomplete="PF('loading').hide();" />
+									</div>
+								</div>
+							</div>
+						</p:panel>
+					</div>
+
+					<div class="p-col-12 section-heading">
+						<h:outputText value="#{msg['domain']} #{dashboardController.selectedDomain.label}" />
+					</div>
+
+					<!-- Current domain -->
+					<div class="p-col-12">
+						<p:panel>
+							<div class="overview p-d-flex p-flex-wrap">
+								<p:repeat value="#{dashboardController.getLatestStatsActiveDomainLabels(false).entrySet()}" var="_stat" varStatus="_i">
+									<div class="box">
+										<div>
+											<h:outputText styleClass="title p-d-block p-text-center" value="#{dashboardController.latestStats.mappedStatValue.get(_stat.key)}" />
+											<h:outputText styleClass="details p-d-block p-text-center" value="#{_stat.value}" />
+										</div>
+										<p:divider layout="vertical" />
+									</div>
+								</p:repeat>
+								<div class="box">
+									<div>
+										<p:commandButton ajax="false" icon="mdi mdi-download" styleClass="secondary title p-d-block p-text-center" value="#{cmsg['page.dashboard.export.current']}">
+											<p:fileDownload
+													value="#{dashboardController.latestStatsActiveDomain}" />
+										</p:commandButton>
+									</div>
+									<p:divider layout="vertical" />
+								</div>
+								<div class="box">
+									<div>
+										<p:commandButton ajax="false" icon="mdi mdi-download" styleClass="secondary title p-d-block p-text-center" value="#{cmsg['page.dashboard.export.history']}">
+											<p:fileDownload
+													value="#{dashboardController.historyStatsActiveDomain}" />
+										</p:commandButton>
+									</div>
+								</div>
+							</div>
+						</p:panel>
+					</div>
+
+					<!-- Documents -->
+					<div class="p-col-12 p-xl-6">
+						<p:panel styleClass="flex-full-height">
+							<h4>
+								#{msg['page.dashboard.documents.types']}
+							</h4>
+							#{msg['page.dashboard.documents.hint']}
+							<p:pieChart model="#{dashboardController.getDocumentsChart(false)}" style="width: 100%; height: 300px; margin-top: 20px;" styleClass="ui-sm-0" />
+							<p:pieChart model="#{dashboardController.getDocumentsChart(true)}" style="width: 100%; height: 300px; margin-top: 20px;" styleClass="ui-sm-block ui-md-0 ui-g-0" />
+							<p:commandButton ajax="false" icon="mdi mdi-download" styleClass="secondary bottom">
+								<p:fileDownload
+										value="#{dashboardController.getPieChartAsCsv(dashboardController.getDocumentsChart(false), dashboardController.latestStats.entrydate,dashboardController.selectedDomain.name.concat(' documents latest'), dashboardController.tool)}" />
+							</p:commandButton>
+						</p:panel>
+					</div>
+
+					<!-- QC -->
+					<div class="p-col-12 p-xl-6">
+						<p:panel styleClass="flex-full-height">
+							<h4>
+								#{msg['page.dashboard.qc']}
+							</h4>
+							<h:outputText value="#{msg['page.dashboard.qc.hint']}" />
+							<p:pieChart model="#{dashboardController.getQcChart(false)}" style="width: 100%; height: 300px; margin-top: 20px" styleClass="ui-sm-0" />
+							<p:pieChart model="#{dashboardController.getQcChart(true)}" style="width: 100%; height: 300px; margin-top: 20px;" styleClass="ui-sm-block ui-md-0 ui-g-0 " />
+							<p:commandButton ajax="false" icon="mdi mdi-download" styleClass="secondary bottom">
+								<p:fileDownload
+										value="#{dashboardController.getPieChartAsCsv(dashboardController.getQcChart(false), dashboardController.latestStats.entrydate, dashboardController.selectedDomain.name.concat(' qc latest'), dashboardController.tool)}" />
+							</p:commandButton>
+						</p:panel>
+					</div>
+
+					<!-- Documents History -->
+					<div class="p-col-12 p-xl-6">
+						<p:panel styleClass="flex-full-height">
+							<h4>
+								#{msg['page.dashboard.documents.history']}
+							</h4>
+							<p:lineChart model="#{dashboardController.documentsHistoryChart}" style="width: 100%; height: 300px;" />
+							<div style="height: 40px;"></div>
+							<p:commandButton ajax="false" icon="mdi mdi-download" styleClass="secondary bottom">
+								<p:fileDownload
+										value="#{dashboardController.getLineChartAsCsv(dashboardController.documentsHistoryChart, dashboardController.selectedDomain.name.concat(' documents history'), dashboardController.tool)}" />
+							</p:commandButton>
+						</p:panel>
+					</div>
+
+					<!-- QC History -->
+					<div class="p-col-12 p-xl-6">
+						<p:panel styleClass="flex-full-height">
+							<h4>
+								#{msg['page.dashboard.qc.history']}
+							</h4>
+							<p:lineChart model="#{dashboardController.qcHistoryChart}" style="width: 100%; height: 300px;" />
+							<div style="height: 40px;"></div>
+							<p:commandButton ajax="false" icon="mdi mdi-download" styleClass="secondary bottom">
+								<p:fileDownload
+										value="#{dashboardController.getLineChartAsCsv(dashboardController.qcHistoryChart, dashboardController.selectedDomain.name.concat(' qc history'), dashboardController.tool)}" />
+							</p:commandButton>
+						</p:panel>
+					</div>
+
+					<!-- Templates -->
+					<div class="p-col-12 p-lg-6 p-xl-4">
+						<p:panel styleClass="flex-full-height">
+							<h4>
+								#{msg['page.dashboard.templates']}
+							</h4>
+							<h:outputFormat value="#{msg['page.dashboard.templates.hint']}">
+								<f:param value="#{dashboardController.allDocuments}" />
+							</h:outputFormat>
+							<p:dataView var="_template" value="#{dashboardController.templateStatistic.entrySet()}" rows="8"
+										currentPageReportTemplate="#{props.currentPageReport}"
+										paginator="true"
+										paginatorTemplate="#{props.paginatorTemplate}"
+										paginatorPosition="bottom" layout="list"
+										styleClass="no-header"
+										style="margin: 15px -10px 0;">
+								<p:dataViewListItem>
+									<div style="padding-bottom: 18px; word-break: break-word;">
+										<h:outputText value="#{_template.key.label} v#{_template.key.key.version}" style="padding-right: 100px;" />
+										<p:progressBar value="#{dashboardController.getPercentage(_template.value, dashboardController.allDocuments)}"
+													   labelTemplate="#{_template.value} (#{dashboardController.getPercentage(_template.value, dashboardController.allDocuments)} %)"
+													   displayOnly="true" styleClass="accepted" />
+									</div>
+								</p:dataViewListItem>
+							</p:dataView>
+						</p:panel>
+					</div>
+
+					<!-- Policies -->
+					<ui:fragment rendered="#{dashboardController.selectedDomain.getProperty('STATISTIC_POLICY_DETAILS') == 'true'}">
+						<div class="p-col-12 p-lg-6 p-xl-4">
+							<p:panel styleClass="flex-full-height">
+								<h4>
+									#{msg['page.dashboard.policies']}
+								</h4>
+								<h:outputText value="#{msg['page.dashboard.policies.hint']}" />
+								<h:panelGroup id="policies" layout="block">
+									<p:dataView var="_policy" value="#{dashboardController.getPolicyStatistic(dashboardController.signerIdTypes.get(0))}" rows="8"
+												currentPageReportTemplate="#{props.currentPageReport}"
+												paginator="true"
+												paginatorTemplate="#{props.paginatorTemplate}"
+												paginatorPosition="bottom" layout="list"
+												rendered="#{dashboardController.signerIdTypes.size() == 1}"
+												styleClass="no-header"
+												style="margin: 15px -10px 0;">
+										<p:dataViewListItem>
+											<div style="padding-bottom: 18px; word-break: break-word;">
+												<h:outputText value="#{_policy.label} v#{_policy.key.version}" style="padding-right: 100px;" />
+												<p:progressBar value="#{_policy.getAcceptedPercentage(dashboardController.includeUnknownPolicyStatus)}"
+															   labelTemplate="#{_policy.accepted} / #{_policy.getAll(dashboardController.includeUnknownPolicyStatus)} (#{_policy.getAcceptedPercentage(dashboardController.includeUnknownPolicyStatus)} %)"
+															   displayOnly="true" styleClass="accepted declined" />
+											</div>
+										</p:dataViewListItem>
+									</p:dataView>
+
+									<p:tabView value="#{dashboardController.signerIdTypes}" var="_signerIdType" rendered="#{dashboardController.signerIdTypes.size() > 1}">
+										<p:tab title="#{_signerIdType}">
+											<p:dataView var="_policy" value="#{dashboardController.getPolicyStatistic(_signerIdType)}" rows="8"
+														currentPageReportTemplate="#{props.currentPageReport}"
+														paginator="true"
+														paginatorTemplate="#{props.paginatorTemplate}"
+														paginatorPosition="bottom" layout="list"
+														styleClass="no-header"
+														style="margin: 15px -10px 0;">
+												<p:dataViewListItem>
+													<div style="padding-bottom: 18px; word-break: break-word;">
+														<h:outputText value="#{_policy.label} v#{_policy.key.version}" style="padding-right: 100px;" />
+														<p:progressBar value="#{_policy.getAcceptedPercentage(dashboardController.includeUnknownPolicyStatus)}"
+																	   labelTemplate="#{_policy.accepted} / #{_policy.getAll(dashboardController.includeUnknownPolicyStatus)} (#{_policy.getAcceptedPercentage(dashboardController.includeUnknownPolicyStatus)} %)"
+																	   displayOnly="true" styleClass="accepted declined" />
+													</div>
+												</p:dataViewListItem>
+											</p:dataView>
+										</p:tab>
+									</p:tabView>
+								</h:panelGroup>
+
+								<p:selectBooleanCheckbox value="#{dashboardController.includeUnknownPolicyStatus}">
+									<p:ajax process="@this" update="policies" />
+								</p:selectBooleanCheckbox> <h:outputText value="#{msg['page.dashboard.policies.unknown']}" />
+							</p:panel>
+						</div>
+					</ui:fragment>
+
+					<!-- Documents details -->
+					<div class="p-col-12 p-xl-4">
+						<p:panel styleClass="flex-full-height">
+							<h4>
+								#{msg['page.dashboard.documents.details']}
+							</h4>
+							<h:outputFormat value="#{msg['page.dashboard.documents.details.hint']}" style="display: block; margin-bottom: 19px;">
+								<f:param value="#{dashboardController.allDocuments}" />
+							</h:outputFormat>
+							<div style="padding-bottom: 18px;">
+								<h:outputText value="#{msg['page.dashboard.documents.details.withScan']}" />
+								<p:progressBar
+										labelTemplate="#{dashboardController.documentsWithScan} (#{dashboardController.documentsWithScanPercentage} %)"
+										value="#{dashboardController.documentsWithScanPercentage}" displayOnly="true" styleClass="accepted" />
+							</div>
+							<ui:fragment rendered="#{dashboardController.selectedDomain.getProperty('STATISTIC_DOCUMENT_DETAILS') == 'true'}">
+								<div style="padding-bottom: 18px;">
+									<h:outputText value="#{msg['page.dashboard.documents.details.withDigitalSignature']}" />
+									<p:progressBar
+											labelTemplate="#{dashboardController.documentsWithDigitalSignature} (#{dashboardController.documentsWithDigitalSignaturePercentage} %)"
+											value="#{dashboardController.documentsWithDigitalSignaturePercentage}" displayOnly="true" styleClass="accepted" />
+								</div>
+								<div style="padding-bottom: 18px;">
+									<h:outputText value="#{msg['page.dashboard.documents.details.expiredFull']}" />
+									<p:progressBar
+											labelTemplate="#{dashboardController.documentsExpiredFull} (#{dashboardController.documentsExpiredFullPercentage} %)"
+											value="#{dashboardController.documentsExpiredFullPercentage}" displayOnly="true" styleClass="declined" />
+								</div>
+							</ui:fragment>
+							<div style="padding-bottom: 18px;">
+								<h:outputText value="#{msg['page.dashboard.qc.checkedDocuments']}" />
+								<p:progressBar
+										labelTemplate="#{dashboardController.qcChecked} (#{dashboardController.qcCheckedPercentage} %)"
+										value="#{dashboardController.qcCheckedPercentage}" displayOnly="true" styleClass="accepted" />
+							</div>
+							<div style="padding-bottom: 18px;">
+								<h:outputText value="#{msg['page.dashboard.qc.validDocuments']}" />
+								<p:progressBar
+										labelTemplate="#{dashboardController.latestStats.mappedStatValue.get('qc_valid'.concat('.per_domain.').concat(dashboardController.selectedDomain.name))} (#{dashboardController.qcPercentage} %)"
+										value="#{dashboardController.qcPercentage}" displayOnly="true" styleClass="accepted" />
+							</div>
+						</p:panel>
+					</div>
+				</div>
+			</ui:fragment>
+		</h:form>
+		<component:dummy />
+		<!-- ${disclaimer.enable.start}
+		<component:demo_disclaimer/>
+		${disclaimer.enable.end} -->
+	</ui:define>
+</ui:composition>
+</body>
+</html>

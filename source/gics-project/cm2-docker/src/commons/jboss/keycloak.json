@@ -1,0 +1,12 @@
+{
+  "auth-server-url": "<PROTOCOL://HOST_OR_IP:PORT/auth/>",
+  "ssl-required": "<none|external|all>",
+  "realm": "<REALM>",
+  "resource": "<RESOURCE>",
+  "verify-token-audience": true,
+  "credentials": {
+    "secret": "<CLIENT_SECRET>"
+  },
+  "use-resource-role-mappings": false,
+  "confidential-port": 8443
+}

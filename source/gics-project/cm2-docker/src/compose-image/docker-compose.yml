@@ -1,0 +1,31 @@
+version: '3.7'
+services:
+  mysql:
+    image: mysql:8.0.28
+    container_name: ${project.shortName}-mysql
+#    ports:
+#      - "3306:3306"
+    env_file:
+      - mysql.env
+    volumes:
+      - ./sqls:/docker-entrypoint-initdb.d
+#      - ./data/mysql:/var/lib/mysql
+    command: --max_allowed_packet=10M
+  wildfly:
+    image: ${docker.image.name}-${build.date}
+    container_name: ${project.shortName}-wildfly
+    ports:
+      - "8080:8080"
+      - "9990:9990"
+    env_file:
+      - ${project.shortName}.env
+      - noti.env
+      - ttp-fhir.env
+      - wildfly.env
+    depends_on:
+      - mysql
+    volumes:
+      - ./logs:${docker.wildfly.logs}
+#      - ./addins:${docker.wildfly.addins}
+    entrypoint: /bin/bash
+    command: -c "./wait-for-it.sh mysql:3306 -t 120 && ./run.sh"

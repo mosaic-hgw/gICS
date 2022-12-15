@@ -1,0 +1,104 @@
+# add System-Properties for TTP-FHIR
+####################################
+
+if (result ~= "(?i)(on|true|yes|1)") of :resolve-expression(expression=${env.TTP_FHIR_KEYCLOAK_ENABLE})
+	echo \>\>\> add system-properties TTP-FHIR
+	try
+		/system-property=ttp.fhir.keycloak.enabled:add(value=true)
+	catch
+		echo \<\<\< Failed: system-property for ttp.fhir.keycloak.enabled can\'t set
+	end-try
+
+	# env TTP_FHIR_KEYCLOAK_REALM=ttp
+	try
+		/system-property=ttp.fhir.keycloak.realm:add(value=${env.TTP_FHIR_KEYCLOAK_REALM})
+	catch
+		echo \<\<\< Failed: system-property for TTP_FHIR_KEYCLOAK_REALM can\'t set
+	end-try
+
+	# env TTP_FHIR_KEYCLOAK_CLIENT_ID=ttp-fhir
+	try
+		/system-property=ttp.fhir.keycloak.clientId:add(value=${env.TTP_FHIR_KEYCLOAK_CLIENT_ID})
+	catch
+		echo \<\<\< Failed: system-property for TTP_FHIR_KEYCLOAK_CLIENT_ID can\'t set
+	end-try
+
+	# env TTP_FHIR_KEYCLOAK_SERVER_URL=<PROTOCOL://HOST_OR_IP:PORT/auth/>
+	try
+		/system-property=ttp.fhir.keycloak.baseUrl:add(value=${env.TTP_FHIR_KEYCLOAK_SERVER_URL})
+	catch
+		echo \<\<\< Failed: system-property for TTP_FHIR_KEYCLOAK_SERVER_URL can\'t set
+	end-try
+
+	# env TTP_FHIR_KEYCLOAK_CLIENT_SECRET=<CLIENT_SECRET>
+	try
+		/system-property=ttp.fhir.keycloak.secret:add(value=${env.TTP_FHIR_KEYCLOAK_CLIENT_SECRET})
+	catch
+		echo \<\<\< Failed: system-property for TTP_FHIR_KEYCLOAK_CLIENT_SECRET can\'t set
+	end-try
+end-if
+
+
+# Keycloak-Role of TTP-FHIR-Gateway for E-PIX-, gICS- and gPAS-Admin
+####################################################################
+if (outcome == "success") of :resolve-expression(expression=${env.TTP_FHIR_KEYCLOAK_ROLE_EPIX_ADMIN})
+	echo \>\>\> set system-property for TTP_FHIR_KEYCLOAK_ROLE_EPIX_ADMIN.
+	try
+		/system-property=ttp.fhir.keycloak.role.epix.admin:add(value=${env.TTP_FHIR_KEYCLOAK_ROLE_EPIX_ADMIN})
+	catch
+		echo \<\<\< Failed: system-property for TTP_FHIR_KEYCLOAK_ROLE_EPIX_ADMIN can\'t set
+	end-try
+else
+	echo \<\<\< TTP_FHIR_KEYCLOAK_ROLE_EPIX_ADMIN maybe not set.
+end-if
+
+if (outcome == "success") of :resolve-expression(expression=${env.TTP_FHIR_KEYCLOAK_ROLE_GICS_ADMIN})
+	echo \>\>\> set system-property for TTP_FHIR_KEYCLOAK_ROLE_GICS_ADMIN.
+	try
+		/system-property=ttp.fhir.keycloak.role.gics.admin:add(value=${env.TTP_FHIR_KEYCLOAK_ROLE_GICS_ADMIN})
+	catch
+		echo \<\<\< Failed: system-property for TTP_FHIR_KEYCLOAK_ROLE_GICS_ADMIN can\'t set
+	end-try
+else
+	echo \<\<\< TTP_FHIR_KEYCLOAK_ROLE_GICS_ADMIN maybe not set.
+end-if
+
+if (outcome == "success") of :resolve-expression(expression=${env.TTP_FHIR_KEYCLOAK_ROLE_GPAS_ADMIN})
+	echo \>\>\> set system-property for TTP_FHIR_KEYCLOAK_ROLE_GPAS_ADMIN.
+	try
+		/system-property=ttp.fhir.keycloak.role.gpas.admin:add(value=${env.TTP_FHIR_KEYCLOAK_ROLE_GPAS_ADMIN})
+	catch
+		echo \<\<\< Failed: system-property for TTP_FHIR_KEYCLOAK_ROLE_GPAS_ADMIN can\'t set
+	end-try
+else
+	echo \<\<\< TTP_FHIR_KEYCLOAK_ROLE_GPAS_ADMIN maybe not set.
+end-if
+
+
+# Updates for TTP-FHIR-gICS-Terminology
+########################################
+if (outcome == "success") of :resolve-expression(expression=${env.TTP_FHIR_GICS_TERMINOLOGY_FOLDER})
+	set terminologyFolder=${TTP_FHIR_GICS_TERMINOLOGY_FOLDER}
+	echo \>\>\> add system-property for TTP_FHIR_GICS_TERMINOLOGY_FOLDER=addins/$terminologyFolder
+	try
+		/system-property=ttp.fhir.terminology.import.folder:add(value=${jboss.server.data.dir}/addins/$terminologyFolder)
+	catch
+		echo \<\<\< Failed: system-property for TTP_FHIR_GICS_TERMINOLOGY_FOLDER can\'t set
+	end-try
+end-if
+
+if (result ~= "(?i)(on|true|yes|1)") of :resolve-expression(expression=${env.TTP_FHIR_GICS_TERMINOLOGY_FORCE_UPDATE_ON_STARTUP})
+	echo \>\>\> add system-property for TTP_FHIR_GICS_TERMINOLOGY_FORCE_UPDATE_ON_STARTUP=true
+	try
+		/system-property=ttp.fhir.terminology.import.forceUpdateOnStartUp:add(value=true)
+	catch
+		echo \<\<\< Failed: system-property for TTP_FHIR_GICS_TERMINOLOGY_FORCE_UPDATE_ON_STARTUP can\'t set
+	end-try
+else
+	echo \>\>\> add system-property for TTP_FHIR_GICS_TERMINOLOGY_FORCE_UPDATE_ON_STARTUP=false
+	try
+		/system-property=ttp.fhir.terminology.import.forceUpdateOnStartUp:add(value=false)
+	catch
+		echo \<\<\< Failed: system-property for TTP_FHIR_GICS_TERMINOLOGY_FORCE_UPDATE_ON_STARTUP can\'t set
+	end-try
+end-if

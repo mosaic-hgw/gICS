@@ -1,0 +1,45 @@
+# add datasource for notifications
+set notiDbHost=${NOTI_DB_HOST}
+if (outcome != "success") of :resolve-expression(expression=${env.NOTI_DB_HOST})
+	set notiDbHost=mysql
+end-if
+set notiDbPort=${NOTI_DB_PORT}
+if (outcome != "success") of :resolve-expression(expression=${env.NOTI_DB_PORT})
+	set notiDbPort=3306
+end-if
+set notiDbName=${NOTI_DB_NAME}
+if (outcome != "success") of :resolve-expression(expression=${env.NOTI_DB_NAME})
+	set notiDbName=notification_service
+end-if
+set notiDbUser=${NOTI_DB_USER}
+if (outcome != "success") of :resolve-expression(expression=${env.NOTI_DB_USER})
+	set notiDbUser=noti_user
+end-if
+set notiDbPass=${NOTI_DB_PASS}
+if (outcome != "success") of :resolve-expression(expression=${env.NOTI_DB_PASS})
+	set notiDbPass=noti_password
+end-if
+
+if (outcome != "success") of /subsystem=datasources/data-source=NotificationDS:read-resource
+	try
+		echo \>\>\> add datasources NotificationDS
+		data-source add \
+			--name=NotificationDS \
+			--driver-name=mysql \
+			--jndi-name=java:jboss/datasources/NotificationDS \	
+			--connection-url=jdbc:mysql://$notiDbHost:$notiDbPort/$notiDbName?useSSL=false&allowPublicKeyRetrieval=true&useJDBCCompliantTimezoneShift=true&useLegacyDatetimeCode=false&serverTimezone=Europe/Berlin \
+			--user-name=$notiDbUser \
+			--password=$notiDbPass \
+			--use-ccm=true \
+			--min-pool-size=0 \
+			--max-pool-size=20 \
+			--flush-strategy=FailingConnectionOnly \
+			--use-java-context=true \
+			--jta=false \
+			--enabled=true
+	catch
+		echo \<\<\< FAILED add datasources NotificationDS
+		data-source remove --name=NotificationDS
+	end-try
+end-if
+

@@ -1,0 +1,140 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+		"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<!--
+  ###license-information-start###
+  gICS - a Generic Informed Consent Service
+  __
+  Copyright (C) 2014 - 2022 Trusted Third Party of the University Medicine Greifswald -
+  							kontakt-ths@uni-greifswald.de
+  
+  							concept and implementation
+  							l.geidel, c.hampf
+  							web client
+  							a.blumentritt, m.bialke, f.m.moser
+  							fhir-api
+  							m.bialke
+  							docker
+  							r. schuldt
+  
+  							The gICS was developed by the University Medicine Greifswald and published
+   							in 2014 as part of the research project "MOSAIC" (funded by the DFG HO 1937/2-1).
+   
+  							Selected functionalities of gICS were developed as
+  							part of the following research projects:
+  							- MAGIC (funded by the DFG HO 1937/5-1)
+  							- MIRACUM (funded by the German Federal Ministry of Education and Research 01ZZ1801M)
+  							- NUM-CODEX (funded by the German Federal Ministry of Education and Research 01KX2021)
+  
+  							please cite our publications
+  							https://doi.org/10.1186/s12967-020-02457-y
+  							http://dx.doi.org/10.3414/ME14-01-0133
+  							http://dx.doi.org/10.1186/s12967-015-0545-6
+  							http://dx.doi.org/10.3205/17gmds146
+  __
+  This program is free software: you can redistribute it and/or modify
+  it under the terms of the GNU Affero General Public License as published by
+  the Free Software Foundation, either version 3 of the License, or
+  (at your option) any later version.
+  
+  This program is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  GNU General Public License for more details.
+  
+  You should have received a copy of the GNU Affero General Public License
+  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+  ###license-information-end###
+  -->
+
+
+<!-- author: Arne Blumentritt -->
+
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:cc="http://java.sun.com/jsf/composite"
+	  xmlns:components="http://java.sun.com/jsf/composite/components" xmlns:f="http://java.sun.com/jsf/core" xmlns:h="http://java.sun.com/jsf/html"
+	  xmlns:p="http://primefaces.org/ui">
+
+<!-- INTERFACE -->
+<cc:interface>
+	<cc:attribute default="" name="update" required="false" type="java.lang.String" />
+</cc:interface>
+
+<!-- IMPLEMENTATION -->
+<cc:implementation>
+	<h:form onkeypress="if (event.keyCode === 13) { return false; }">
+		<p:panel>
+			<h4>
+				<h:outputFormat value="#{msg['policy.label.found']}">
+					<f:param value="#{policyController.policies.size()}" />
+				</h:outputFormat>
+			</h4>
+
+			<p:dataTable id="policies"
+						 currentPageReportTemplate="#{props.currentPageReport}"
+						 emptyMessage="#{cmsg['ui.table.empty']}"
+						 globalFilter="#{policyController.globalFilter}"
+						 pageLinks="3" paginator="true" paginatorPosition="bottom" paginatorTemplate="#{props.paginatorTemplate}"
+						 rowKey="#{policyController.convertKey(_policy.key)}" rows="10"
+						 selection="#{policyController.selectedPolicy}" selectionMode="single"
+						 value="#{policyController.policies}"
+						 var="_policy" widgetVar="policies">
+				<p:ajax event="contextMenu" ignoreAutoUpdate="true" update="@form:policies_menu" />
+				<p:ajax event="filter" ignoreAutoUpdate="true" />
+
+				<f:facet name="header">
+					<p:inputText id="globalFilter" onkeyup="PF('policies').filter()" placeholder="#{cmsg['ui.table.filter']}" value="#{policyController.globalFilter}" />
+				</f:facet>
+				
+				<p:column filterBy="#{_policy.label}" filterMatchMode="contains" filterStyle="display: none"
+						  headerText="#{msg['policy.label']}" sortBy="#{_policy.label}" width="100%">
+					<h:outputText value="#{_policy.label} " />
+					<h:outputText id="comment-icon" rendered="#{not empty _policy.comment}" styleClass="mdi mdi-comment-text-outline tooltip-icon comment" />
+					<p:tooltip for="comment-icon" rendered="#{not empty _policy.comment}" value="#{_policy.comment}" escape="false" />
+				</p:column>
+				<p:column filterBy="#{_policy.key.version}" filterMatchMode="contains" filterStyle="display: none"
+						  headerText="#{msg['policy.version']}" sortBy="#{_policy.key.version}">
+					<h:outputText value="#{_policy.key.version}" />
+				</p:column>
+				<p:column filterBy="#{_policy.creationDate}" filterMatchMode="contains" filterStyle="display: none"
+						  headerText="#{cmsg['ui.date.created']}" sortBy="#{_policy.creationDate}"
+						  style="min-width: 160px;">
+					<h:outputText value="#{_policy.creationDate}" converter="datetime"/>
+				</p:column>
+				<p:column filterBy="#{_policy.updateDate}" filterMatchMode="contains" filterStyle="display: none"
+						  headerText="#{cmsg['ui.date.edited']}" sortBy="#{_policy.updateDate}" sortOrder="desc"
+						  style="min-width: 160px;">
+					<h:outputText value="#{_policy.updateDate}" converter="datetime"/>
+				</p:column>
+
+				<p:column headerText="#{msg['common.button.actions']}" styleClass="icons">
+					<p:commandButton action="#{policyController.onEditPolicy(_policy)}" ajax="false" alt="#{cmsg['ui.button.edit']}" icon="mdi mdi-pencil"
+									 styleClass="secondary" title="#{cmsg['ui.button.edit']}" />
+					<p:commandButton action="#{policyController.onDeletePolicy(_policy)}" alt="#{cmsg['ui.button.delete']}" icon="mdi mdi-delete-empty"
+									 oncomplete="PF('policies').filter()" styleClass="secondary" title="#{cmsg['ui.button.delete']}" update="@form">
+						<p:confirm header="#{msg['common.confirmation']}" icon="mdi mdi-alert-outline" message="#{msg['policy.label.confirmDelete']}" />
+					</p:commandButton>
+					<p:confirmDialog closeOnEscape="true" global="true">
+						<p:commandButton icon="mdi mdi-check" styleClass="ui-confirmdialog-yes" type="button" value="#{cmsg['ui.button.yes']}" />
+						<p:commandButton icon="mdi mdi-close" styleClass="ui-confirmdialog-no" type="button" value="#{cmsg['ui.button.no']}" />
+						<h:outputText />
+					</p:confirmDialog>
+				</p:column>
+			</p:dataTable>
+			<components:rightclick />
+
+			<p:contextMenu for="policies" id="policies_menu">
+				<p:menuitem actionListener="#{policyController.onEditPolicy(policyController.selectedPolicy)}" icon="mdi mdi-pencil-outline"
+							update="#{cc.attrs.update}" value="#{cmsg['ui.button.edit']}" />
+				<p:separator />
+				<p:menuitem actionListener="#{policyController.onDuplicatePolicy(policyController.selectedPolicy)}" icon="mdi mdi-content-copy"
+							update="#{cc.attrs.update}" value="#{cmsg['ui.button.duplicate']}" />
+				<p:separator />
+				<p:menuitem actionListener="#{policyController.onDeletePolicy(policyController.selectedPolicy)}" icon="mdi mdi-delete-empty"
+							oncomplete="PF('policies').filter()" update="@form" value="#{cmsg['ui.button.delete']}">
+					<p:confirm header="#{msg['common.confirmation']}" icon="mdi mdi-alert-outline" message="#{msg['policy.label.confirmDelete']}" />
+				</p:menuitem>
+			</p:contextMenu>
+		</p:panel>
+	</h:form>
+</cc:implementation>
+
+</html>

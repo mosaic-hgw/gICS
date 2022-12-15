@@ -1,0 +1,119 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+		"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<!--
+  ###license-information-start###
+  gICS - a Generic Informed Consent Service
+  __
+  Copyright (C) 2014 - 2022 Trusted Third Party of the University Medicine Greifswald -
+  							kontakt-ths@uni-greifswald.de
+  
+  							concept and implementation
+  							l.geidel, c.hampf
+  							web client
+  							a.blumentritt, m.bialke, f.m.moser
+  							fhir-api
+  							m.bialke
+  							docker
+  							r. schuldt
+  
+  							The gICS was developed by the University Medicine Greifswald and published
+   							in 2014 as part of the research project "MOSAIC" (funded by the DFG HO 1937/2-1).
+   
+  							Selected functionalities of gICS were developed as
+  							part of the following research projects:
+  							- MAGIC (funded by the DFG HO 1937/5-1)
+  							- MIRACUM (funded by the German Federal Ministry of Education and Research 01ZZ1801M)
+  							- NUM-CODEX (funded by the German Federal Ministry of Education and Research 01KX2021)
+  
+  							please cite our publications
+  							https://doi.org/10.1186/s12967-020-02457-y
+  							http://dx.doi.org/10.3414/ME14-01-0133
+  							http://dx.doi.org/10.1186/s12967-015-0545-6
+  							http://dx.doi.org/10.3205/17gmds146
+  __
+  This program is free software: you can redistribute it and/or modify
+  it under the terms of the GNU Affero General Public License as published by
+  the Free Software Foundation, either version 3 of the License, or
+  (at your option) any later version.
+  
+  This program is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  GNU General Public License for more details.
+  
+  You should have received a copy of the GNU Affero General Public License
+  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+  ###license-information-end###
+  -->
+
+
+<!-- author: Arne Blumentritt -->
+
+<html xmlns:h="http://java.sun.com/jsf/html" xmlns:ui="http://java.sun.com/jsf/facelets"
+	  xmlns:p="http://primefaces.org/ui" xmlns:cc="http://java.sun.com/jsf/composite">
+
+<!-- INTERFACE -->
+<cc:interface>
+	<cc:attribute name="checkboxLabel" type="java.lang.Boolean" required="false" default="true" />
+	<cc:attribute name="disabled" type="java.lang.Boolean" required="false" default="false" />
+	<cc:attribute name="info" type="java.lang.String" required="false" default="" />
+	<cc:attribute name="dialog" type="java.lang.Boolean" required="false" default="false" />
+	<cc:attribute name="expiration" type="org.emau.icmvc.ganimed.ttp.cm2.frontend.controller.component.WebExpirationValue" required="true" />
+	<cc:attribute name="ontoggle" type="java.lang.String" required="false" default="" />
+</cc:interface>
+
+<!-- IMPLEMENTATION -->
+<cc:implementation>
+	<h:panelGroup id="expiration" layout="block">
+		<h:outputText value="#{cc.attrs.info}" />
+
+		<p:selectBooleanCheckbox disabled="#{cc.attrs.disabled}" value="#{cc.attrs.expiration.expires}">
+			<p:ajax oncomplete="#{cc.attrs.ontoggle}" process="@this" update="expiration" />
+		</p:selectBooleanCheckbox>
+		<h:outputText rendered="#{cc.attrs.checkboxLabel}" value="#{msg['template.expirationProperties.'.concat(cc.attrs.expiration.expires)]}" />
+
+		<ui:fragment rendered="#{cc.attrs.expiration.expires}">
+			<p:panelGrid columns="2" columnClasses="#{cc.attrs.dialog ? 'ui-grid-col-4,ui-grid-col-8' : 'ui-grid-col-2,ui-grid-col-10'}" layout="grid" styleClass="top">
+				<h:outputText value="#{msg['model.consent.expiration.TIMESTAMP']}" />
+				<h:panelGroup class="ui-inputgroup" layout="block">
+					<p:calendar id="expirationDate" disabled="#{cc.attrs.disabled}" pattern="#{cmsg['ui.date.pattern.date']}" value="#{cc.attrs.expiration.timestamp}"
+								mask="#{cmsg['ui.date.mask.date']}" />
+					<p:watermark for="expirationDate" value="#{cmsg['ui.date.pattern.date']}" />
+					<p:commandButton actionListener="#{cc.attrs.expiration.setTimestamp(null)}" disabled="#{cc.attrs.disabled}" icon="mdi mdi-eraser" process="@this"
+									 styleClass="secondary" update="expirationDate" />
+				</h:panelGroup>
+
+				<h:outputText value="#{msg['model.consent.expiration.PERIOD']}" />
+				<h:panelGroup layout="block"
+							  style="border: 1px solid #d9e3e8; width: fit-content; padding: 13px 10px 0px 17px;    border-radius: 2px;">
+
+					<p:panelGrid columns="2" columnClasses="ui-grid-col-4,ui-grid-col-8" layout="grid" styleClass="top">
+						<p:outputLabel for="expirationPeriodYears" value="#{cmsg['ui.date.period.'.concat(cc.attrs.expiration.periodYears == 1 ? 'YEAR' : 'YEARS')]}" />
+						<p:panelGrid columns="1" layout="grid">
+							<p:inputText id="expirationPeriodYears" disabled="#{cc.attrs.disabled}" value="#{cc.attrs.expiration.periodYears}" />
+							<p:slider disabled="#{cc.attrs.disabled}" for="expirationPeriodYears" maxValue="150" minValue="0" />
+						</p:panelGrid>
+					</p:panelGrid>
+
+					<p:panelGrid columns="2" columnClasses="ui-grid-col-4,ui-grid-col-8" layout="grid" styleClass="top">
+						<p:outputLabel for="expirationPeriodMonths" value="#{cmsg['ui.date.period.'.concat(cc.attrs.expiration.periodMonths == 1 ? 'MONTH' : 'MONTHS')]}" />
+						<p:panelGrid columns="1" layout="grid">
+							<p:inputText id="expirationPeriodMonths" disabled="#{cc.attrs.disabled}" value="#{cc.attrs.expiration.periodMonths}" />
+							<p:slider disabled="#{cc.attrs.disabled}" for="expirationPeriodMonths" maxValue="11" minValue="0" widgetVar="monthSlider" />
+						</p:panelGrid>
+					</p:panelGrid>
+
+					<p:panelGrid columns="2" columnClasses="ui-grid-col-4,ui-grid-col-8" layout="grid" styleClass="top">
+						<p:outputLabel for="expirationPeriodDays" value="#{cmsg['ui.date.period.'.concat(cc.attrs.expiration.periodDays == 1 ? 'DAY' : 'DAYS')]}" />
+						<p:panelGrid columns="1" layout="grid">
+							<p:inputText id="expirationPeriodDays" disabled="#{cc.attrs.disabled}" value="#{cc.attrs.expiration.periodDays}" />
+							<p:slider disabled="#{cc.attrs.disabled}" for="expirationPeriodDays" maxValue="30" minValue="0" />
+						</p:panelGrid>
+					</p:panelGrid>
+				</h:panelGroup>
+			</p:panelGrid>
+		</ui:fragment>
+	</h:panelGroup>
+</cc:implementation>
+
+</html>

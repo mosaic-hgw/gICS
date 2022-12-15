@@ -1,0 +1,62 @@
+
+# console-log-level
+set consoleLogLevel=${CONSOLE_LOG_LEVEL}
+if (result ~= "(TRACE|DEBUG|INFO|WARN|ERROR|FATAL)") of :resolve-expression(expression=$consoleLogLevel)
+	echo \>\>\> set console-log-level to $consoleLogLevel
+	/subsystem=logging/console-handler=CONSOLE:write-attribute(name=level,value=$consoleLogLevel)
+end-if
+
+# Set WSDL address to use incoming request address
+/subsystem=webservices:write-attribute(name=wsdl-host, value=jbossws.undefined.host)
+# Set WSDL scheme to HTTPS (optional)
+# /subsystem=webservices:write-attribute(name=wsdl-uri-scheme, value=https)
+# Set port for WSDL HTTP scheme (optional)
+# /subsystem=webservices:write-attribute(name=wsdl-port, value=8080)
+# Set port for WSDL HTTPS scheme (optional)
+# /subsystem=webservices:write-attribute(name=wsdl-secure-port, value=8443)
+
+# set custom max-post-size
+set maxPostSize=${MAX_POST_SIZE}
+if (result ~= "[0-9]+") of :resolve-expression(expression=$maxPostSize)
+	try
+		echo \>\>\> set max-post-size to $maxPostSize
+		/subsystem=undertow/server=default-server/http-listener=default/:write-attribute(name=max-post-size,value=$maxPostSize)
+		/subsystem=undertow/server=default-server/https-listener=https/:write-attribute(name=max-post-size,value=$maxPostSize)
+	catch
+		echo \<\<\< FAILED can\'t set max-post-size
+	end-try
+end-if
+
+# set custom max-child-elements
+set maxChildElements=${MAX_CHILD_ELEMENTS}
+if (result ~= "[0-9]+") of :resolve-expression(expression=$maxChildElements)
+	try
+		echo \>\>\> set max-child-elements to $maxChildElements
+		/system-property=org.apache.cxf.stax.maxChildElements:add(value=$maxChildElements)
+	catch
+		echo \<\<\< FAILED can\'t set max-child-elements
+	end-try
+end-if
+
+# set custom blocking-timeout
+if (result ~= "[0-9]+") of :resolve-expression(expression=${env.BLOCKING_TIMEOUT})
+	try
+		set blockingTimeout=${BLOCKING_TIMEOUT}
+		echo \>\>\> set blocking-timeout to $blockingTimeout seconds
+		/system-property=jboss.as.management.blocking.timeout:add(value=$blockingTimeout)
+	catch
+		echo \<\<\< FAILED can\'t set blocking-timeout
+	end-try
+else
+end-if
+
+# set custom transaction-timeout
+if (result ~= "[0-9]+") of :resolve-expression(expression=${env.TRANSACTION_TIMEOUT})
+	try
+		set transactionTimeout=${TRANSACTION_TIMEOUT}
+		echo \>\>\> set transaction-timeout to $blockingTimeout seconds
+		/subsystem=transactions/:write-attribute(name=default-timeout,value=$transactionTimeout)
+	catch
+		echo \<\<\< FAILED can\'t set transaction-timeout
+	end-try
+end-if

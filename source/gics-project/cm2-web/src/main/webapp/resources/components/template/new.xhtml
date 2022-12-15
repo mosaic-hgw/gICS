@@ -1,0 +1,407 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+		"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<!--
+  ###license-information-start###
+  gICS - a Generic Informed Consent Service
+  __
+  Copyright (C) 2014 - 2022 Trusted Third Party of the University Medicine Greifswald -
+  							kontakt-ths@uni-greifswald.de
+  
+  							concept and implementation
+  							l.geidel, c.hampf
+  							web client
+  							a.blumentritt, m.bialke, f.m.moser
+  							fhir-api
+  							m.bialke
+  							docker
+  							r. schuldt
+  
+  							The gICS was developed by the University Medicine Greifswald and published
+   							in 2014 as part of the research project "MOSAIC" (funded by the DFG HO 1937/2-1).
+   
+  							Selected functionalities of gICS were developed as
+  							part of the following research projects:
+  							- MAGIC (funded by the DFG HO 1937/5-1)
+  							- MIRACUM (funded by the German Federal Ministry of Education and Research 01ZZ1801M)
+  							- NUM-CODEX (funded by the German Federal Ministry of Education and Research 01KX2021)
+  
+  							please cite our publications
+  							https://doi.org/10.1186/s12967-020-02457-y
+  							http://dx.doi.org/10.3414/ME14-01-0133
+  							http://dx.doi.org/10.1186/s12967-015-0545-6
+  							http://dx.doi.org/10.3205/17gmds146
+  __
+  This program is free software: you can redistribute it and/or modify
+  it under the terms of the GNU Affero General Public License as published by
+  the Free Software Foundation, either version 3 of the License, or
+  (at your option) any later version.
+  
+  This program is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  GNU General Public License for more details.
+  
+  You should have received a copy of the GNU Affero General Public License
+  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+  ###license-information-end###
+  -->
+
+
+<!-- author: Arne Blumentritt -->
+
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:h="http://java.sun.com/jsf/html" xmlns:f="http://java.sun.com/jsf/core"
+	  xmlns:p="http://primefaces.org/ui" xmlns:cc="http://java.sun.com/jsf/composite" xmlns:components="http://java.sun.com/jsf/composite/components"
+	  xmlns:module="http://java.sun.com/jsf/composite/components/module">
+
+<!-- INTERFACE -->
+<cc:interface>
+	<cc:attribute name="update" type="java.lang.String" required="false" default="" />
+</cc:interface>
+
+<!-- IMPLEMENTATION -->
+<cc:implementation>
+	<h:form id="editTemplateForm">
+		<p:panel>
+			<h4>
+				<h:outputText value="#{msg['template.title.'.concat(templateController.pageMode)]}" />
+			</h4>
+
+			<p:focus for="template_label" rendered="#{templateController.pageMode == 'NEW'}" />
+			<p:panelGrid columns="2" columnClasses="ui-grid-col-3,ui-grid-col-9" layout="grid">
+
+				<!-- Type -->
+				<p:outputLabel for="template_type" value="#{msg['template.type']}" />
+				<h:panelGroup>
+					<p:selectOneMenu id="template_type" disabled="#{templateController.pageMode == 'EDIT'}" required="true"
+									 value="#{templateController.editTemplate.type}">
+						<f:selectItem noSelectionOption="true" itemLabel="#{msg['common.pleaseSelect']}" itemDisabled="true" />
+						<f:selectItems value="#{templateController.templateTypes}" var="_type" itemLabel="#{msg['template.type.'.concat(_type.name())]}"
+									   itemValue="#{_type}" />
+						<!-- empty ajax to save type in backing bean for use in assignedModuleTable -->
+						<p:ajax event="change" update="moduleOptions, selectModulesButton" />
+					</p:selectOneMenu>
+					<components:tooltip value="#{msg['template.type.hint']}" iconStyle="top: 7px;" />
+				</h:panelGroup>
+
+				<!-- Label -->
+				<p:outputLabel for="template_label" value="#{msg['template.label']}" />
+				<p:inputTextarea id="template_label" value="#{templateController.editTemplate.label}" required="true" counter="template_label_counter"
+								 counterTemplate="#{msg['common.characters.remaining']}" maxlength="100" rows="1" />
+				<p:column />
+				<h:outputText id="template_label_counter" styleClass="textCounter" />
+
+				<!-- Name -->
+				<p:outputLabel for="name" rendered="#{templateController.pageMode == 'EDIT'}" value="#{msg['template.name']}" />
+				<p:inputText id="name" disabled="true" rendered="#{templateController.pageMode == 'EDIT'}" required="true" value="#{templateController.editTemplate.key.name}" />
+
+				<!-- Version -->
+				<p:outputLabel for="template_version" value="#{msg['template.version']}" />
+				<h:panelGroup>
+					<p:inputText id="template_version" value="#{templateController.editTemplate.key.version}" required="true"
+								 disabled="#{templateController.pageMode == 'EDIT'}" style="margin-right: 7px; margin-bottom: 5px" />
+					<p:watermark for="template_version"
+								 value="#{msg['domain.versionLevel.'.concat(Versions.label(domainSelector.selectedDomain.ctVersionConverter))]}" />
+
+					<!-- Version Label-->
+					<p:inputText id="template_version_label" value="#{templateController.editTemplate.versionLabel}" />
+					<p:watermark for="template_version_label" value="#{msg['template.version.label']}" />
+					<components:tooltip value="#{msg['template.version.label.hint']}" />
+				</h:panelGroup>
+
+				<!-- Title -->
+				<p:column>
+					<p:outputLabel for="template_title" value="#{msg['template.label.title']}" />
+				</p:column>
+				<components:text_editor id="template_title" value="#{templateController.editTemplate.title}" small="true"
+										disabled="#{templateController.editTemplate.finalised}" />
+
+				<!-- Header -->
+				<p:column>
+					<p:outputLabel for="template_header" value="#{msg['template.header']}" />
+				</p:column>
+				<components:text_editor id="template_header" value="#{templateController.editTemplate.header}" small="true"
+										disabled="#{templateController.editTemplate.finalised}" />
+			</p:panelGrid>
+		</p:panel>
+
+		<!-- Modules Options -->
+		<p:panel style="margin-top: 15px;">
+			<h4>
+				<h:outputText value="#{msg['template.label.modules']}" />
+			</h4>
+			<p:dataTable id="moduleOptions" value="#{templateController.modules.target}" var="_assignedModule" rowIndexVar="_i"
+						 emptyMessage="#{msg['template.label.modules.noneSelected']}">
+				<p:column headerText="#{msg['module.label']}">
+					<h:outputText id="templateModuleName" value="#{_assignedModule.module.label}" />
+					<br />
+					<h:outputText styleClass="lightgrey" value="#{msg['module.version']} #{_assignedModule.module.key.version}" />
+				</p:column>
+				<p:column headerText="#{msg['module.mandatory']}" style="width: 55px; text-align:center;">
+					<p:selectBooleanCheckbox disabled="#{templateController.editTemplate.finalised}" value="#{_assignedModule.mandatory}">
+						<p:ajax partialSubmit="true" process="@this" update="moduleOptions" />
+					</p:selectBooleanCheckbox>
+				</p:column>
+				<p:column styleClass="dynamicStates" headerText="#{msg['template.module.choices']}" style="width:560px; min-width: 270px;">
+					<p:selectManyCheckbox disabled="#{templateController.editTemplate.finalised}" value="#{_assignedModule.displayCheckboxes}"
+										  converter="consentStatusConverter" layout="responsive" columns="2" style="border-bottom: 1px solid #E4E4E4; margin-bottom: 8px;">
+						<f:selectItems value="#{templateController.getMandatoryConsentStates(_assignedModule.mandatory)}" var="_status"
+									   itemLabel="#{cmsg['model.consent.status.user.'.concat(templateController.editTemplate.type.name()).concat('.').concat(_status)]} (#{cmsg['model.consent.status.admin.'.concat(_status)]})"
+									   itemValue="#{_status}" />
+						<p:ajax partialSubmit="true" process="@this" />
+					</p:selectManyCheckbox>
+					<h:outputText value="#{msg['template.module.choices.preselection']}: "
+								  style="font-weight: bold; margin: 5px 10px 0 5px; display: block; float: left;" />
+					<p:selectOneMenu disabled="#{templateController.editTemplate.finalised}" value="#{_assignedModule.defaultConsentStatus}"
+									 style="margin-bottom: 8px;">
+						<f:selectItem itemLabel="#{msg['template.label.module.default.none']}" />
+						<f:selectItems value="#{templateController.getMandatoryConsentStates(_assignedModule.mandatory)}" var="_status"
+									   itemLabel="#{cmsg['model.consent.status.user.'.concat(templateController.editTemplate.type.name()).concat('.').concat(_status)]} (#{cmsg['model.consent.status.admin.'.concat(_status)]})"
+									   itemValue="#{_status}" />
+						<p:ajax partialSubmit="true" process="@this" />
+					</p:selectOneMenu>
+				</p:column>
+				<p:column headerText="#{msg['template.module.options']}" styleClass="icons">
+					<!-- Edit Module Button -->
+					<p:commandButton actionListener="#{moduleController.onEditModule(_assignedModule.module)}" icon="mdi mdi-pencil" ignoreAutoUpdate="true"
+									 immediate="true" oncomplete="PF('editModuleDialog').show();PF('editModuleDialog').toggleMaximize();" styleClass="secondary"
+									 update="#{cc.clientId}:newModuleDialog, #{cc.clientId}:editModuleDialog" title="#{msg['module.update']}">
+						<p:resetInput target="#{cc.clientId}:editModuleDialog" />
+					</p:commandButton>
+
+					<!-- Expiration -->
+					<p:badge id="expirationBadge" severity="danger" visible="#{templateController.moduleExpirations.get(_assignedModule.module.key).savedExpiration.expires}">
+						<p:commandButton actionListener="#{templateController.moduleExpirations.get(_assignedModule.module.key).loadExpiration}"
+										 oncomplete="PF('expiration_properties_dialog_#{_i}').show();" icon="mdi mdi-progress-clock" partialSubmit="true" process="@this"
+										 title="#{msg['template.expirationPropertiesModule']}" styleClass="secondary"
+										 update="#{cc.clientId}:editTemplateForm:moduleOptions:#{_i}:moduleExpirationDialog">
+							<p:resetInput target="#{cc.clientId}:editTemplateForm:moduleOptions:#{_i}:moduleExpirationDialog" />
+						</p:commandButton>
+					</p:badge>
+					<p:dialog id="moduleExpirationDialog" closeOnEscape="true" widgetVar="expiration_properties_dialog_#{_i}" modal="true" blockScroll="true"
+							  header="#{msg['template.expirationPropertiesModule']}" style="text-align:left;">
+						<components:expiration disabled="#{templateController.editTemplate.finalised}"
+											   expiration="#{templateController.moduleExpirations.get(_assignedModule.module.key).editExpiration}" dialog="true" />
+						<p:commandButton actionListener="#{templateController.moduleExpirations.get(_assignedModule.module.key).saveExpiration}" icon="mdi mdi-check"
+										 value="#{templateController.editTemplate.finalised ? cmsg['ui.button.close'] : cmsg['ui.button.save']}"
+										 onclick="PF('expiration_properties_dialog_#{_i}').hide();" process="@parent" partialSubmit="true" update="@parent:@parent:expirationBadge" />
+						<p:commandButton value="#{cmsg['ui.button.cancel']}" icon="mdi mdi-close" immediate="true"
+										 onclick="PF('expiration_properties_dialog_#{_i}').hide();" process="@this" partialSubmit="true" styleClass="secondary" />
+					</p:dialog>
+
+					<!-- Extern properties -->
+					<p:badge id="externPropertiesBadge" severity="danger" visible="#{not empty _assignedModule.externProperties}">
+						<p:commandButton onclick="PF('extern_properties_dialog_#{_i}').show();" update="extern_properties" icon="mdi mdi-tag-text-outline"
+										 styleClass="secondary" partialSubmit="true" process="@this" title="#{msg['consent.externProperties']}" />
+					</p:badge>
+					<p:dialog closeOnEscape="true" widgetVar="extern_properties_dialog_#{_i}" modal="true" blockScroll="true"
+							  header="#{msg['consent.externProperties']}" style="text-align:left;">
+						<p:panelGrid columns="1" columnClasses="ui-grid-col-12" layout="grid">
+							<p:inputTextarea id="extern_properties" value="#{_assignedModule.externProperties}" counter="extern_properties_counter"
+											 counterTemplate="#{msg['common.characters.remaining']}" maxlength="4095" rows="3" />
+							<h:outputText id="extern_properties_counter" styleClass="textCounter" />
+						</p:panelGrid>
+						<p:commandButton icon="mdi mdi-check" value="#{cmsg['ui.button.save']}" onclick="PF('extern_properties_dialog_#{_i}').hide();"
+										 process="extern_properties" partialSubmit="true" update="@parent:@parent:externPropertiesBadge" />
+						<p:commandButton value="#{cmsg['ui.button.cancel']}" icon="mdi mdi-close" immediate="true"
+										 onclick="PF('extern_properties_dialog_#{_i}').hide();" process="@this" partialSubmit="true" styleClass="secondary" />
+					</p:dialog>
+				</p:column>
+			</p:dataTable>
+			<div class="space"></div>
+			<!--Select and Sort Modules-->
+			<p:commandButton id="selectModulesButton" disabled="#{empty templateController.editTemplate.type}" icon="mdi mdi-feature-search-outline"
+							 styleClass="secondary" type="button" onclick="PF('selectModules').show();" rendered="#{!templateController.editTemplate.finalised}"
+							 value="#{msg['template.label.modules.search']}"
+							 title="#{empty templateController.editTemplate.type ? msg['template.label.modules.search.disabled'] : ''}" />
+		</p:panel>
+
+		<!-- Free Texts -->
+		<p:accordionPanel id="misc_accordion" multiple="true" activeIndex="#{templateController.activeAccordionTabs}">
+			<p:tab title="#{msg['template.label.freeText']}">
+				<p:dataTable id="free_text_table" value="#{templateController.freeTextDefs}" var="_freeText"
+							 emptyMessage="#{msg['template.label.freetext.empty']}" rowIndexVar="_i">
+
+					<!-- Name -->
+					<p:column headerText="#{msg['template.freetext.header.name']}" style="min-width: 150px;">
+						<p:inputText disabled="#{not empty _freeText.fhirID}" required="true" value="#{_freeText.name}" />
+					</p:column>
+
+					<!-- Label -->
+					<p:column headerText="#{msg['template.freetext.header.label']}" style="min-width: 150px;">
+						<p:inputText value="#{_freeText.label}" />
+					</p:column>
+
+					<!-- Required -->
+					<p:column headerText="#{msg['template.freetext.header.required']}">
+						<p:selectBooleanCheckbox disabled="#{templateController.editTemplate.finalised}" value="#{_freeText.required}" />
+					</p:column>
+
+					<!-- Type -->
+					<p:column id="type_column" headerText="#{msg['template.freetext.header.type']}">
+						<p:selectOneMenu disabled="#{templateController.editTemplate.finalised}" value="#{_freeText.type}">
+							<p:ajax update="converterStringInput" partialSubmit="true" process="@this" event="change" />
+							<f:selectItems value="#{templateController.freeTextTypes}" var="_freeTextType" itemValue="#{_freeTextType}"
+										   itemLabel="#{msg['template.label.freeText.type.'.concat(_freeTextType)]}" />
+						</p:selectOneMenu>
+						<p:outputPanel layout="inline" id="converterStringInput" style="vertical-align: top;margin-left:4px;">
+							<p:outputLabel value="#{msg['template.label.freeText.datePattern']}" rendered="#{_freeText.type=='DATE'}" style="margin: 0 5px;" />
+							<p:inputText id="pattern_input" disabled="#{templateController.editTemplate.finalised}" value="#{_freeText.converterString}" required="true"
+										 rendered="#{_freeText.type=='DATE'}" />
+						</p:outputPanel>
+					</p:column>
+
+					<!-- Comment -->
+					<p:column headerText="#{msg['template.freetext.header.comment']}" style="min-width: 150px;">
+						<p:inputText value="#{_freeText.comment}" />
+					</p:column>
+
+					<p:column styleClass="icons">
+						<!-- Move -->
+						<p:commandButton actionListener="#{templateController.onMoveFreeTextUp(_i)}"
+										 disabled="#{_i == 0 or templateController.editTemplate.finalised}" icon="mdi mdi-arrow-up"
+										 process="free_text_table" styleClass="secondary" update="free_text_table" />
+						<p:commandButton actionListener="#{templateController.onMoveFreeTextDown(_i)}"
+										 disabled="#{_i ge templateController.freeTextDefs.size() - 1 or templateController.editTemplate.finalised}" icon="mdi mdi-arrow-down"
+										 process="free_text_table" styleClass="secondary" update="free_text_table" />
+						<!-- Extern properties -->
+						<p:commandButton onclick="PF('freetext_extern_properties_dialog_#{_i}').show();" update="freetext_extern_properties" icon="mdi mdi-tag-text-outline"
+										 styleClass="secondary" partialSubmit="true" process="@this" title="#{msg['consent.externProperties']}" />
+						<p:dialog closeOnEscape="true" widgetVar="freetext_extern_properties_dialog_#{_i}" modal="true" blockScroll="true"
+								  header="#{msg['consent.externProperties']}" style="text-align:left;">
+							<p:panelGrid columns="1" columnClasses="ui-grid-col-12" layout="grid">
+								<p:inputTextarea id="freetext_extern_properties" value="#{_freeText.externProperties}" counter="freetext_extern_properties_counter"
+												 counterTemplate="#{msg['common.characters.remaining']}" maxlength="4095" rows="3" />
+								<h:outputText id="freetext_extern_properties_counter" styleClass="textCounter" />
+							</p:panelGrid>
+							<p:commandButton icon="mdi mdi-check" value="#{cmsg['ui.button.save']}" onclick="PF('freetext_extern_properties_dialog_#{_i}').hide();"
+											 process="freetext_extern_properties" />
+							<p:commandButton value="#{cmsg['ui.button.cancel']}" icon="mdi mdi-close" immediate="true"
+											 onclick="PF('freetext_extern_properties_dialog_#{_i}').hide();" styleClass="secondary" />
+						</p:dialog>
+
+						<!-- Delete -->
+						<p:commandButton actionListener="#{templateController.removeFreeText(_freeText)}" disabled="#{templateController.editTemplate.finalised}"
+										 icon="mdi mdi-delete-empty" immediate="true" styleClass="secondary"
+										 title="#{cmsg['ui.button.delete']}" update="free_text_table" />
+					</p:column>
+				</p:dataTable>
+				<div class="space"></div>
+				<p:commandButton value="#{msg['template.addFreeText']}" actionListener="#{templateController.onNewFreeText}" update="free_text_table"
+								 process="@this, free_text_table" rendered="#{!templateController.editTemplate.finalised}" styleClass="secondary" icon="mdi mdi-plus" />
+			</p:tab>
+
+			<!-- Misc -->
+			<p:tab title="#{msg['template.label.misc']}">
+				<p:panelGrid columns="2" columnClasses="ui-grid-col-3,ui-grid-col-9" layout="grid" styleClass="top">
+					<!-- Comment -->
+					<p:outputLabel for="template_comment" value="#{msg['template.comment']}" />
+					<p:inputTextarea id="template_comment" value="#{templateController.editTemplate.comment}" maxlength="255" counter="template_comment_counter"
+									 counterTemplate="#{msg['common.characters.remaining']}" style="width: 100%" />
+					<p:column />
+					<h:outputText id="template_comment_counter" styleClass="textCounter" style="width: 100%" />
+
+					<!-- Expiration Properties -->
+					<h:outputText value="#{msg['template.expirationProperties.'.concat(templateController.editTemplate.type.name())]}" />
+					<components:expiration id="template_expirationProperties" checkboxLabel="false" disabled="#{templateController.editTemplate.finalised}" expiration="#{templateController.templateExpiration.editExpiration}" />
+
+					<!-- Extern Properties -->
+					<p:outputLabel for="template_externProperties" value="#{msg['template.externProperties']}" />
+					<p:inputTextarea id="template_externProperties" value="#{templateController.editTemplate.externProperties}" maxlength="4095"
+									 counter="template_externProperties_counter" counterTemplate="#{msg['common.characters.remaining']}" style="width: 100%" />
+					<p:column />
+					<h:outputText id="template_externProperties_counter" styleClass="textCounter" style="width: 100%" />
+				</p:panelGrid>
+			</p:tab>
+		</p:accordionPanel>
+
+		<!-- Footer -->
+		<p:panel>
+			<p:panelGrid columns="2" columnClasses="ui-grid-col-3,ui-grid-col-9" layout="grid">
+				<p:column>
+					<p:outputLabel for="template_footer" value="#{msg['template.footer']}" />
+				</p:column>
+				<components:text_editor id="template_footer" value="#{templateController.editTemplate.footer}" small="true"
+										disabled="#{templateController.editTemplate.finalised}" />
+			</p:panelGrid>
+		</p:panel>
+
+		<!-- Actions -->
+		<p:panel style="margin-top: 15px;">
+			<p:commandButton id="save" actionListener="#{templateController.onSaveTemplate}" icon="mdi mdi-check" update="#{cc.attrs.update}"
+							 oncomplete="if (args &amp;&amp; !args.validationFailed) PF('templates').filter()"
+							 value="#{cmsg['ui.button.save.'.concat(templateController.pageMode)]}" />
+			<p:commandButton id="cancel" actionListener="#{templateController.onCancel}" icon="mdi mdi-close" partialSubmit="true" process="@this" styleClass="secondary"
+							 update="#{cc.attrs.update}" value="#{cmsg['ui.button.cancel']}" />
+		</p:panel>
+	</h:form>
+
+	<!-- Select Modules -->
+	<p:dialog widgetVar="selectModules" modal="true" blockScroll="true" responsive="true" closeOnEscape="true"
+			  header="#{msg['template.label.modules.select']}">
+		<h:form id="selectModules">
+			<h:outputText escape="false" value="#{msg['template.label.modules.select.hint']}" />
+			<p:messages id="selectModulesMessages" escape="false" for="modulePicker" style="margin-bottom: 10px;" />
+			<p:pickList id="modulePicker" widgetVar="modulePicker" value="#{templateController.modules}" var="_module" itemLabel="#{_module.module.key}"
+						itemValue="#{_module}" converter="genericConverter" showTargetControls="true" addLabel="#{msg['template.module.add']}"
+						addAllLabel="#{msg['template.module.addAll']}" removeLabel="#{msg['template.module.remove']}"
+						removeAllLabel="#{msg['template.module.removeAll']}" moveUpLabel="#{msg['common.moveUp']}" moveDownLabel="#{msg['common.moveDown']}"
+						moveTopLabel="#{msg['common.moveTop']}" moveBottomLabel="#{msg['common.moveBottom']}" responsive="true" showSourceFilter="true"
+						showTargetFilter="true" filterMatchMode="contains">
+				<p:ajax event="transfer" ignoreAutoUpdate="true" partialSubmit="true" process="@this" />
+				<p:ajax event="reorder" ignoreAutoUpdate="true" partialSubmit="true" process="@this" />
+				<f:facet name="sourceCaption">#{msg['template.label.modules.available']}</f:facet>
+				<f:facet name="targetCaption">#{msg['template.label.modules.selected']}</f:facet>
+				<p:column>
+					#{_module.module.label}
+				</p:column>
+				<p:column style="text-align: right;" styleClass="lightgrey">
+					#{msg['module.version.short']} #{_module.module.key.version}
+				</p:column>
+			</p:pickList>
+			<br />
+			<br />
+
+			<!-- Apply selected modules Button -->
+			<p:commandButton actionListener="#{templateController.onAssignModules}" icon="mdi mdi-check"
+							 oncomplete="if (args &amp;&amp; !args.validationFailed) PF('selectModules').hide();" partialSubmit="true" process="@this"
+							 update="selectModulesMessages, #{cc.clientId}:editTemplateForm:moduleOptions" value="#{msg['template.module.applySelected']}" />
+
+			<!-- New Module Button -->
+			<p:commandButton actionListener="#{moduleController.onNewModule}" icon="mdi mdi-shape-square-plus" ignoreAutoUpdate="true" immediate="true"
+							 oncomplete="PF('newModuleDialog').show();PF('newModuleDialog').toggleMaximize();" styleClass="secondary" update="#{cc.clientId}:newModuleDialog"
+							 value="#{msg['template.module.create']}">
+				<p:resetInput target="#{cc.clientId}:newModuleDialog" />
+			</p:commandButton>
+
+			<!-- Refresh Modules Button -->
+			<p:commandButton actionListener="#{templateController.refreshAvailableModules}" icon="mdi mdi-refresh" partialSubmit="true" process="@this" styleClass="secondary"
+							 update="selectModules" value="#{msg['template.module.refreshAvailable']}" />
+		</h:form>
+	</p:dialog>
+
+	<!-- New Module -->
+	<p:dialog widgetVar="newModuleDialog" modal="false" blockScroll="true" closeOnEscape="true" onHide="PF('newModuleDialog').toggleMaximize();"
+			  showEffect="none" styleClass="no-border-first-panel no-border-last-panel no-title">
+		<p:ajax event="close" listener="#{moduleController.onCancel()}" ignoreAutoUpdate="true" />
+		<h:panelGroup layout="block" id="newModuleDialog">
+			<p:messages escape="false" rendered="#{moduleController.pageMode == 'NEW'}" />
+			<module:new id="newModuleComponent" update="#{cc.clientId}:newModuleDialog, #{cc.clientId}:selectModules"
+						onSubmitAction="#{templateController.addNewestModule()}"
+						onSubmitFunction="if (args &amp;&amp; !args.validationFailed) PF('newModuleDialog').hide();" onCancelFunction="PF('newModuleDialog').hide();"
+						dialog="true" rendered="#{moduleController.pageMode == 'NEW'}" />
+		</h:panelGroup>
+	</p:dialog>
+
+	<!-- Edit Module -->
+	<p:dialog widgetVar="editModuleDialog" modal="false" blockScroll="true" closeOnEscape="true" onHide="PF('editModuleDialog').toggleMaximize();"
+			  showEffect="none" styleClass="no-border-first-panel no-border-last-panel no-title">
+		<p:ajax event="close" listener="#{moduleController.onCancel()}" ignoreAutoUpdate="true" />
+		<h:panelGroup layout="block" id="editModuleDialog">
+			<p:messages escape="false" rendered="#{moduleController.pageMode == 'EDIT'}" />
+			<module:new id="editModuleComponent" update="#{cc.clientId}:editModuleDialog, #{cc.clientId}:selectModules"
+						onSubmitFunction="if (args &amp;&amp; !args.validationFailed) PF('editModuleDialog').hide();" onCancelFunction="PF('editModuleDialog').hide();"
+						dialog="true" rendered="#{moduleController.pageMode == 'EDIT'}" />
+		</h:panelGroup>
+	</p:dialog>
+</cc:implementation>
+</html>
