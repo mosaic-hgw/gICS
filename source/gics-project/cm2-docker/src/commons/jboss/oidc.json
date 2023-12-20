@@ -1,0 +1,11 @@
+{
+  "client-id": "ths",
+  "provider-url": "<PROTOCOL>://<HOST_OR_IP>:<PORT>/realms/ttp",
+  "ssl-required": "<none|external|all>",
+  "verify-token-audience": true,
+  "credentials": {
+    "secret": "<CLIENT_SECRET>"
+  },
+  "use-resource-role-mappings": false,
+  "confidential-port": 8443
+}

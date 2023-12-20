@@ -4,9 +4,9 @@ package org.emau.icmvc.ganimed.ttp.cm2.frontend.model;
  * ###license-information-start###
  * gICS - a Generic Informed Consent Service
  * __
- * Copyright (C) 2014 - 2022 Trusted Third Party of the University Medicine Greifswald -
+ * Copyright (C) 2014 - 2023 Trusted Third Party of the University Medicine Greifswald -
  * 							kontakt-ths@uni-greifswald.de
- * 
+ *
  * 							concept and implementation
  * 							l.geidel, c.hampf
  * 							web client
@@ -15,17 +15,18 @@ package org.emau.icmvc.ganimed.ttp.cm2.frontend.model;
  * 							m.bialke
  * 							docker
  * 							r. schuldt
- * 
+ *
  * 							The gICS was developed by the University Medicine Greifswald and published
- *  							in 2014 as part of the research project "MOSAIC" (funded by the DFG HO 1937/2-1).
- *  
+ * 							in 2014 as part of the research project "MOSAIC" (funded by the DFG HO 1937/2-1).
+ *
  * 							Selected functionalities of gICS were developed as
  * 							part of the following research projects:
  * 							- MAGIC (funded by the DFG HO 1937/5-1)
  * 							- MIRACUM (funded by the German Federal Ministry of Education and Research 01ZZ1801M)
  * 							- NUM-CODEX (funded by the German Federal Ministry of Education and Research 01KX2021)
- * 
+ *
  * 							please cite our publications
+ * 							https://doi.org/10.1186/s12911-022-02081-4
  * 							https://doi.org/10.1186/s12967-020-02457-y
  * 							http://dx.doi.org/10.3414/ME14-01-0133
  * 							http://dx.doi.org/10.1186/s12967-015-0545-6
@@ -35,12 +36,12 @@ package org.emau.icmvc.ganimed.ttp.cm2.frontend.model;
  * it under the terms of the GNU Affero General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  * ###license-information-end###
@@ -118,7 +119,7 @@ public class WebConsentLazyModel extends LazyDataModel<WebConsent>
 	{
 		for (WebConsent webConsent : currentPageData)
 		{
-			if (rowKey.equals(webConsent.getKey().toString()))
+			if (rowKey.replace("~", ",").equals(webConsent.getKey().toString()))
 			{
 				return webConsent;
 			}
@@ -129,7 +130,7 @@ public class WebConsentLazyModel extends LazyDataModel<WebConsent>
 	@Override
 	public String getRowKey(WebConsent object)
 	{
-		return object.getKey().toString();
+		return object.getKey().toString().replace(",", "~");
 	}
 
 	@Override
@@ -153,7 +154,7 @@ public class WebConsentLazyModel extends LazyDataModel<WebConsent>
 					paginationConfig.setSortField(ConsentField.DATE);
 					break;
 				case "template.label":
-					paginationConfig.setSortField(ConsentField.CT_NAME);
+					paginationConfig.setSortField(ConsentField.CT_LABEL);
 					break;
 				case "key.consentTemplateKey.version":
 					paginationConfig.setSortField(ConsentField.CT_VERSION);
@@ -178,7 +179,8 @@ public class WebConsentLazyModel extends LazyDataModel<WebConsent>
 				String globalFilter = (String) filters.get("globalFilter").getFilterValue();
 				if (StringUtils.isNotEmpty(globalFilter))
 				{
-					// Filter CT_NAME
+					// Filter CT_LABEL and (or) CT_NAME
+					filterMap.put(ConsentField.CT_LABEL, globalFilter);
 					filterMap.put(ConsentField.CT_NAME, globalFilter);
 					// Filter SIGNER_ID. Don't overwrite if predfined
 					if (!signerIdFilter)
@@ -198,6 +200,7 @@ public class WebConsentLazyModel extends LazyDataModel<WebConsent>
 				}
 				else
 				{
+					filterMap.remove(ConsentField.CT_LABEL);
 					filterMap.remove(ConsentField.CT_NAME);
 					filterMap.remove(ConsentField.CT_VERSION);
 					if (!signerIdFilter)
@@ -241,7 +244,7 @@ public class WebConsentLazyModel extends LazyDataModel<WebConsent>
 	}
 
 	private WebConsent getWebConsent(ConsentLightDTO lightDTO) throws UnknownDomainException, UnknownConsentTemplateException, VersionConverterClassException, InvalidVersionException,
-			InconsistentStatusException, UnknownSignerIdTypeException, UnknownConsentException
+			InconsistentStatusException, UnknownSignerIdTypeException, UnknownConsentException, InvalidParameterException
 	{
 		WebConsent webConsent;
 		if (webConsents.containsKey(lightDTO.getKey()))
@@ -271,14 +274,16 @@ public class WebConsentLazyModel extends LazyDataModel<WebConsent>
 	 * @see <a href="https://primefaces.github.io/primefaces/11_0_0/#/../migrationguide/11_0_0?id=datatable-dataview-datagrid-datalist">DataTable section in PF Migration guide 10 -> 11</a>
 	 * @see <a href="https://primefaces.github.io/primefaces/11_0_0/#/components/datatable?id=lazy-loading">Lazy Loading in DataTable part of PF Documentation</a>
 	 *
-	 * @param filterBy the filter map
+	 * @param filterBy
+	 *            the filter map
 	 * @return the number of items in the database wrt. the filter configuration or any arbitrary value, when {@link #setRowCount(int)} is used correctly
 	 */
 	@Override
-	public int count(Map<String, FilterMeta> filterBy) {
+	public int count(Map<String, FilterMeta> filterBy)
+	{
 		return 0;
 	}
-	
+
 	private ConsentTemplateDTO getTemplate(ConsentTemplateKeyDTO key)
 	{
 		if (!templates.containsKey(key))
@@ -287,7 +292,7 @@ public class WebConsentLazyModel extends LazyDataModel<WebConsent>
 			{
 				templates.put(key, service.getConsentTemplate(key));
 			}
-			catch (UnknownDomainException | UnknownConsentTemplateException | InvalidVersionException e)
+			catch (UnknownDomainException | UnknownConsentTemplateException | InvalidVersionException | InvalidParameterException e)
 			{
 				logger.error(e.getLocalizedMessage());
 			}

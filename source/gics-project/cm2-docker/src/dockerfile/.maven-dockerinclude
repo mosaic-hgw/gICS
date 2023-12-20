@@ -1,0 +1,9 @@
+deployments/**
+jboss/**
+sqls/**
+jmeter/**
+Dockerfile
+LICENSE.txt
+ABOUT_gICS.md
+ReleaseNotes_gICS.md
+README_gICS.md

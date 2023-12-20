@@ -4,7 +4,7 @@
   ###license-information-start###
   gICS - a Generic Informed Consent Service
   __
-  Copyright (C) 2014 - 2022 Trusted Third Party of the University Medicine Greifswald -
+  Copyright (C) 2014 - 2023 Trusted Third Party of the University Medicine Greifswald -
   							kontakt-ths@uni-greifswald.de
   
   							concept and implementation
@@ -17,8 +17,8 @@
   							r. schuldt
   
   							The gICS was developed by the University Medicine Greifswald and published
-   							in 2014 as part of the research project "MOSAIC" (funded by the DFG HO 1937/2-1).
-   
+  							in 2014 as part of the research project "MOSAIC" (funded by the DFG HO 1937/2-1).
+  
   							Selected functionalities of gICS were developed as
   							part of the following research projects:
   							- MAGIC (funded by the DFG HO 1937/5-1)
@@ -26,6 +26,7 @@
   							- NUM-CODEX (funded by the German Federal Ministry of Education and Research 01KX2021)
   
   							please cite our publications
+  							https://doi.org/10.1186/s12911-022-02081-4
   							https://doi.org/10.1186/s12967-020-02457-y
   							http://dx.doi.org/10.3414/ME14-01-0133
   							http://dx.doi.org/10.1186/s12967-015-0545-6
@@ -91,14 +92,14 @@
 				<h:outputText id="template_label_counter" styleClass="textCounter" />
 
 				<!-- Name -->
-				<p:outputLabel for="name" rendered="#{templateController.pageMode == 'EDIT'}" value="#{msg['template.name']}" />
-				<p:inputText id="name" disabled="true" rendered="#{templateController.pageMode == 'EDIT'}" required="true" value="#{templateController.editTemplate.key.name}" />
+				<p:outputLabel for="name" value="#{msg['template.name']}" />
+				<p:inputText id="name" disabled="#{templateController.pageMode == 'EDIT'}" value="#{templateController.editTemplate.key.name}" />
 
 				<!-- Version -->
 				<p:outputLabel for="template_version" value="#{msg['template.version']}" />
 				<h:panelGroup>
 					<p:inputText id="template_version" value="#{templateController.editTemplate.key.version}" required="true"
-								 disabled="#{templateController.pageMode == 'EDIT'}" style="margin-right: 7px; margin-bottom: 5px" />
+								 disabled="#{templateController.pageMode == 'EDIT'}" style="margin-right: 7px" />
 					<p:watermark for="template_version"
 								 value="#{msg['domain.versionLevel.'.concat(Versions.label(domainSelector.selectedDomain.ctVersionConverter))]}" />
 
@@ -112,14 +113,14 @@
 				<p:column>
 					<p:outputLabel for="template_title" value="#{msg['template.label.title']}" />
 				</p:column>
-				<components:text_editor id="template_title" value="#{templateController.editTemplate.title}" small="true"
+				<components:text_editor id="template_title" sanitizedValue="#{templateController.editTemplateSanitizedTitle}" small="true"
 										disabled="#{templateController.editTemplate.finalised}" />
 
 				<!-- Header -->
 				<p:column>
 					<p:outputLabel for="template_header" value="#{msg['template.header']}" />
 				</p:column>
-				<components:text_editor id="template_header" value="#{templateController.editTemplate.header}" small="true"
+				<components:text_editor id="template_header" sanitizedValue="#{templateController.editTemplateSanitizedHeader}" small="true"
 										disabled="#{templateController.editTemplate.finalised}" />
 			</p:panelGrid>
 		</p:panel>
@@ -178,11 +179,15 @@
 						</p:commandButton>
 					</p:badge>
 					<p:dialog id="moduleExpirationDialog" closeOnEscape="true" widgetVar="expiration_properties_dialog_#{_i}" modal="true" blockScroll="true"
-							  header="#{msg['template.expirationPropertiesModule']}" style="text-align:left;">
-						<components:expiration disabled="#{templateController.editTemplate.finalised}"
-											   expiration="#{templateController.moduleExpirations.get(_assignedModule.module.key).editExpiration}" dialog="true" />
+							  style="text-align:left;">
+						<components:expiration checkboxLabel="false"
+											   info="#{msg['template.expirationPropertiesModule']}"
+											   disabled="#{templateController.editTemplate.finalised and templateController.moduleExpirations.get(_assignedModule.module.key).editExpiration.expired}"
+											   disabledPeriod="#{templateController.editTemplate.finalised}"
+											   expiration="#{templateController.moduleExpirations.get(_assignedModule.module.key).editExpiration}" dialog="true"
+											   mindate="#{templateController.editTemplate.finalised ? templateController.tomorrow : null}" />
 						<p:commandButton actionListener="#{templateController.moduleExpirations.get(_assignedModule.module.key).saveExpiration}" icon="mdi mdi-check"
-										 value="#{templateController.editTemplate.finalised ? cmsg['ui.button.close'] : cmsg['ui.button.save']}"
+										 value="#{templateController.editTemplate.finalised and templateController.moduleExpirations.get(_assignedModule.module.key).editExpiration.expired ? cmsg['ui.button.close'] : cmsg['ui.button.save']}"
 										 onclick="PF('expiration_properties_dialog_#{_i}').hide();" process="@parent" partialSubmit="true" update="@parent:@parent:expirationBadge" />
 						<p:commandButton value="#{cmsg['ui.button.cancel']}" icon="mdi mdi-close" immediate="true"
 										 onclick="PF('expiration_properties_dialog_#{_i}').hide();" process="@this" partialSubmit="true" styleClass="secondary" />
@@ -302,7 +307,11 @@
 
 					<!-- Expiration Properties -->
 					<h:outputText value="#{msg['template.expirationProperties.'.concat(templateController.editTemplate.type.name())]}" />
-					<components:expiration id="template_expirationProperties" checkboxLabel="false" disabled="#{templateController.editTemplate.finalised}" expiration="#{templateController.templateExpiration.editExpiration}" />
+					<components:expiration id="template_expirationProperties" checkboxLabel="false"
+										   disabled="#{templateController.editTemplate.finalised and templateController.templateExpiration.editExpiration.expired}"
+										   disabledPeriod="#{templateController.editTemplate.finalised}"
+										   expiration="#{templateController.templateExpiration.editExpiration}"
+										   mindate="#{templateController.editTemplate.finalised ? templateController.tomorrow : null}"/>
 
 					<!-- Extern Properties -->
 					<p:outputLabel for="template_externProperties" value="#{msg['template.externProperties']}" />
@@ -320,7 +329,7 @@
 				<p:column>
 					<p:outputLabel for="template_footer" value="#{msg['template.footer']}" />
 				</p:column>
-				<components:text_editor id="template_footer" value="#{templateController.editTemplate.footer}" small="true"
+				<components:text_editor id="template_footer" sanitizedValue="#{templateController.editTemplateSanitizedFooter}" small="true"
 										disabled="#{templateController.editTemplate.finalised}" />
 			</p:panelGrid>
 		</p:panel>
@@ -339,7 +348,7 @@
 	<p:dialog widgetVar="selectModules" modal="true" blockScroll="true" responsive="true" closeOnEscape="true"
 			  header="#{msg['template.label.modules.select']}">
 		<h:form id="selectModules">
-			<h:outputText escape="false" value="#{msg['template.label.modules.select.hint']}" />
+			<h:outputText value="#{msg['template.label.modules.select.hint']}" />
 			<p:messages id="selectModulesMessages" escape="false" for="modulePicker" style="margin-bottom: 10px;" />
 			<p:pickList id="modulePicker" widgetVar="modulePicker" value="#{templateController.modules}" var="_module" itemLabel="#{_module.module.key}"
 						itemValue="#{_module}" converter="genericConverter" showTargetControls="true" addLabel="#{msg['template.module.add']}"
@@ -347,8 +356,8 @@
 						removeAllLabel="#{msg['template.module.removeAll']}" moveUpLabel="#{msg['common.moveUp']}" moveDownLabel="#{msg['common.moveDown']}"
 						moveTopLabel="#{msg['common.moveTop']}" moveBottomLabel="#{msg['common.moveBottom']}" responsive="true" showSourceFilter="true"
 						showTargetFilter="true" filterMatchMode="contains">
-				<p:ajax event="transfer" ignoreAutoUpdate="true" partialSubmit="true" process="@this" />
-				<p:ajax event="reorder" ignoreAutoUpdate="true" partialSubmit="true" process="@this" />
+<!--				<p:ajax event="transfer" ignoreAutoUpdate="true" partialSubmit="true" process="@this" />-->
+<!--				<p:ajax event="reorder" ignoreAutoUpdate="true" partialSubmit="true" process="@this" />-->
 				<f:facet name="sourceCaption">#{msg['template.label.modules.available']}</f:facet>
 				<f:facet name="targetCaption">#{msg['template.label.modules.selected']}</f:facet>
 				<p:column>
@@ -363,7 +372,7 @@
 
 			<!-- Apply selected modules Button -->
 			<p:commandButton actionListener="#{templateController.onAssignModules}" icon="mdi mdi-check"
-							 oncomplete="if (args &amp;&amp; !args.validationFailed) PF('selectModules').hide();" partialSubmit="true" process="@this"
+							 oncomplete="if (args &amp;&amp; !args.validationFailed) PF('selectModules').hide();" partialSubmit="true" process="modulePicker, @this"
 							 update="selectModulesMessages, #{cc.clientId}:editTemplateForm:moduleOptions" value="#{msg['template.module.applySelected']}" />
 
 			<!-- New Module Button -->

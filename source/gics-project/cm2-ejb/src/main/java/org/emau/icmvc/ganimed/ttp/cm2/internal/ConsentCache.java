@@ -4,9 +4,9 @@ package org.emau.icmvc.ganimed.ttp.cm2.internal;
  * ###license-information-start###
  * gICS - a Generic Informed Consent Service
  * __
- * Copyright (C) 2014 - 2022 Trusted Third Party of the University Medicine Greifswald -
+ * Copyright (C) 2014 - 2023 Trusted Third Party of the University Medicine Greifswald -
  * 							kontakt-ths@uni-greifswald.de
- * 
+ *
  * 							concept and implementation
  * 							l.geidel, c.hampf
  * 							web client
@@ -15,17 +15,18 @@ package org.emau.icmvc.ganimed.ttp.cm2.internal;
  * 							m.bialke
  * 							docker
  * 							r. schuldt
- * 
+ *
  * 							The gICS was developed by the University Medicine Greifswald and published
- *  							in 2014 as part of the research project "MOSAIC" (funded by the DFG HO 1937/2-1).
- *  
+ * 							in 2014 as part of the research project "MOSAIC" (funded by the DFG HO 1937/2-1).
+ *
  * 							Selected functionalities of gICS were developed as
  * 							part of the following research projects:
  * 							- MAGIC (funded by the DFG HO 1937/5-1)
  * 							- MIRACUM (funded by the German Federal Ministry of Education and Research 01ZZ1801M)
  * 							- NUM-CODEX (funded by the German Federal Ministry of Education and Research 01KX2021)
- * 
+ *
  * 							please cite our publications
+ * 							https://doi.org/10.1186/s12911-022-02081-4
  * 							https://doi.org/10.1186/s12967-020-02457-y
  * 							http://dx.doi.org/10.3414/ME14-01-0133
  * 							http://dx.doi.org/10.1186/s12967-015-0545-6
@@ -35,12 +36,12 @@ package org.emau.icmvc.ganimed.ttp.cm2.internal;
  * it under the terms of the GNU Affero General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  * ###license-information-end###
@@ -63,18 +64,20 @@ import javax.persistence.criteria.CriteriaBuilder;
 import javax.persistence.criteria.CriteriaQuery;
 import javax.persistence.criteria.Root;
 
-import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.emau.icmvc.ganimed.ttp.cm2.dto.enums.ConsentStatus;
 import org.emau.icmvc.ganimed.ttp.cm2.exceptions.UnknownPolicyException;
 import org.emau.icmvc.ganimed.ttp.cm2.model.Consent;
 import org.emau.icmvc.ganimed.ttp.cm2.model.ConsentKey;
 import org.emau.icmvc.ganimed.ttp.cm2.model.ConsentTemplate;
 import org.emau.icmvc.ganimed.ttp.cm2.model.ConsentTemplateKey;
+import org.emau.icmvc.ganimed.ttp.cm2.model.PolicyKey;
 import org.emau.icmvc.ganimed.ttp.cm2.model.QC;
 import org.emau.icmvc.ganimed.ttp.cm2.model.SignedPolicy;
 import org.emau.icmvc.ganimed.ttp.cm2.model.SignedPolicyKey;
 import org.emau.icmvc.ganimed.ttp.cm2.model.SignerIdKey;
+import org.emau.icmvc.ganimed.ttp.cm2.model.SignerIdTypeKey;
 import org.emau.icmvc.ganimed.ttp.cm2.model.VirtualPerson;
 import org.emau.icmvc.ganimed.ttp.cm2.model.VirtualPersonSignerId;
 
@@ -87,13 +90,20 @@ import org.emau.icmvc.ganimed.ttp.cm2.model.VirtualPersonSignerId;
 public class ConsentCache
 {
 	private static final Logger LOGGER = LogManager.getLogger(ConsentCache.class);
-	private static final int SIGNED_POLICIES_PAGE_SIZE = 10000;
+	private static final ConsentCache INSTANCE = new ConsentCache();
+	private static final int SIGNED_POLICIES_PAGE_SIZE = 100000;
 	private static volatile boolean INITIALISED = false;
 	private static final ReentrantReadWriteLock CACHE_RWL = new ReentrantReadWriteLock();
 	// domain -> signerId -> signedPolicies
 	private static final Map<String, Map<SignerIdKey, List<CachedSignedPolicy>>> SIGNER_CACHE = new HashMap<>();
 	private static final Map<String, Map<Long, List<CachedSignedPolicy>>> VP_CACHE = new HashMap<>();
-	private static final ConsentCache INSTANCE = new ConsentCache();
+	// in order to safe memory
+	private static final Map<SignerIdKey, SignerIdKey> SIGNER_ID_KEY_CACHE = new HashMap<>();
+	private static final Map<SignerIdTypeKey, SignerIdTypeKey> SIGNER_ID_TYPE_KEY_CACHE = new HashMap<>();
+	private static final Map<SignedPolicyKey, SignedPolicyKey> SIGNED_POLICY_KEY_CACHE = new HashMap<>();
+	private static final Map<ConsentKey, ConsentKey> CONSENT_KEY_CACHE = new HashMap<>();
+	private static final Map<ConsentTemplateKey, ConsentTemplateKey> CONSENT_TEMPLATE_KEY_CACHE = new HashMap<>();
+	private static final Map<PolicyKey, PolicyKey> POLICY_KEY_CACHE = new HashMap<>();
 
 	private ConsentCache()
 	{}
@@ -168,6 +178,7 @@ public class ConsentCache
 						LOGGER.debug("loading consent information " + i * SIGNED_POLICIES_PAGE_SIZE + " - " + (i * SIGNED_POLICIES_PAGE_SIZE + nextPageSize));
 					}
 					List<SignedPolicy> signedPolicies = getSignedPolicies(em, i * SIGNED_POLICIES_PAGE_SIZE, nextPageSize);
+					em.clear(); // wichtig! eclipselink laedt sonst die ganzen objekte (vor allem consents) nach
 					// key = vpId
 					Map<Long, List<SignedPolicy>> mappedSignedPolicies = mapSignedPolicies(signedPolicies);
 					if (LOGGER.isDebugEnabled())
@@ -199,6 +210,7 @@ public class ConsentCache
 		}
 		finally
 		{
+			em.clear();
 			CACHE_RWL.writeLock().unlock();
 		}
 	}
@@ -340,12 +352,13 @@ public class ConsentCache
 			if (domainSignerCache == null)
 			{
 				domainSignerCache = new HashMap<>();
-				SIGNER_CACHE.put(domainName, domainSignerCache);
+				SIGNER_CACHE.put(domainName.intern(), domainSignerCache);
 			}
 			for (SignerIdKey signerIdKey : signerIdKeys)
 			{
 				if (domainSignerCache.get(signerIdKey) == null)
 				{
+					signerIdKey = getCachedSignerIdKey(signerIdKey);
 					domainSignerCache.put(signerIdKey, new ArrayList<>());
 				}
 			}
@@ -353,7 +366,7 @@ public class ConsentCache
 			if (domainVPCache == null)
 			{
 				domainVPCache = new HashMap<>();
-				VP_CACHE.put(domainName, domainVPCache);
+				VP_CACHE.put(domainName.intern(), domainVPCache);
 			}
 			List<CachedSignedPolicy> vpSignedPolicies = domainVPCache.get(vpId);
 			if (vpSignedPolicies == null)
@@ -367,7 +380,8 @@ public class ConsentCache
 				ConsentKey consentKey = entry.getKey().getKey().getConsentKey();
 				if (entry.getValue() != null)
 				{
-					CachedSignedPolicy cachedSignedPolicy = INSTANCE.new CachedSignedPolicy(entry.getKey().getKey(), gicsConsentDates.get(consentKey), legalConsentDates.get(consentKey),
+					SignedPolicyKey cachedKey = getCachedSignedPolicyKey(entry.getKey().getKey());
+					CachedSignedPolicy cachedSignedPolicy = INSTANCE.new CachedSignedPolicy(cachedKey, gicsConsentDates.get(consentKey), legalConsentDates.get(consentKey),
 							entry.getKey().getStatus(), entry.getValue());
 					for (SignerIdKey signerId : signerIdKeys)
 					{
@@ -385,6 +399,77 @@ public class ConsentCache
 		{
 			CACHE_RWL.writeLock().unlock();
 		}
+	}
+
+	private static SignerIdKey getCachedSignerIdKey(SignerIdKey signerIdKey)
+	{
+		SignerIdKey result = SIGNER_ID_KEY_CACHE.get(signerIdKey);
+		if (result == null)
+		{
+			SignerIdTypeKey typeKey = getCachedSignerIdTypeKey(signerIdKey.getSignerIdTypeKey());
+			result = new SignerIdKey(typeKey, signerIdKey.getValue());
+			SIGNER_ID_KEY_CACHE.put(result, result);
+		}
+		return result;
+	}
+
+	private static SignerIdTypeKey getCachedSignerIdTypeKey(SignerIdTypeKey signerIdTypeKey)
+	{
+		SignerIdTypeKey result = SIGNER_ID_TYPE_KEY_CACHE.get(signerIdTypeKey);
+		if (result == null)
+		{
+			result = new SignerIdTypeKey(signerIdTypeKey.getDomainName().intern(), signerIdTypeKey.getName().intern());
+			SIGNER_ID_TYPE_KEY_CACHE.put(result, result);
+		}
+		return result;
+	}
+
+	private static SignedPolicyKey getCachedSignedPolicyKey(SignedPolicyKey key)
+	{
+		SignedPolicyKey result = SIGNED_POLICY_KEY_CACHE.get(key);
+		if (result == null)
+		{
+			String domainName = key.getPolicyKey().getDomainName().intern();
+			ConsentTemplateKey ctKey = getCachedConsentTemplateKey(domainName, key.getConsentKey().getCtKey());
+			ConsentKey cKey = getCachedConsentKey(ctKey, key.getConsentKey());
+			PolicyKey pKey = getCachedPolicyKey(domainName, key.getPolicyKey());
+			result = new SignedPolicyKey(cKey, pKey);
+			SIGNED_POLICY_KEY_CACHE.put(result, result);
+		}
+		return result;
+	}
+
+	private static ConsentTemplateKey getCachedConsentTemplateKey(String domainName, ConsentTemplateKey ctKey)
+	{
+		ConsentTemplateKey result = CONSENT_TEMPLATE_KEY_CACHE.get(ctKey);
+		if (result == null)
+		{
+			result = new ConsentTemplateKey(domainName, ctKey.getName().intern(), ctKey.getVersion());
+			CONSENT_TEMPLATE_KEY_CACHE.put(result, result);
+		}
+		return result;
+	}
+
+	private static ConsentKey getCachedConsentKey(ConsentTemplateKey ctKey, ConsentKey consentKey)
+	{
+		ConsentKey result = CONSENT_KEY_CACHE.get(consentKey);
+		if (result == null)
+		{
+			result = new ConsentKey(ctKey, new Date(consentKey.getConsentDate().getTime()), consentKey.getVirtualPersonId());
+			CONSENT_KEY_CACHE.put(result, result);
+		}
+		return result;
+	}
+
+	private static PolicyKey getCachedPolicyKey(String domainName, PolicyKey policyKey)
+	{
+		PolicyKey result = POLICY_KEY_CACHE.get(policyKey);
+		if (result == null)
+		{
+			result = new PolicyKey(domainName, policyKey.getName().intern(), policyKey.getVersion());
+			POLICY_KEY_CACHE.put(result, result);
+		}
+		return result;
 	}
 
 	public static void removeConsent(Consent consent, Set<SignerIdKey> signerIdKeys, Map<SignedPolicy, Long> signedPoliciesWithExpirationDates, String domainName)

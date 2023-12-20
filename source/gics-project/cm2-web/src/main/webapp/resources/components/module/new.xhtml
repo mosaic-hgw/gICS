@@ -4,7 +4,7 @@
   ###license-information-start###
   gICS - a Generic Informed Consent Service
   __
-  Copyright (C) 2014 - 2022 Trusted Third Party of the University Medicine Greifswald -
+  Copyright (C) 2014 - 2023 Trusted Third Party of the University Medicine Greifswald -
   							kontakt-ths@uni-greifswald.de
   
   							concept and implementation
@@ -17,8 +17,8 @@
   							r. schuldt
   
   							The gICS was developed by the University Medicine Greifswald and published
-   							in 2014 as part of the research project "MOSAIC" (funded by the DFG HO 1937/2-1).
-   
+  							in 2014 as part of the research project "MOSAIC" (funded by the DFG HO 1937/2-1).
+  
   							Selected functionalities of gICS were developed as
   							part of the following research projects:
   							- MAGIC (funded by the DFG HO 1937/5-1)
@@ -26,6 +26,7 @@
   							- NUM-CODEX (funded by the German Federal Ministry of Education and Research 01KX2021)
   
   							please cite our publications
+  							https://doi.org/10.1186/s12911-022-02081-4
   							https://doi.org/10.1186/s12967-020-02457-y
   							http://dx.doi.org/10.3414/ME14-01-0133
   							http://dx.doi.org/10.1186/s12967-015-0545-6
@@ -81,8 +82,8 @@
 				<h:outputText id="module_label_counter" styleClass="textCounter" />
 
 				<!-- Name -->
-				<p:outputLabel for="module_name" rendered="#{moduleController.pageMode == 'EDIT'}" value="#{msg['module.name']}" />
-				<p:inputText id="module_name" disabled="true" rendered="#{moduleController.pageMode == 'EDIT'}" required="true" value="#{moduleController.editModule.key.name}" />
+				<p:outputLabel for="module_name" value="#{msg['module.name']}" />
+				<p:inputText id="module_name" disabled="#{moduleController.pageMode == 'EDIT'}" value="#{moduleController.editModule.key.name}" />
 
 				<!-- Version -->
 				<p:outputLabel for="module_version" value="#{msg['module.version']}" />
@@ -104,21 +105,21 @@
 				<p:column style="vertical-align: top;">
 					<p:outputLabel for="module_title" value="#{msg['model.module.title']}" />
 				</p:column>
-				<components:text_editor id="module_title" disabled="#{moduleController.editModule.finalised}" value="#{moduleController.editModule.title}"
+				<components:text_editor id="module_title" disabled="#{moduleController.editModule.finalised}" sanitizedValue="#{moduleController.editModuleSanitizedTitle}"
 										small="true" />
 
 				<!-- Text -->
 				<p:column style="vertical-align: top;">
 					<p:outputLabel for="module_text" value="#{msg['module.text']}" />
 				</p:column>
-				<components:text_editor id="module_text" disabled="#{moduleController.editModule.finalised}" value="#{moduleController.editModule.text}" />
+				<components:text_editor id="module_text" disabled="#{moduleController.editModule.finalised}" sanitizedValue="#{moduleController.editModuleSanitizedText}" />
 			</p:panelGrid>
 		</p:panel>
 
 		<!-- Assigned Policies -->
 		<p:panel style="margin-top: 15px;">
 			<h4>
-				<h:outputText value="#{moduleController.editModule.assignedPolicies.size()} #{msg['module.policies']}" />
+				<h:outputText id="policyOptionsCounter" value="#{moduleController.editModule.assignedPolicies.size()} #{msg['module.policies']}" />
 				<components:tooltip value="#{msg['module.hint.policies']}" />
 			</h4>
 			<p:dataTable id="policyOptions" value="#{moduleController.assignedPoliciesSorted}" var="_assignedPolicy" rowIndexVar="_i"
@@ -139,10 +140,15 @@
 						</p:commandButton>
 					</p:badge>
 					<p:dialog id="policyExpirationDialog" closeOnEscape="true" widgetVar="expiration_properties_dialog_#{_i}" modal="#{!cc.attrs.dialog}" blockScroll="true"
-							  header="#{msg['module.policy.expiration']}" style="text-align:left;">
-						<components:expiration disabled="#{moduleController.editModule.finalised}" expiration="#{moduleController.policyExpirations.get(_assignedPolicy.policy.key).editExpiration}" dialog="true" />
+							  style="text-align:left;" styleClass="no-title">
+						<components:expiration checkboxLabel="false"
+											   info="#{msg['module.policy.expiration']}"
+											   disabled="#{moduleController.editModule.finalised and moduleController.policyExpirations.get(_assignedPolicy.policy.key).editExpiration.expired}"
+											   disabledPeriod="#{moduleController.editModule.finalised}"
+											   expiration="#{moduleController.policyExpirations.get(_assignedPolicy.policy.key).editExpiration}" dialog="true"
+											   mindate="#{moduleController.editModule.finalised ? moduleController.tomorrow : null}" />
 						<p:commandButton actionListener="#{moduleController.policyExpirations.get(_assignedPolicy.policy.key).saveExpiration}" icon="mdi mdi-check"
-										 value="#{moduleController.editModule.finalised ? cmsg['ui.button.close'] : cmsg['ui.button.save']}"
+										 value="#{moduleController.editModule.finalised and moduleController.policyExpirations.get(_assignedPolicy.policy.key).editExpiration.expired ? cmsg['ui.button.close'] : cmsg['ui.button.save']}"
 										 onclick="PF('expiration_properties_dialog_#{_i}').hide();" process="@parent" update="@parent:@parent:expirationBadge" />
 						<p:commandButton value="#{cmsg['ui.button.cancel']}" icon="mdi mdi-close" immediate="true"
 										 onclick="PF('expiration_properties_dialog_#{_i}').hide();" styleClass="secondary" />
@@ -181,7 +187,7 @@
 		<p:dialog widgetVar="selectPolicies" modal="#{!cc.attrs.dialog}" blockScroll="true" responsive="true" closeOnEscape="true"
 				  header="#{msg['module.policies.select']}">
 			<h:panelGroup layout="block" id="selectPolicies">
-				<h:outputText escape="false" value="#{msg['module.policies.select.hint']}" />
+				<h:outputText value="#{msg['module.policies.select.hint']}" />
 				<p:messages id="selectPoliciesMessages" escape="false" for="policyPicker" style="margin-bottom: 10px;" />
 				<p:pickList id="policyPicker" widgetVar="policyPicker" value="#{moduleController.policies}" var="_policy" itemLabel="#{_policy.policy.key}"
 							itemValue="#{_policy}" converter="genericConverter" addLabel="#{msg['module.policy.add']}"
@@ -206,7 +212,7 @@
 				<!-- Apply selected policies Button -->
 				<p:commandButton actionListener="#{moduleController.onAssignPolicies}" icon="mdi mdi-check"
 								 oncomplete="if (args &amp;&amp; !args.validationFailed) PF('selectPolicies').hide();" process="@this"
-								 update="selectPoliciesMessages, policyOptions" value="#{msg['module.policies.applySelected']}" />
+								 update="selectPoliciesMessages, policyOptions, policyOptionsCounter" value="#{msg['module.policies.applySelected']}" />
 
 				<!-- New Module Button -->
 				<p:commandButton actionListener="#{policyController.onNewPolicy}" icon="mdi mdi-shield-plus-outline" ignoreAutoUpdate="true" immediate="true"

@@ -4,9 +4,9 @@ package org.emau.icmvc.ganimed.ttp.cm2.model;
  * ###license-information-start###
  * gICS - a Generic Informed Consent Service
  * __
- * Copyright (C) 2014 - 2022 Trusted Third Party of the University Medicine Greifswald -
+ * Copyright (C) 2014 - 2023 Trusted Third Party of the University Medicine Greifswald -
  * 							kontakt-ths@uni-greifswald.de
- * 
+ *
  * 							concept and implementation
  * 							l.geidel, c.hampf
  * 							web client
@@ -15,17 +15,18 @@ package org.emau.icmvc.ganimed.ttp.cm2.model;
  * 							m.bialke
  * 							docker
  * 							r. schuldt
- * 
+ *
  * 							The gICS was developed by the University Medicine Greifswald and published
- *  							in 2014 as part of the research project "MOSAIC" (funded by the DFG HO 1937/2-1).
- *  
+ * 							in 2014 as part of the research project "MOSAIC" (funded by the DFG HO 1937/2-1).
+ *
  * 							Selected functionalities of gICS were developed as
  * 							part of the following research projects:
  * 							- MAGIC (funded by the DFG HO 1937/5-1)
  * 							- MIRACUM (funded by the German Federal Ministry of Education and Research 01ZZ1801M)
  * 							- NUM-CODEX (funded by the German Federal Ministry of Education and Research 01KX2021)
- * 
+ *
  * 							please cite our publications
+ * 							https://doi.org/10.1186/s12911-022-02081-4
  * 							https://doi.org/10.1186/s12967-020-02457-y
  * 							http://dx.doi.org/10.3414/ME14-01-0133
  * 							http://dx.doi.org/10.1186/s12967-015-0545-6
@@ -35,17 +36,18 @@ package org.emau.icmvc.ganimed.ttp.cm2.model;
  * it under the terms of the GNU Affero General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  * ###license-information-end###
  */
 
+import java.io.Serial;
 import java.io.Serializable;
 import java.sql.Timestamp;
 import java.text.ParseException;
@@ -78,8 +80,8 @@ import javax.persistence.PreRemove;
 import javax.persistence.Table;
 import javax.persistence.Transient;
 
-import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.eclipse.persistence.annotations.BatchFetch;
 import org.eclipse.persistence.annotations.BatchFetchType;
 import org.eclipse.persistence.annotations.Cache;
@@ -88,6 +90,7 @@ import org.eclipse.persistence.config.CacheIsolationType;
 import org.emau.icmvc.ganimed.ttp.cm2.dto.AssignedModuleDTO;
 import org.emau.icmvc.ganimed.ttp.cm2.dto.ConsentTemplateDTO;
 import org.emau.icmvc.ganimed.ttp.cm2.dto.ConsentTemplateKeyDTO;
+import org.emau.icmvc.ganimed.ttp.cm2.dto.ExpirationPropertiesDTO;
 import org.emau.icmvc.ganimed.ttp.cm2.dto.FreeTextDefDTO;
 import org.emau.icmvc.ganimed.ttp.cm2.dto.ModuleKeyDTO;
 import org.emau.icmvc.ganimed.ttp.cm2.dto.enums.ConsentTemplateType;
@@ -116,6 +119,7 @@ import org.emau.icmvc.ganimed.ttp.cm2.model.enums.TextType;
 @UuidGenerator(name = "FHIR_ID_CT")
 public class ConsentTemplate implements Serializable, FhirDTOExporter<ConsentTemplateDTO>
 {
+	@Serial
 	private static final long serialVersionUID = 5679698013992681307L;
 	private static final Logger logger = LogManager.getLogger(ConsentTemplate.class);
 	@EmbeddedId
@@ -169,6 +173,9 @@ public class ConsentTemplate implements Serializable, FhirDTOExporter<ConsentTem
 	private String versionLabel;
 	@Column(name = "FINALISED", nullable = false)
 	private boolean finalised;
+	@OneToMany(mappedBy = "consentTemplateFrom", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
+	@BatchFetch(BatchFetchType.IN)
+	private Set<MappedConsentTemplate> mappedConsentTemplates = new HashSet<>();
 	@Column(name = "FHIR_ID", length = 41)
 	@GeneratedValue(generator = "FHIR_ID_CT")
 	private String fhirID;
@@ -177,9 +184,10 @@ public class ConsentTemplate implements Serializable, FhirDTOExporter<ConsentTem
 	public ConsentTemplate()
 	{}
 
-	public ConsentTemplate(Domain domain, ConsentTemplateDTO dto, Map<ModuleKeyDTO, Module> modules, boolean finaliseRelatedEntities)
-			throws FreeTextConverterStringException, InvalidParameterException, InvalidPropertiesException, InvalidVersionException, RequirementsNotFullfilledException,
-			UnknownModuleException, UnknownDomainException
+	public ConsentTemplate(Domain domain, ConsentTemplateDTO dto, Map<ModuleKeyDTO, Module> modules, Map<ConsentTemplateKeyDTO, ConsentTemplate> templates,
+			boolean finaliseRelatedEntities)
+			throws FreeTextConverterStringException, InvalidParameterException, InvalidPropertiesException, InvalidVersionException,
+			RequirementsNotFullfilledException,	UnknownModuleException, UnknownDomainException
 	{
 		super();
 		this.key = new ConsentTemplateKey(VersionConverterCache.getCTVersionConverter(domain.getName()), dto.getKey());
@@ -214,6 +222,9 @@ public class ConsentTemplate implements Serializable, FhirDTOExporter<ConsentTem
 			moduleConsentTemplates.add(moduleConsentTemplate);
 			module.getModuleConsentTemplates().add(moduleConsentTemplate);
 		}
+
+		dto.getAllMappedTemplates().forEach(key -> mappedConsentTemplates.add(
+				new MappedConsentTemplate(this, templates.get(key))));
 
 		setLabel(dto.getLabel());
 		setVersionLabel(dto.getVersionLabel());
@@ -395,6 +406,35 @@ public class ConsentTemplate implements Serializable, FhirDTOExporter<ConsentTem
 		}
 	}
 
+	@PreRemove
+	private void beforeRemove()
+	{
+		new HashSet<>(mappedConsentTemplates).forEach(mct ->
+				mct.getConsentTemplateTo().getMappedConsentTemplates().removeIf(rmct ->
+						this.equals(rmct.getConsentTemplateTo())));
+		mappedConsentTemplates.clear();
+	}
+
+	public Set<MappedConsentTemplate> getMappedConsentTemplates()
+	{
+		return mappedConsentTemplates;
+	}
+
+	public void setMappedConsentTemplates(Set<MappedConsentTemplate> mappedConsentTemplates)
+	{
+		if (mappedConsentTemplates != null)
+		{
+			for (MappedConsentTemplate mct : mappedConsentTemplates)
+			{
+				if (!this.equals(mct.getConsentTemplateFrom()))
+				{
+					throw new IllegalArgumentException("this ct and the first ct in any mapping must match");
+				}
+			}
+		}
+		this.mappedConsentTemplates = mappedConsentTemplates;
+	}
+
 	public String getFhirID()
 	{
 		return fhirID;
@@ -415,6 +455,8 @@ public class ConsentTemplate implements Serializable, FhirDTOExporter<ConsentTem
 		this.externProperties = dto.getExternProperties();
 		setScanBase64(dto.getScanBase64(), dto.getScanFileType());
 		this.updateTimestamp = new Timestamp(System.currentTimeMillis());
+		updateExpiration(dto.getExpirationProperties());
+
 		if (updateRel)
 		{
 			for (FreeTextDefDTO freeTextDTO : dto.getFreeTextDefs())
@@ -443,14 +485,15 @@ public class ConsentTemplate implements Serializable, FhirDTOExporter<ConsentTem
 				{
 					if (moduleConsentTemplate.getKey().getModuleKey().equals(key))
 					{
-						moduleConsentTemplate.updateInUse(assignedModuleDTO.getComment(), assignedModuleDTO.getExternProperties());
+						moduleConsentTemplate.updateInUse(assignedModuleDTO.getComment(),
+								assignedModuleDTO.getExternProperties(), assignedModuleDTO.getExpirationProperties());
 						found = true;
 						break;
 					}
 				}
 				if (!found && finalised)
 				{
-					throw new UnknownModuleException("unknown module: " + key.toString());
+					throw new UnknownModuleException("unknown module: " + key);
 				}
 			}
 		}
@@ -464,14 +507,19 @@ public class ConsentTemplate implements Serializable, FhirDTOExporter<ConsentTem
 			throw new ObjectInUseException(
 					"consent template is finalised and can't be updated anymore. to update non-critical fields please use updateConsentTemplateInUse(...)");
 		}
-		updateInUse(dto, false);
-		this.expirationPropertiesObject = new ExpirationPropertiesObject(dto.getExpirationProperties().getFixedExpirationDate(), dto.getExpirationProperties().getValidPeriod());
-		this.expirationProperties = expirationPropertiesObject.toPropertiesString();
+		updateInUse(dto, false); // also will handle expiration properties
 		this.title.setText(dto.getTitle());
 		this.type = dto.getType();
 		this.header.setText(dto.getHeader());
 		this.footer.setText(dto.getFooter());
 		setFinalised(dto.getFinalised(), finaliseRelatedEntities);
+	}
+
+	private void updateExpiration(ExpirationPropertiesDTO expiration)
+	{
+		// for finalized templates only allow to update future expiration properties (existing as well as new date must be in the future)
+		this.expirationPropertiesObject = expirationPropertiesObject.createMergedExpirationProperties(expiration, finalised);
+		this.expirationProperties = expirationPropertiesObject.toPropertiesString();
 	}
 
 	@Override
@@ -504,7 +552,7 @@ public class ConsentTemplate implements Serializable, FhirDTOExporter<ConsentTem
 					.toDTO(VersionConverterCache.getModuleVersionConverter(domain.getName()));
 			if (tempChildren.get(moduleKeyDTO) == null)
 			{
-				tempChildren.put(moduleKeyDTO, new ArrayList<ModuleKeyDTO>());
+				tempChildren.put(moduleKeyDTO, new ArrayList<>());
 			}
 			if (moduleConsentTemplate.getParent() == null)
 			{
@@ -516,7 +564,7 @@ public class ConsentTemplate implements Serializable, FhirDTOExporter<ConsentTem
 						.toDTO(VersionConverterCache.getModuleVersionConverter(domain.getName()));
 				if (tempChildren.get(parentKeyDTO) == null)
 				{
-					tempChildren.put(parentKeyDTO, new ArrayList<ModuleKeyDTO>());
+					tempChildren.put(parentKeyDTO, new ArrayList<>());
 				}
 				tempChildren.get(parentKeyDTO).add(moduleKeyDTO);
 			}
@@ -534,13 +582,30 @@ public class ConsentTemplate implements Serializable, FhirDTOExporter<ConsentTem
 		}
 		result.setFreeTextDefs(freeTextDTOs);
 		result.setFhirID(fhirID);
-		return result;
-	}
 
-	@PreRemove
-	private void beforeRemove()
-	{
-		domain.getConsentTemplates().remove(this);
+		final Set<ConsentTemplateKeyDTO> consentMappings = new HashSet<>();
+		final Set<ConsentTemplateKeyDTO> refusalMappings = new HashSet<>();
+		final Set<ConsentTemplateKeyDTO> revocationMappings = new HashSet<>();
+
+		for (MappedConsentTemplate m : getMappedConsentTemplates())
+		{
+			ConsentTemplate consentTemplateTo = m.getConsentTemplateTo();
+			ConsentTemplateKeyDTO keyDTO = consentTemplateTo.getKey().toDTO(
+					VersionConverterCache.getCTVersionConverter(domain.getName()));
+
+			switch (consentTemplateTo.getType())
+			{
+				case CONSENT -> consentMappings.add(keyDTO);
+				case REFUSAL -> refusalMappings.add(keyDTO);
+				case REVOCATION -> revocationMappings.add(keyDTO);
+			}
+		}
+
+		result.setMappedConsentTemplates(consentMappings);
+		result.setMappedRefusalTemplates(refusalMappings);
+		result.setMappedRevocationTemplates(revocationMappings);
+
+		return result;
 	}
 
 	@Override

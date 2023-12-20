@@ -2,7 +2,7 @@
  * ###license-information-start###
  * gICS - a Generic Informed Consent Service
  * __
- * Copyright (C) 2014 - 2022 Trusted Third Party of the University Medicine Greifswald -
+ * Copyright (C) 2014 - 2023 Trusted Third Party of the University Medicine Greifswald -
  * 							kontakt-ths@uni-greifswald.de
  * 
  * 							concept and implementation
@@ -15,8 +15,8 @@
  * 							r. schuldt
  * 
  * 							The gICS was developed by the University Medicine Greifswald and published
- *  							in 2014 as part of the research project "MOSAIC" (funded by the DFG HO 1937/2-1).
- *  
+ * 							in 2014 as part of the research project "MOSAIC" (funded by the DFG HO 1937/2-1).
+ * 
  * 							Selected functionalities of gICS were developed as
  * 							part of the following research projects:
  * 							- MAGIC (funded by the DFG HO 1937/5-1)
@@ -24,6 +24,7 @@
  * 							- NUM-CODEX (funded by the German Federal Ministry of Education and Research 01KX2021)
  * 
  * 							please cite our publications
+ * 							https://doi.org/10.1186/s12911-022-02081-4
  * 							https://doi.org/10.1186/s12967-020-02457-y
  * 							http://dx.doi.org/10.3414/ME14-01-0133
  * 							http://dx.doi.org/10.1186/s12967-015-0545-6
@@ -53,7 +54,7 @@
 .ui-selectonebutton .ui-button.ui-state-active, .ui-selectmanybutton .ui-button.ui-state-active,
 .ui-button.ui-state-disabled:hover, .ui-datatable table tbody .ui-state-highlight > td,
 .ui-panelgrid tbody .ui-state-highlight > td, .ui-datepicker-current-day a, .ui-slider .ui-slider-handle.ui-state-focus,
-.ui-tabmenuitem.ui-state-active, .ui-sortable-placeholder, .ui-treenode-content.ui-state-highlight,
+.ui-tabmenuitem.ui-state-active, .ui-tabs-header.ui-state-active, .ui-sortable-placeholder, .ui-treenode-content.ui-state-highlight,
 .ui-selectonemenu[aria-expanded="true"] .ui-selectonemenu-trigger {
 	background-color: #309e59;
 }
@@ -64,8 +65,7 @@ a:hover, a.ui-menuitem-link.active, .ui-state-highlight .ui-button,
 #mobile-menu .toggler:checked ~ .toggler-icon, .help-button i.active, .flag, .ui-chkbox-box .ui-icon-check,
 .ui-datatable.checkbox-select .ui-chkbox-box .ui-icon-check,
 .ui-button.secondary, .ui-button.ui-confirmdialog-no, .ui-fileupload.secondary .ui-button,
-.ui-picklist-buttons .ui-button, .ui-inplace-cancel.ui-button,
-.ui-tabs-header.ui-state-active > a, .ui-treenode-label .tree-cut:hover {
+.ui-picklist-buttons .ui-button, .ui-inplace-editor .ui-button, .ui-treenode-label .tree-cut:hover {
 	color: #309e59;
 }
 
@@ -73,8 +73,7 @@ a:hover, a.ui-menuitem-link.active, .ui-state-highlight .ui-button,
 	border-bottom-color: #309e59 !important;
 }
 
-.ui-growl-item-container, .ui-button, .ui-slider .ui-slider-handle.ui-state-hover, .ui-slider .ui-slider-handle.ui-state-focus
-.ui-tabs-header.ui-state-hover, .ui-tabs-header.ui-state-active {
+.ui-growl-item-container, .ui-button, .ui-slider .ui-slider-handle.ui-state-hover, .ui-slider .ui-slider-handle.ui-state-focus {
 	border-color: #309e59;
 }
 
@@ -82,9 +81,9 @@ a:hover, a.ui-menuitem-link.active, .ui-state-highlight .ui-button,
 .ui-button.ui-state-hover, .ui-button:hover, .ui-button.ui-state-focus, .ui-button:focus,
 .ui-selectonemenu-item.ui-state-highlight, .ui-picklist-item.ui-state-highlight,
 .ui-selectlistbox-item.ui-state-highlight, .ui-autocomplete-item.ui-state-highlight,
-.ui-state-highlight span.ui-steps-number, .ui-tabmenuitem.ui-state-hover .ui-menuitem-link,
+.ui-state-highlight span.ui-steps-number, .ui-tabmenuitem.ui-state-hover .ui-menuitem-link, .ui-tabs-header.ui-state-hover,
 .ui-treenode-content.ui-state-hover, .ui-selectbooleanbutton.ui-button.ui-state-active.ui-state-hover,
-.ui-selectbooleanbutton.ui-button.ui-state-active.ui-state-focus {
+.ui-selectbooleanbutton.ui-button.ui-state-active.ui-state-focus, .ui-datepicker-calendar .ui-state-active {
 	background-color: #37b365;
 }
 

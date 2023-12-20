@@ -1,10 +1,12 @@
 package org.emau.icmvc.ganimed.ttp.cm2.internal;
 
+import static org.apache.commons.lang3.StringUtils.isNotEmpty;
+
 /*-
  * ###license-information-start###
  * gICS - a Generic Informed Consent Service
  * __
- * Copyright (C) 2014 - 2022 Trusted Third Party of the University Medicine Greifswald -
+ * Copyright (C) 2014 - 2023 Trusted Third Party of the University Medicine Greifswald -
  * 							kontakt-ths@uni-greifswald.de
  * 
  * 							concept and implementation
@@ -17,8 +19,8 @@ package org.emau.icmvc.ganimed.ttp.cm2.internal;
  * 							r. schuldt
  * 
  * 							The gICS was developed by the University Medicine Greifswald and published
- *  							in 2014 as part of the research project "MOSAIC" (funded by the DFG HO 1937/2-1).
- *  
+ * 							in 2014 as part of the research project "MOSAIC" (funded by the DFG HO 1937/2-1).
+ * 
  * 							Selected functionalities of gICS were developed as
  * 							part of the following research projects:
  * 							- MAGIC (funded by the DFG HO 1937/5-1)
@@ -26,6 +28,7 @@ package org.emau.icmvc.ganimed.ttp.cm2.internal;
  * 							- NUM-CODEX (funded by the German Federal Ministry of Education and Research 01KX2021)
  * 
  * 							please cite our publications
+ * 							https://doi.org/10.1186/s12911-022-02081-4
  * 							https://doi.org/10.1186/s12967-020-02457-y
  * 							http://dx.doi.org/10.3414/ME14-01-0133
  * 							http://dx.doi.org/10.1186/s12967-015-0545-6
@@ -58,11 +61,9 @@ import org.apache.logging.log4j.Logger;
 import org.emau.icmvc.ganimed.ttp.cm2.config.DomainProperties;
 import org.emau.icmvc.ganimed.ttp.cm2.dto.QCDTO;
 
-import static org.apache.commons.lang3.StringUtils.isNotEmpty;
-
 public class DomainPropertiesObject extends PropertiesObject implements Serializable
 {
-	private static final long serialVersionUID = -2335548458489766137L;
+	private static final long serialVersionUID = 5241079938793824683L;
 	private static final Logger logger = LogManager.getLogger(DomainPropertiesObject.class);
 	private static final int DEFAULT_SCAN_SIZE_LIMIT = 10485760;
 	private final boolean takeHighestVersion;
@@ -77,7 +78,7 @@ public class DomainPropertiesObject extends PropertiesObject implements Serializ
 	private final Set<String> invalidQcTypes = new HashSet<>();
 	private final String defaultQcType;
 
-	public DomainPropertiesObject(String propertiesString)
+	public DomainPropertiesObject(String domainName, String propertiesString)
 	{
 		super(propertiesString);
 		Properties properties = getProperties();
@@ -101,7 +102,7 @@ public class DomainPropertiesObject extends PropertiesObject implements Serializ
 		}
 		catch (NumberFormatException e)
 		{
-			logger.warn("Cannot parse scansSizeLimit " + temp + ". Using default value " + DEFAULT_SCAN_SIZE_LIMIT + " instead.");
+			logger.warn("Cannot parse scansSizeLimit " + temp + " for domain " + domainName + ". Using default value " + DEFAULT_SCAN_SIZE_LIMIT + " instead.");
 		}
 		scansSizeLimit = tempInt;
 		temp = (String) properties.get(DomainProperties.TAKE_MOST_SPECIFIC_PERIOD_OF_VALIDITY_INSTEAD_OF_SHORTEST.toString());
@@ -119,7 +120,7 @@ public class DomainPropertiesObject extends PropertiesObject implements Serializ
 		temp = (String) properties.get(DomainProperties.DEFAULT_QC_TYPE.toString());
 		if (!validQcTypes.contains(temp) && !invalidQcTypes.contains(temp))
 		{
-			logger.warn("default qc type " + temp + " doesn't exist in valid or invalid qc types, setting to " + QCDTO.AUTO_GENERATED);
+			logger.warn("default qc type " + temp + " doesn't exist in valid or invalid qc types for domain " + domainName + ", setting it to " + QCDTO.AUTO_GENERATED);
 			temp = QCDTO.AUTO_GENERATED;
 		}
 		defaultQcType = temp;
@@ -127,7 +128,7 @@ public class DomainPropertiesObject extends PropertiesObject implements Serializ
 		{
 			if (logger.isInfoEnabled())
 			{
-				logger.info(QCDTO.AUTO_GENERATED + " doesn't exist in valid qc types, adding it");
+				logger.info(QCDTO.AUTO_GENERATED + " doesn't exist in valid qc types for domain " + domainName + ", adding it");
 			}
 			validQcTypes.add(QCDTO.AUTO_GENERATED);
 		}
@@ -279,18 +280,26 @@ public class DomainPropertiesObject extends PropertiesObject implements Serializ
 	@Override
 	public String toString()
 	{
-		StringBuilder sb = new StringBuilder("domain properties: ");
-		sb.append(DomainProperties.REVOKE_IS_PERMANENT).append(" = ").append(permanentRevoke).append("; ");
-		sb.append(DomainProperties.TAKE_HIGHEST_VERSION_INSTEAD_OF_NEWEST).append(" = ").append(takeHighestVersion).append("; ");
-		sb.append(DomainProperties.SCANS_ARE_NOT_MANDATORY_FOR_ACCEPTED_CONSENTS).append(" = ").append(noMandatoryScans).append("; ");
-		sb.append(DomainProperties.SEND_NOTIFICATIONS_WEB).append(" = ").append(sendNotificationsWeb).append("; ");
-		sb.append(DomainProperties.STATISTIC_DOCUMENT_DETAILS).append(" = ").append(statisticDocumentDetails).append("; ");
-		sb.append(DomainProperties.STATISTIC_POLICY_DETAILS).append(" = ").append(statisticPolicyDetails).append("; ");
-		sb.append(DomainProperties.SCANS_SIZE_LIMIT).append(" = ").append(scansSizeLimit).append("; ");
-		sb.append(DomainProperties.TAKE_MOST_SPECIFIC_PERIOD_OF_VALIDITY_INSTEAD_OF_SHORTEST).append(" = ").append(takeSpecificValidity).append("; ");
-		sb.append(DomainProperties.VALID_QC_TYPES).append(" = ").append(validQcTypes).append("; ");
-		sb.append(DomainProperties.INVALID_QC_TYPES).append(" = ").append(invalidQcTypes).append("; ");
-		sb.append(DomainProperties.DEFAULT_QC_TYPE).append(" = ").append(defaultQcType);
+		StringBuilder sb = new StringBuilder();
+		sb.append(DomainProperties.REVOKE_IS_PERMANENT).append("=").append(permanentRevoke).append(";");
+		sb.append(DomainProperties.TAKE_HIGHEST_VERSION_INSTEAD_OF_NEWEST).append("=").append(takeHighestVersion).append(";");
+		sb.append(DomainProperties.SCANS_ARE_NOT_MANDATORY_FOR_ACCEPTED_CONSENTS).append("=").append(noMandatoryScans).append(";");
+		sb.append(DomainProperties.SEND_NOTIFICATIONS_WEB).append("=").append(sendNotificationsWeb).append(";");
+		sb.append(DomainProperties.STATISTIC_DOCUMENT_DETAILS).append("=").append(statisticDocumentDetails).append(";");
+		sb.append(DomainProperties.STATISTIC_POLICY_DETAILS).append("=").append(statisticPolicyDetails).append(";");
+		sb.append(DomainProperties.SCANS_SIZE_LIMIT).append("=").append(scansSizeLimit).append(";");
+		sb.append(DomainProperties.TAKE_MOST_SPECIFIC_PERIOD_OF_VALIDITY_INSTEAD_OF_SHORTEST).append("=").append(takeSpecificValidity).append(";");
+		// prevent [ ] in implicit toString
+		if (validQcTypes != null && !validQcTypes.isEmpty())
+		{
+			sb.append(DomainProperties.VALID_QC_TYPES).append("=").append(String.join(",", validQcTypes)).append(";");
+		}
+		// prevent [ ] in implicit toString
+		if (invalidQcTypes != null && !invalidQcTypes.isEmpty())
+		{
+			sb.append(DomainProperties.INVALID_QC_TYPES).append("=").append(String.join(",", invalidQcTypes)).append(";");
+		}
+		sb.append(DomainProperties.DEFAULT_QC_TYPE).append("=").append(defaultQcType);
 		return sb.toString();
 	}
 }

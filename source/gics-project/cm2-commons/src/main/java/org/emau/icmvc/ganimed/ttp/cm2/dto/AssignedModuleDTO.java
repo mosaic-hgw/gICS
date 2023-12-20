@@ -4,9 +4,9 @@ package org.emau.icmvc.ganimed.ttp.cm2.dto;
  * ###license-information-start###
  * gICS - a Generic Informed Consent Service
  * __
- * Copyright (C) 2014 - 2022 Trusted Third Party of the University Medicine Greifswald -
+ * Copyright (C) 2014 - 2023 Trusted Third Party of the University Medicine Greifswald -
  * 							kontakt-ths@uni-greifswald.de
- * 
+ *
  * 							concept and implementation
  * 							l.geidel, c.hampf
  * 							web client
@@ -15,17 +15,18 @@ package org.emau.icmvc.ganimed.ttp.cm2.dto;
  * 							m.bialke
  * 							docker
  * 							r. schuldt
- * 
+ *
  * 							The gICS was developed by the University Medicine Greifswald and published
- *  							in 2014 as part of the research project "MOSAIC" (funded by the DFG HO 1937/2-1).
- *  
+ * 							in 2014 as part of the research project "MOSAIC" (funded by the DFG HO 1937/2-1).
+ *
  * 							Selected functionalities of gICS were developed as
  * 							part of the following research projects:
  * 							- MAGIC (funded by the DFG HO 1937/5-1)
  * 							- MIRACUM (funded by the German Federal Ministry of Education and Research 01ZZ1801M)
  * 							- NUM-CODEX (funded by the German Federal Ministry of Education and Research 01KX2021)
- * 
+ *
  * 							please cite our publications
+ * 							https://doi.org/10.1186/s12911-022-02081-4
  * 							https://doi.org/10.1186/s12967-020-02457-y
  * 							http://dx.doi.org/10.3414/ME14-01-0133
  * 							http://dx.doi.org/10.1186/s12967-015-0545-6
@@ -35,17 +36,18 @@ package org.emau.icmvc.ganimed.ttp.cm2.dto;
  * it under the terms of the GNU Affero General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  * ###license-information-end###
  */
 
+import java.io.Serial;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
@@ -58,18 +60,19 @@ import org.emau.icmvc.ganimed.ttp.cm2.dto.enums.ConsentStatus;
  * @author geidell
  *
  */
-public class AssignedModuleDTO extends FhirIdDTO implements Serializable
+public class AssignedModuleDTO extends FhirIdDTO implements Serializable, DomainRelated
 {
-	private static final long serialVersionUID = -4054297467017230728L;
+	@Serial
+	private static final long serialVersionUID = -4022555365752019842L;
 	private ModuleDTO module;
 	private boolean mandatory;
 	private ConsentStatus defaultConsentStatus;
-	private List<ConsentStatus> displayCheckboxes = new ArrayList<>();
+	private final List<ConsentStatus> displayCheckboxes = new ArrayList<>();
 	private int orderNumber;
 	private ModuleKeyDTO parent;
 	private String comment;
 	private String externProperties;
-	private ExpirationPropertiesDTO expirationProperties;
+	private ExpirationPropertiesDTO expirationProperties = new ExpirationPropertiesDTO();
 
 	public AssignedModuleDTO()
 	{
@@ -79,26 +82,29 @@ public class AssignedModuleDTO extends FhirIdDTO implements Serializable
 	public AssignedModuleDTO(ModuleDTO module, ModuleKeyDTO parent)
 	{
 		super(null);
-		this.module = module;
-		this.parent = parent;
+		setModule(module);
+		setParent(parent);
 	}
 
 	public AssignedModuleDTO(ModuleDTO module, boolean mandatory, ConsentStatus defaultConsentStatus, List<ConsentStatus> displayCheckboxes,
 			int orderNumber, ModuleKeyDTO parent, String comment, String externProperties, ExpirationPropertiesDTO expirationProperties, String fhirID)
 	{
 		super(fhirID);
-		this.module = module;
+		setModule(module);
 		this.mandatory = mandatory;
 		this.defaultConsentStatus = defaultConsentStatus;
-		if (displayCheckboxes != null)
-		{
-			this.displayCheckboxes = displayCheckboxes;
-		}
+		setDisplayCheckboxes(displayCheckboxes);
 		this.orderNumber = orderNumber;
-		this.parent = parent;
+		setParent(parent);
 		this.comment = comment;
 		this.externProperties = externProperties;
-		this.expirationProperties = expirationProperties;
+		setExpirationProperties(expirationProperties);
+	}
+
+	public AssignedModuleDTO(AssignedModuleDTO dto)
+	{
+		this(dto.getModule(), dto.getMandatory(), dto.getDefaultConsentStatus(), dto.getDisplayCheckboxes(),
+				dto.getOrderNumber(), dto.getParent(), dto.getComment(), dto.getExternProperties(), dto.getExpirationProperties(), dto.getFhirID());
 	}
 
 	public ModuleDTO getModule()
@@ -108,7 +114,14 @@ public class AssignedModuleDTO extends FhirIdDTO implements Serializable
 
 	public void setModule(ModuleDTO module)
 	{
-		this.module = module;
+		if (module != null)
+		{
+			this.module = new ModuleDTO(module);
+		}
+		else
+		{
+			this.module = null;
+		}
 	}
 
 	public boolean getMandatory()
@@ -138,9 +151,13 @@ public class AssignedModuleDTO extends FhirIdDTO implements Serializable
 
 	public void setDisplayCheckboxes(List<ConsentStatus> displayCheckboxes)
 	{
-		if (displayCheckboxes != null)
+		if (this.displayCheckboxes != displayCheckboxes)
 		{
-			this.displayCheckboxes = displayCheckboxes;
+			this.displayCheckboxes.clear();
+			if (displayCheckboxes != null)
+			{
+				this.displayCheckboxes.addAll(displayCheckboxes);
+			}
 		}
 	}
 
@@ -161,7 +178,14 @@ public class AssignedModuleDTO extends FhirIdDTO implements Serializable
 
 	public void setParent(ModuleKeyDTO parent)
 	{
-		this.parent = parent;
+		if (parent != null)
+		{
+			this.parent = new ModuleKeyDTO(parent);
+		}
+		else
+		{
+			this.parent = null;
+		}
 	}
 
 	public String getComment()
@@ -191,7 +215,20 @@ public class AssignedModuleDTO extends FhirIdDTO implements Serializable
 
 	public void setExpirationProperties(ExpirationPropertiesDTO expirationProperties)
 	{
-		this.expirationProperties = expirationProperties;
+		if (expirationProperties != null)
+		{
+			this.expirationProperties = new ExpirationPropertiesDTO(expirationProperties);
+		}
+		else
+		{
+			this.expirationProperties = new ExpirationPropertiesDTO();
+		}
+	}
+
+	@Override
+	public String getDomainName()
+	{
+		return getModule().getKey().getDomainName();
 	}
 
 	@Override

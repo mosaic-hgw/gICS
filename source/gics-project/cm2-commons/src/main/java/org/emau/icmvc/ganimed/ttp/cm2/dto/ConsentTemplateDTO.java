@@ -4,9 +4,9 @@ package org.emau.icmvc.ganimed.ttp.cm2.dto;
  * ###license-information-start###
  * gICS - a Generic Informed Consent Service
  * __
- * Copyright (C) 2014 - 2022 Trusted Third Party of the University Medicine Greifswald -
+ * Copyright (C) 2014 - 2023 Trusted Third Party of the University Medicine Greifswald -
  * 							kontakt-ths@uni-greifswald.de
- * 
+ *
  * 							concept and implementation
  * 							l.geidel, c.hampf
  * 							web client
@@ -15,17 +15,18 @@ package org.emau.icmvc.ganimed.ttp.cm2.dto;
  * 							m.bialke
  * 							docker
  * 							r. schuldt
- * 
+ *
  * 							The gICS was developed by the University Medicine Greifswald and published
- *  							in 2014 as part of the research project "MOSAIC" (funded by the DFG HO 1937/2-1).
- *  
+ * 							in 2014 as part of the research project "MOSAIC" (funded by the DFG HO 1937/2-1).
+ *
  * 							Selected functionalities of gICS were developed as
  * 							part of the following research projects:
  * 							- MAGIC (funded by the DFG HO 1937/5-1)
  * 							- MIRACUM (funded by the German Federal Ministry of Education and Research 01ZZ1801M)
  * 							- NUM-CODEX (funded by the German Federal Ministry of Education and Research 01KX2021)
- * 
+ *
  * 							please cite our publications
+ * 							https://doi.org/10.1186/s12911-022-02081-4
  * 							https://doi.org/10.1186/s12967-020-02457-y
  * 							http://dx.doi.org/10.3414/ME14-01-0133
  * 							http://dx.doi.org/10.1186/s12967-015-0545-6
@@ -35,18 +36,20 @@ package org.emau.icmvc.ganimed.ttp.cm2.dto;
  * it under the terms of the GNU Affero General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  * ###license-information-end###
  */
 
+import java.io.Serial;
 import java.io.Serializable;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -63,12 +66,13 @@ import org.emau.icmvc.ganimed.ttp.cm2.dto.enums.ConsentTemplateType;
  * @author geidell
  *
  */
-public class ConsentTemplateDTO extends FhirIdDTO implements Serializable
+public class ConsentTemplateDTO extends FhirIdDTO implements Serializable, DomainRelated
 {
-	private static final long serialVersionUID = -5766360977586667279L;
+	@Serial
+	private static final long serialVersionUID = 3799101600837986225L;
 	private ConsentTemplateKeyDTO key;
 	private String title;
-	private ExpirationPropertiesDTO expirationProperties;
+	private ExpirationPropertiesDTO expirationProperties = new ExpirationPropertiesDTO();
 	private String comment;
 	private String externProperties;
 	private ConsentTemplateType type;
@@ -76,35 +80,48 @@ public class ConsentTemplateDTO extends FhirIdDTO implements Serializable
 	private String footer;
 	private String scanBase64;
 	private String scanFileType;
-	private Set<AssignedModuleDTO> assignedModules = new HashSet<>();
-	private Set<FreeTextDefDTO> freeTextDefs = new HashSet<>();
+	private final Set<AssignedModuleDTO> assignedModules = new HashSet<>();
+	private final Set<FreeTextDefDTO> freeTextDefs = new HashSet<>();
 	private ConsentTemplateStructureDTO structure = new ConsentTemplateStructureDTO();
 	private Date creationDate;
 	private Date updateDate;
 	private String label;
 	private String versionLabel;
-	private boolean finalised;
+	private boolean finalised = false;
+	private final Set<ConsentTemplateKeyDTO> mappedConsentTemplates = new HashSet<>();
+	private final Set<ConsentTemplateKeyDTO> mappedRevocationTemplates = new HashSet<>();
+	private final Set<ConsentTemplateKeyDTO> mappedRefusalTemplates = new HashSet<>();
 
 	public ConsentTemplateDTO()
 	{
 		super(null);
-		finalised = false;
+	}
+
+	public ConsentTemplateDTO(ConsentTemplateDTO dto)
+	{
+		this(dto.getKey(), dto.getTitle(), dto.getExpirationProperties(), dto.getComment(), dto.getExternProperties(),
+				dto.getType(), dto.getHeader(), dto.getFooter(), dto.getScanBase64(), dto.getScanFileType(), dto.getAssignedModules(),
+				dto.getFreeTextDefs(), dto.getLabel(), dto.getVersionLabel(), dto.getFinalised(),
+				dto.getCreationDate(), dto.getUpdateDate(), dto.getFhirID(), dto.getStructure(),
+				dto.getMappedConsentTemplates(), dto.getMappedRevocationTemplates(), dto.getMappedRefusalTemplates());
 	}
 
 	public ConsentTemplateDTO(ConsentTemplateKeyDTO key)
 	{
 		super(null);
-		this.key = key;
+		setKey(key);
 	}
 
-	public ConsentTemplateDTO(ConsentTemplateKeyDTO key, String title, ExpirationPropertiesDTO expirationProperties, String comment, String externProperties,
-			ConsentTemplateType type, String header, String footer, String scanBase64, String scanFileType, Set<AssignedModuleDTO> assignedModules,
-			Set<FreeTextDefDTO> freeTextDefs, String label, String versionLabel, boolean finalised, Date creationDate, Date updateDate, String fhirID)
+	public ConsentTemplateDTO(ConsentTemplateKeyDTO key, String title, ExpirationPropertiesDTO expirationProperties, String comment,
+			String externProperties, ConsentTemplateType type, String header, String footer, String scanBase64, String scanFileType,
+			Set<AssignedModuleDTO> assignedModules, Set<FreeTextDefDTO> freeTextDefs, String label, String versionLabel,
+			boolean finalised, Date creationDate, Date updateDate, String fhirID, ConsentTemplateStructureDTO structure,
+			Set<ConsentTemplateKeyDTO> mappedConsentTemplates, Set<ConsentTemplateKeyDTO> mappedRevocationTemplates, Set<ConsentTemplateKeyDTO> mappedRefusalTemplates)
 	{
 		super(fhirID);
-		this.key = key;
+		setKey(key);
 		this.title = title;
-		this.expirationProperties = expirationProperties;
+		setExpirationProperties(expirationProperties);
 		this.comment = comment;
 		this.externProperties = externProperties;
 		this.type = type;
@@ -112,13 +129,17 @@ public class ConsentTemplateDTO extends FhirIdDTO implements Serializable
 		this.footer = footer;
 		this.scanBase64 = scanBase64;
 		this.scanFileType = scanFileType;
-		this.assignedModules = assignedModules;
-		this.freeTextDefs = freeTextDefs;
+		setAssignedModules(assignedModules);
+		setFreeTextDefs(freeTextDefs);
 		this.label = label;
 		this.versionLabel = versionLabel;
 		this.finalised = finalised;
-		this.creationDate = creationDate;
-		this.updateDate = updateDate;
+		setCreationDate(creationDate);
+		setUpdateDate(updateDate);
+		setStructure(structure);
+		setMappedConsentTemplates(mappedConsentTemplates);
+		setMappedRevocationTemplates(mappedRevocationTemplates);
+		setMappedRefusalTemplates(mappedRefusalTemplates);
 	}
 
 	public ConsentTemplateKeyDTO getKey()
@@ -130,7 +151,11 @@ public class ConsentTemplateDTO extends FhirIdDTO implements Serializable
 	{
 		if (key != null)
 		{
-			this.key = key;
+			this.key = new ConsentTemplateKeyDTO(key);
+		}
+		else
+		{
+			this.key = null;
 		}
 	}
 
@@ -151,7 +176,14 @@ public class ConsentTemplateDTO extends FhirIdDTO implements Serializable
 
 	public void setExpirationProperties(ExpirationPropertiesDTO expirationProperties)
 	{
-		this.expirationProperties = expirationProperties;
+		if (expirationProperties != null)
+		{
+			this.expirationProperties = new ExpirationPropertiesDTO(expirationProperties);
+		}
+		else
+		{
+			this.expirationProperties = new ExpirationPropertiesDTO();
+		}
 	}
 
 	public String getComment()
@@ -231,9 +263,16 @@ public class ConsentTemplateDTO extends FhirIdDTO implements Serializable
 
 	public void setAssignedModules(Set<AssignedModuleDTO> assignedModules)
 	{
-		if (assignedModules != null)
+		if (this.assignedModules != assignedModules)
 		{
-			this.assignedModules = assignedModules;
+			this.assignedModules.clear();
+			if (assignedModules != null)
+			{
+				for (AssignedModuleDTO dto : assignedModules)
+				{
+					this.assignedModules.add(new AssignedModuleDTO(dto));
+				}
+			}
 		}
 	}
 
@@ -244,9 +283,16 @@ public class ConsentTemplateDTO extends FhirIdDTO implements Serializable
 
 	public void setFreeTextDefs(Set<FreeTextDefDTO> freeTextDefs)
 	{
-		if (freeTextDefs != null)
+		if (this.freeTextDefs != freeTextDefs)
 		{
-			this.freeTextDefs = freeTextDefs;
+			this.freeTextDefs.clear();
+			if (freeTextDefs != null)
+			{
+				for (FreeTextDefDTO dto : freeTextDefs)
+				{
+					this.freeTextDefs.add(new FreeTextDefDTO(dto));
+				}
+			}
 		}
 	}
 
@@ -259,7 +305,11 @@ public class ConsentTemplateDTO extends FhirIdDTO implements Serializable
 	{
 		if (structure != null)
 		{
-			this.structure = structure;
+			this.structure = new ConsentTemplateStructureDTO(structure);
+		}
+		else
+		{
+			this.structure = null;
 		}
 	}
 
@@ -270,7 +320,14 @@ public class ConsentTemplateDTO extends FhirIdDTO implements Serializable
 
 	public void setCreationDate(Date creationDate)
 	{
-		this.creationDate = creationDate;
+		if (creationDate != null)
+		{
+			this.creationDate = new Date(creationDate.getTime());
+		}
+		else
+		{
+			this.creationDate = null;
+		}
 	}
 
 	public Date getUpdateDate()
@@ -280,7 +337,14 @@ public class ConsentTemplateDTO extends FhirIdDTO implements Serializable
 
 	public void setUpdateDate(Date updateDate)
 	{
-		this.updateDate = updateDate;
+		if (updateDate != null)
+		{
+			this.updateDate = new Date(updateDate.getTime());
+		}
+		else
+		{
+			this.updateDate = null;
+		}
 	}
 
 	public String getLabel()
@@ -291,6 +355,11 @@ public class ConsentTemplateDTO extends FhirIdDTO implements Serializable
 	public void setLabel(String label)
 	{
 		this.label = label;
+	}
+
+	public String getLabelOrName()
+	{
+		return StringUtils.isNotEmpty(label) ? label : key.getName();
 	}
 
 	public String getVersionLabel()
@@ -334,11 +403,98 @@ public class ConsentTemplateDTO extends FhirIdDTO implements Serializable
 	}
 
 	@Override
+	public String getDomainName()
+	{
+		return getKey().getDomainName();
+	}
+
+	public Set<ConsentTemplateKeyDTO> getMappedConsentTemplates()
+	{
+		return mappedConsentTemplates;
+	}
+
+	public void setMappedConsentTemplates(Set<ConsentTemplateKeyDTO> mappedConsentTemplates)
+	{
+		this.mappedConsentTemplates.clear();
+		if (mappedConsentTemplates != null)
+		{
+			for (ConsentTemplateKeyDTO key : mappedConsentTemplates)
+			{
+				this.mappedConsentTemplates.add(new ConsentTemplateKeyDTO(key));
+			}
+		}
+	}
+
+	public Set<ConsentTemplateKeyDTO> getMappedRevocationTemplates()
+	{
+		return mappedRevocationTemplates;
+	}
+
+	public void setMappedRevocationTemplates(Set<ConsentTemplateKeyDTO> mappedRevocationTemplates)
+	{
+		this.mappedRevocationTemplates.clear();
+		if (mappedRevocationTemplates != null)
+		{
+			for (ConsentTemplateKeyDTO key : mappedRevocationTemplates)
+			{
+				this.mappedRevocationTemplates.add(new ConsentTemplateKeyDTO(key));
+			}
+		}
+	}
+
+	public Set<ConsentTemplateKeyDTO> getMappedRefusalTemplates()
+	{
+		return mappedRefusalTemplates;
+	}
+
+	public void setMappedRefusalTemplates(Set<ConsentTemplateKeyDTO> mappedRefusalTemplates)
+	{
+		this.mappedRefusalTemplates.clear();
+		if (mappedRefusalTemplates != null)
+		{
+			for (ConsentTemplateKeyDTO key : mappedRefusalTemplates)
+			{
+				this.mappedRefusalTemplates.add(new ConsentTemplateKeyDTO(key));
+			}
+		}
+	}
+
+	public Set<ConsentTemplateKeyDTO> getMappedTemplates(ConsentTemplateType type)
+	{
+		return switch (type)
+		{
+			case CONSENT -> getMappedConsentTemplates();
+			case REVOCATION -> getMappedRevocationTemplates();
+			case REFUSAL -> getMappedRefusalTemplates();
+		};
+	}
+
+	public void setMappedTemplates(ConsentTemplateType type, Set<ConsentTemplateKeyDTO> mappedTemplates)
+	{
+		switch (type)
+		{
+			case CONSENT -> setMappedConsentTemplates(mappedTemplates);
+			case REVOCATION -> setMappedRevocationTemplates(mappedTemplates);
+			case REFUSAL -> setMappedRefusalTemplates(mappedTemplates);
+		}
+	}
+
+	public Set<ConsentTemplateKeyDTO> getAllMappedTemplates()
+	{
+		Set<ConsentTemplateKeyDTO> mappedTemplates = new HashSet<>();
+		Arrays.stream(ConsentTemplateType.values()).forEach(t -> mappedTemplates.addAll(getMappedTemplates(t)));
+		return mappedTemplates;
+	}
+
+	@Override
 	public int hashCode()
 	{
 		final int prime = 31;
 		int result = super.hashCode();
-		result = prime * result + (assignedModules == null ? 0 : assignedModules.hashCode());
+		result = prime * result + assignedModules.hashCode();
+		result = prime * result + mappedConsentTemplates.hashCode();
+		result = prime * result + mappedRevocationTemplates.hashCode();
+		result = prime * result + mappedRefusalTemplates.hashCode();
 		result = prime * result + (comment == null ? 0 : comment.hashCode());
 		result = prime * result + (creationDate == null ? 0 : creationDate.hashCode());
 		result = prime * result + (expirationProperties == null ? 0 : expirationProperties.hashCode());
@@ -375,14 +531,19 @@ public class ConsentTemplateDTO extends FhirIdDTO implements Serializable
 			return false;
 		}
 		ConsentTemplateDTO other = (ConsentTemplateDTO) obj;
-		if (assignedModules == null)
+		if (!assignedModules.equals(other.assignedModules))
 		{
-			if (other.assignedModules != null)
-			{
-				return false;
-			}
+			return false;
 		}
-		else if (!assignedModules.equals(other.assignedModules))
+		if (!mappedConsentTemplates.equals(other.mappedConsentTemplates))
+		{
+			return false;
+		}
+		if (!mappedRevocationTemplates.equals(other.mappedRevocationTemplates))
+		{
+			return false;
+		}
+		if (!mappedRefusalTemplates.equals(other.mappedRefusalTemplates))
 		{
 			return false;
 		}
@@ -793,9 +954,15 @@ public class ConsentTemplateDTO extends FhirIdDTO implements Serializable
 		sb.append(expirationProperties);
 		sb.append("', ");
 		sb.append(assignedModules.size());
-		sb.append(" modules and ");
+		sb.append(" assigned modules, ");
 		sb.append(freeTextDefs.size());
-		sb.append(" free text fields");
+		sb.append(" free text fields, ");
+		sb.append(mappedConsentTemplates.size());
+		sb.append(" mapped consent templates, ");
+		sb.append(mappedRevocationTemplates.size());
+		sb.append(" mapped consent templates, ");
+		sb.append(mappedRefusalTemplates.size());
+		sb.append(" mapped refusal templates, ");
 		sb.append(" created at ");
 		sb.append(creationDate);
 		sb.append(" last update at ");

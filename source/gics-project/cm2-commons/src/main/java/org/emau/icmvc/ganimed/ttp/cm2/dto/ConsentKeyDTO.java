@@ -4,9 +4,9 @@ package org.emau.icmvc.ganimed.ttp.cm2.dto;
  * ###license-information-start###
  * gICS - a Generic Informed Consent Service
  * __
- * Copyright (C) 2014 - 2022 Trusted Third Party of the University Medicine Greifswald -
+ * Copyright (C) 2014 - 2023 Trusted Third Party of the University Medicine Greifswald -
  * 							kontakt-ths@uni-greifswald.de
- * 
+ *
  * 							concept and implementation
  * 							l.geidel, c.hampf
  * 							web client
@@ -15,17 +15,18 @@ package org.emau.icmvc.ganimed.ttp.cm2.dto;
  * 							m.bialke
  * 							docker
  * 							r. schuldt
- * 
+ *
  * 							The gICS was developed by the University Medicine Greifswald and published
- *  							in 2014 as part of the research project "MOSAIC" (funded by the DFG HO 1937/2-1).
- *  
+ * 							in 2014 as part of the research project "MOSAIC" (funded by the DFG HO 1937/2-1).
+ *
  * 							Selected functionalities of gICS were developed as
  * 							part of the following research projects:
  * 							- MAGIC (funded by the DFG HO 1937/5-1)
  * 							- MIRACUM (funded by the German Federal Ministry of Education and Research 01ZZ1801M)
  * 							- NUM-CODEX (funded by the German Federal Ministry of Education and Research 01KX2021)
- * 
+ *
  * 							please cite our publications
+ * 							https://doi.org/10.1186/s12911-022-02081-4
  * 							https://doi.org/10.1186/s12967-020-02457-y
  * 							http://dx.doi.org/10.3414/ME14-01-0133
  * 							http://dx.doi.org/10.1186/s12967-015-0545-6
@@ -35,17 +36,18 @@ package org.emau.icmvc.ganimed.ttp.cm2.dto;
  * it under the terms of the GNU Affero General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  * ###license-information-end###
  */
 
+import java.io.Serial;
 import java.io.Serializable;
 import java.util.Date;
 import java.util.HashSet;
@@ -59,11 +61,12 @@ import java.util.stream.Collectors;
  * @author geidell
  *
  */
-public class ConsentKeyDTO implements Serializable
+public class ConsentKeyDTO implements Serializable, DomainRelated
 {
-	private static final long serialVersionUID = 3488915902092845220L;
+	@Serial
+	private static final long serialVersionUID = 5573761553883016998L;
 	private ConsentTemplateKeyDTO consentTemplateKey;
-	private Set<SignerIdDTO> signerIds = new HashSet<>();
+	private final Set<SignerIdDTO> signerIds = new HashSet<>();
 	private Date consentDate;
 
 	public ConsentKeyDTO()
@@ -72,12 +75,14 @@ public class ConsentKeyDTO implements Serializable
 	public ConsentKeyDTO(ConsentTemplateKeyDTO consentTemplateKey, Set<SignerIdDTO> signerIds, Date consentDate)
 	{
 		super();
-		this.consentTemplateKey = consentTemplateKey;
-		if (signerIds != null)
-		{
-			this.signerIds = signerIds;
-		}
-		this.consentDate = consentDate;
+		setConsentTemplateKey(consentTemplateKey);
+		setSignerIds(signerIds);
+		setConsentDate(consentDate);
+	}
+
+	public ConsentKeyDTO(ConsentKeyDTO dto)
+	{
+		this(dto.getConsentTemplateKey(), dto.getSignerIds(), dto.getConsentDate());
 	}
 
 	public ConsentTemplateKeyDTO getConsentTemplateKey()
@@ -87,7 +92,14 @@ public class ConsentKeyDTO implements Serializable
 
 	public void setConsentTemplateKey(ConsentTemplateKeyDTO consentTemplateKey)
 	{
-		this.consentTemplateKey = consentTemplateKey;
+		if (consentTemplateKey != null)
+		{
+			this.consentTemplateKey = new ConsentTemplateKeyDTO(consentTemplateKey);
+		}
+		else
+		{
+			this.consentTemplateKey = null;
+		}
 	}
 
 	public Set<SignerIdDTO> getSignerIds()
@@ -97,9 +109,16 @@ public class ConsentKeyDTO implements Serializable
 
 	public void setSignerIds(Set<SignerIdDTO> signerIds)
 	{
-		if (signerIds != null)
+		if (this.signerIds != signerIds)
 		{
-			this.signerIds = signerIds;
+			this.signerIds.clear();
+			if (signerIds != null)
+			{
+				for (SignerIdDTO signerId : signerIds)
+				{
+					this.signerIds.add(new SignerIdDTO(signerId));
+				}
+			}
 		}
 	}
 
@@ -120,7 +139,20 @@ public class ConsentKeyDTO implements Serializable
 
 	public void setConsentDate(Date consentDate)
 	{
-		this.consentDate = consentDate;
+		if (consentDate != null)
+		{
+			this.consentDate = new Date(consentDate.getTime());
+		}
+		else
+		{
+			this.consentDate = null;
+		}
+	}
+
+	@Override
+	public String getDomainName()
+	{
+		return getConsentTemplateKey().getDomainName();
 	}
 
 	@Override

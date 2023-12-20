@@ -4,9 +4,9 @@ package org.emau.icmvc.ganimed.ttp.cm2.frontend.controller;
  * ###license-information-start###
  * gICS - a Generic Informed Consent Service
  * __
- * Copyright (C) 2014 - 2022 Trusted Third Party of the University Medicine Greifswald -
+ * Copyright (C) 2014 - 2023 Trusted Third Party of the University Medicine Greifswald -
  * 							kontakt-ths@uni-greifswald.de
- * 
+ *
  * 							concept and implementation
  * 							l.geidel, c.hampf
  * 							web client
@@ -15,17 +15,18 @@ package org.emau.icmvc.ganimed.ttp.cm2.frontend.controller;
  * 							m.bialke
  * 							docker
  * 							r. schuldt
- * 
+ *
  * 							The gICS was developed by the University Medicine Greifswald and published
- *  							in 2014 as part of the research project "MOSAIC" (funded by the DFG HO 1937/2-1).
- *  
+ * 							in 2014 as part of the research project "MOSAIC" (funded by the DFG HO 1937/2-1).
+ *
  * 							Selected functionalities of gICS were developed as
  * 							part of the following research projects:
  * 							- MAGIC (funded by the DFG HO 1937/5-1)
  * 							- MIRACUM (funded by the German Federal Ministry of Education and Research 01ZZ1801M)
  * 							- NUM-CODEX (funded by the German Federal Ministry of Education and Research 01KX2021)
- * 
+ *
  * 							please cite our publications
+ * 							https://doi.org/10.1186/s12911-022-02081-4
  * 							https://doi.org/10.1186/s12967-020-02457-y
  * 							http://dx.doi.org/10.3414/ME14-01-0133
  * 							http://dx.doi.org/10.1186/s12967-015-0545-6
@@ -35,17 +36,19 @@ package org.emau.icmvc.ganimed.ttp.cm2.frontend.controller;
  * it under the terms of the GNU Affero General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  * ###license-information-end###
  */
 
+import java.time.LocalDate;
+import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -69,16 +72,19 @@ import org.emau.icmvc.ganimed.ttp.cm2.dto.ConsentTemplateDTO;
 import org.emau.icmvc.ganimed.ttp.cm2.dto.PolicyDTO;
 import org.emau.icmvc.ganimed.ttp.cm2.dto.StatisticDTO;
 import org.emau.icmvc.ganimed.ttp.cm2.dto.enums.ConsentStatusType;
+import org.emau.icmvc.ganimed.ttp.cm2.exceptions.InvalidParameterException;
 import org.emau.icmvc.ganimed.ttp.cm2.exceptions.InvalidVersionException;
 import org.emau.icmvc.ganimed.ttp.cm2.exceptions.StatisticException;
 import org.emau.icmvc.ganimed.ttp.cm2.exceptions.UnknownDomainException;
 import org.emau.icmvc.ganimed.ttp.cm2.frontend.controller.common.AbstractGICSBean;
 import org.emau.icmvc.ganimed.ttp.cm2.frontend.model.StatisticPolicy;
 import org.emau.icmvc.ganimed.ttp.cm2.util.StatisticKeys;
+import org.emau.icmvc.ttp.auth.TTPNames.Tool;
 import org.icmvc.ttp.web.controller.ThemeBean;
 import org.icmvc.ttp.web.util.Chart;
 import org.icmvc.ttp.web.util.File;
 import org.primefaces.model.StreamedContent;
+import org.primefaces.model.charts.bar.BarChartModel;
 import org.primefaces.model.charts.line.LineChartModel;
 import org.primefaces.model.charts.pie.PieChartModel;
 
@@ -87,6 +93,7 @@ import org.primefaces.model.charts.pie.PieChartModel;
 public class DashboardController extends AbstractGICSBean
 {
 	@EJB(lookup = "java:global/gics/cm2-ejb/StatisticManagerBean!org.emau.icmvc.ganimed.ttp.cm2.StatisticManager")
+	private StatisticManager statisticServiceTarget;
 	private StatisticManager statisticService;
 
 	@ManagedProperty(value = "#{themeBean}")
@@ -100,6 +107,8 @@ public class DashboardController extends AbstractGICSBean
 	private List<String> invalidQcTypes;
 	private StatisticDTO latestStats;
 	private long allDocuments = 0L;
+	private Chart.BarScale documentsBarScale = Chart.BarScale.MONTHS_12;
+	private Chart.BarScale qcBarScale = Chart.BarScale.MONTHS_12;
 
 	private boolean includeUnknownPolicyStatus = false;
 
@@ -110,6 +119,15 @@ public class DashboardController extends AbstractGICSBean
 	@PostConstruct
 	public void init()
 	{
+		if (getWebAuthContext().isUsingDomainBasedRolesDisabled(Tool.gics))
+		{
+			statisticService = statisticServiceTarget;
+		}
+		else
+		{
+			statisticService = getWebAuthContext().createUpdateAuthContextProxy(statisticServiceTarget, StatisticManager.class);
+		}
+
 		loadStats();
 		if (getInit())
 		{
@@ -143,7 +161,7 @@ public class DashboardController extends AbstractGICSBean
 		if (extended)
 		{
 			result.put(StatisticKeys.MODULES_WITHOUT_VERSIONS, getBundle().getString("module.modulesWithoutVersions"));
-//			result.put(StatisticKeys.SIGNED_POLICIES, getBundle().getString("page.dashboard.policies.signed"));
+			// result.put(StatisticKeys.SIGNED_POLICIES, getBundle().getString("page.dashboard.policies.signed"));
 		}
 		result.put(StatisticKeys.POLICIES, getBundle().getString("policy.policies"));
 		if (extended)
@@ -153,7 +171,7 @@ public class DashboardController extends AbstractGICSBean
 		}
 		return result;
 	}
-	
+
 	public Map<String, String> getLatestStatsActiveDomainLabels(boolean extended)
 	{
 		Map<String, String> result = new LinkedHashMap<>();
@@ -165,13 +183,14 @@ public class DashboardController extends AbstractGICSBean
 		if (extended)
 		{
 			result.put(new StatisticKeys(StatisticKeys.MODULES_WITHOUT_VERSIONS).perDomain(getSelectedDomain().getName()).build(), getBundle().getString("module.modulesWithoutVersions"));
-//			result.put(new StatisticKeys(StatisticKeys.SIGNED_POLICIES).perDomain(getSelectedDomain().getName()).build(), getBundle().getString("page.dashboard.policies.signed"));
+			// result.put(new StatisticKeys(StatisticKeys.SIGNED_POLICIES).perDomain(getSelectedDomain().getName()).build(), getBundle().getString("page.dashboard.policies.signed"));
 		}
 		result.put(new StatisticKeys(StatisticKeys.POLICIES).perDomain(getSelectedDomain().getName()).build(), getBundle().getString("policy.policies"));
 		if (extended)
 		{
 			result.put(new StatisticKeys(StatisticKeys.DOCUMENTS_WITH_SCANS).perDomain(getSelectedDomain().getName()).build(), getBundle().getString("page.dashboard.documents.details.withScan"));
-			result.put(new StatisticKeys(StatisticKeys.DOCUMENTS_WITH_DIGITAL_PATIENTSIGNATURE).perDomain(getSelectedDomain().getName()).build(), getBundle().getString("page.dashboard.documents.details.withDigitalSignature"));
+			result.put(new StatisticKeys(StatisticKeys.DOCUMENTS_WITH_DIGITAL_PATIENTSIGNATURE).perDomain(getSelectedDomain().getName()).build(),
+					getBundle().getString("page.dashboard.documents.details.withDigitalSignature"));
 		}
 		return result;
 	}
@@ -182,7 +201,6 @@ public class DashboardController extends AbstractGICSBean
 		List<Number> values = new ArrayList<>();
 		List<String> labels = new ArrayList<>();
 		List<String> colors = new ArrayList<>();
-		PieChartModel pieChartModel = Chart.initPieChart(values, labels, colors, mobile ? "top" : "left", themeBean.getDarkMode());
 
 		values.add(latestStats.getMappedStatValue().get(new StatisticKeys(StatisticKeys.CONSENTS).perDomain(getSelectedDomain().getName()).build()));
 		values.add(latestStats.getMappedStatValue().get(new StatisticKeys(StatisticKeys.REVOCATIONS).perDomain(getSelectedDomain().getName()).build()));
@@ -194,7 +212,7 @@ public class DashboardController extends AbstractGICSBean
 		colors.add(REVOCATION_COLOR);
 		colors.add(REFUSAL_COLOR);
 
-		return pieChartModel;
+		return Chart.initPieChart(values, labels, colors, mobile ? "top" : "left", themeBean.getDarkMode());
 	}
 
 	public PieChartModel getQcChart(boolean mobile)
@@ -202,7 +220,6 @@ public class DashboardController extends AbstractGICSBean
 		List<Number> values = new ArrayList<>();
 		List<String> labels = new ArrayList<>();
 		List<String> colors = new ArrayList<>();
-		PieChartModel pieChartModel = Chart.initPieChart(values, labels, colors, mobile ? "top" : "left", themeBean.getDarkMode());
 
 		for (String type : Stream.concat(validQcTypes.stream(), invalidQcTypes.stream()).collect(Collectors.toList()))
 		{
@@ -212,7 +229,7 @@ public class DashboardController extends AbstractGICSBean
 			colors.add(qcColors.get(type));
 		}
 
-		return pieChartModel;
+		return Chart.initPieChart(values, labels, colors, mobile ? "top" : "left", themeBean.getDarkMode());
 	}
 
 	/* Percentage bars */
@@ -261,7 +278,7 @@ public class DashboardController extends AbstractGICSBean
 		}
 
 		return result.entrySet().stream()
-				.sorted(Map.Entry.<ConsentTemplateDTO, Long>comparingByValue().reversed())
+				.sorted(Map.Entry.<ConsentTemplateDTO, Long> comparingByValue().reversed())
 				.collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, (e1, e2) -> e1, LinkedHashMap::new));
 	}
 
@@ -273,16 +290,8 @@ public class DashboardController extends AbstractGICSBean
 		List<Object> revocationsValues = new ArrayList<>();
 		List<Object> refusalsValues = new ArrayList<>();
 		List<String> dataLabels = new ArrayList<>();
-		List<String> dataSetLabels = new ArrayList<>(Arrays.asList(
-				getBundle().getString("consent.title.type_ALL"),
-				getBundle().getString("consent.title.type_CONSENT"),
-				getBundle().getString("consent.title.type_REVOCATION"),
-				getBundle().getString("consent.title.type_REFUSAL")));
-		List<String> dataSetColors = new ArrayList<>(Arrays.asList(
-				"#7A7A7A",
-				CONSENT_COLOR,
-				REVOCATION_COLOR,
-				REFUSAL_COLOR));
+		List<String> dataSetLabels = getDocumentLabels(true);
+		List<String> dataSetColors = getDocumentColors(true);
 
 		List<List<Object>> valuesLists = new ArrayList<>();
 		valuesLists.add(allDocumentsValues);
@@ -339,6 +348,183 @@ public class DashboardController extends AbstractGICSBean
 		return qcTypeHistoryChart;
 	}
 
+	/* Documents monthly increase bar chart */
+	public BarChartModel getDocumentsMonthChart()
+	{
+		List<String> dataSetLabels = getDocumentLabels(false);
+		List<String> dataSetColors = getDocumentColors(false);
+		List<String> dataSetTypes = getDocumentTypes(false);
+
+		return getMonthChart(dataSetLabels, dataSetColors, dataSetTypes, BarStatType.DOCUMENTS);
+	}
+
+	/* Documents yearly increase bar chart */
+	public BarChartModel getDocumentsYearChart()
+	{
+		List<String> dataSetLabels = getDocumentLabels(false);
+		List<String> dataSetColors = getDocumentColors(false);
+		List<String> dataSetTypes = getDocumentTypes(false);
+
+		return getYearChart(dataSetLabels, dataSetColors, dataSetTypes, BarStatType.DOCUMENTS);
+	}
+
+	/* QC monthly change bar chart */
+	public BarChartModel getQcMonthChart()
+	{
+		List<String> dataSetLabels = getQcLabels();
+		List<String> dataSetColors = getQcColors();
+		List<String> dataSetTypes = getQcTypes();
+
+		return getMonthChart(dataSetLabels, dataSetColors, dataSetTypes, BarStatType.QC);
+	}
+
+	/* QC yearly change bar chart */
+	public BarChartModel getQcYearChart()
+	{
+		List<String> dataSetLabels = getQcLabels();
+		List<String> dataSetColors = getQcColors();
+		List<String> dataSetTypes = getQcTypes();
+
+		return getYearChart(dataSetLabels, dataSetColors, dataSetTypes, BarStatType.QC);
+	}
+
+	public BarChartModel getMonthChart(List<String> dataSetLabels, List<String> dataSetColors, List<String> dataSetTypes, BarStatType barStatType)
+	{
+		List<String> dataLabels = new ArrayList<>();
+
+		Map<String, List<Number>> allValues = new LinkedHashMap<>();
+		Map<String, Long> previousValues = new LinkedHashMap<>();
+		Map<String, Long> currentValues = new LinkedHashMap<>();
+
+		for (String type : dataSetTypes)
+		{
+			allValues.put(type, new ArrayList<>());
+			previousValues.put(type, 0L);
+			currentValues.put(type, 0L);
+		}
+
+		BarChartModel barChart = Chart.initVerticalBarChart(allValues.values().stream().toList(), dataSetLabels, dataSetColors, dataLabels, false, themeBean.getDarkMode());
+
+		// get current month + year
+		LocalDate today = LocalDate.now();
+
+		// year*12 + month = currentMonth
+		int todayYearMonth = today.getYear() * 12 + today.getMonthValue();
+
+		// for all 12 previous months + year
+		for (int yearMonth = todayYearMonth - 12; yearMonth < todayYearMonth; yearMonth++)
+		{
+			// month and year
+			int year = yearMonth / 12;
+			int month = yearMonth % 12 + 1;
+
+			// get stats of the month
+			List<StatisticDTO> monthStats = historyStats.stream().filter(s -> s.getEntrydate().toInstant().atZone(ZoneId.systemDefault()).toLocalDate().getYear() == year
+					&& s.getEntrydate().toInstant().atZone(ZoneId.systemDefault()).toLocalDate().getMonthValue() == month).toList();
+
+			// get last stat of the month if any stats for the month exist
+			StatisticDTO stat = null;
+			if (!monthStats.isEmpty())
+			{
+				stat = monthStats.get(monthStats.size() - 1);
+			}
+
+			if (stat != null)
+			{
+				for (String type : dataSetTypes)
+				{
+					if (BarStatType.DOCUMENTS.equals(barStatType))
+					{
+						currentValues.put(type, stat.getMappedStatValue().getOrDefault(new StatisticKeys(type).perDomain(getSelectedDomain().getName()).build(), 0L));
+					}
+					else if (BarStatType.QC.equals(barStatType))
+					{
+						currentValues.put(type, stat.getMappedStatValue().getOrDefault(new StatisticKeys(StatisticKeys.QC).perDomain(getSelectedDomain().getName()).perQcType(type).build(), 0L));
+					}
+					allValues.get(type).add(currentValues.get(type) - previousValues.get(type));
+					previousValues.put(type, currentValues.get(type));
+				}
+			}
+			else
+			{
+				for (String type : dataSetTypes)
+				{
+					allValues.get(type).add(0L);
+				}
+			}
+			dataLabels.add(year + "-" + month);
+		}
+		return barChart;
+	}
+
+	public BarChartModel getYearChart(List<String> dataSetLabels, List<String> dataSetColors, List<String> dataSetTypes, BarStatType barStatType)
+	{
+		List<String> dataLabels = new ArrayList<>();
+
+		Map<String, List<Number>> allValues = new LinkedHashMap<>();
+		Map<String, Long> previousValues = new LinkedHashMap<>();
+		Map<String, Long> currentValues = new LinkedHashMap<>();
+
+		for (String type : dataSetTypes)
+		{
+			allValues.put(type, new ArrayList<>());
+			previousValues.put(type, 0L);
+			currentValues.put(type, 0L);
+		}
+
+		BarChartModel barChart = Chart.initVerticalBarChart(allValues.values().stream().toList(), dataSetLabels, dataSetColors, dataLabels, false, themeBean.getDarkMode());
+
+		// get current month + year
+		LocalDate today = LocalDate.now();
+		int todayYear = today.getYear();
+
+		// first year
+		int firstYear = historyStats.get(0).getEntrydate().toInstant().atZone(ZoneId.systemDefault()).toLocalDate().getYear();
+
+		// for all 12 previous months + year
+		for (int year = firstYear; year <= todayYear; year++)
+		{
+			// get stats of the year
+			int streamYear = year;
+
+			// get stats of the month
+			List<StatisticDTO> yearStats = historyStats.stream().filter(s -> s.getEntrydate().toInstant().atZone(ZoneId.systemDefault()).toLocalDate().getYear() == streamYear).toList();
+
+			// get last stat of the year if any stats for the year exist
+			StatisticDTO stat = null;
+			if (!yearStats.isEmpty())
+			{
+				stat = yearStats.get(yearStats.size() - 1);
+			}
+
+			if (stat != null)
+			{
+				for (String type : dataSetTypes)
+				{
+					if (BarStatType.DOCUMENTS.equals(barStatType))
+					{
+						currentValues.put(type, stat.getMappedStatValue().getOrDefault(new StatisticKeys(type).perDomain(getSelectedDomain().getName()).build(), 0L));
+					}
+					else if (BarStatType.QC.equals(barStatType))
+					{
+						currentValues.put(type, stat.getMappedStatValue().getOrDefault(new StatisticKeys(StatisticKeys.QC).perDomain(getSelectedDomain().getName()).perQcType(type).build(), 0L));
+					}
+					allValues.get(type).add(currentValues.get(type) - previousValues.get(type));
+					previousValues.put(type, currentValues.get(type));
+				}
+			}
+			else
+			{
+				for (String type : dataSetTypes)
+				{
+					allValues.get(type).add(0L);
+				}
+			}
+			dataLabels.add(String.valueOf(year));
+		}
+		return barChart;
+	}
+
 	/* Downloads */
 	public StreamedContent getLatestStatsAllDomains()
 	{
@@ -385,7 +571,7 @@ public class DashboardController extends AbstractGICSBean
 				domainPolicies = service.listPolicies(getSelectedDomain().getName(), true);
 				domainTemplates = service.listConsentTemplates(getSelectedDomain().getName(), true);
 			}
-			catch (UnknownDomainException | InvalidVersionException e)
+			catch (UnknownDomainException | InvalidVersionException | InvalidParameterException e)
 			{
 				logger.error(e.getLocalizedMessage());
 			}
@@ -426,6 +612,60 @@ public class DashboardController extends AbstractGICSBean
 			i++;
 		}
 		logger.warn(qcColors.toString());
+	}
+
+	private List<String> getDocumentLabels(boolean includeAll)
+	{
+		List<String> result = new ArrayList<>(Arrays.asList(
+				getBundle().getString("consent.title.type_CONSENT"),
+				getBundle().getString("consent.title.type_REVOCATION"),
+				getBundle().getString("consent.title.type_REFUSAL")));
+		if (includeAll)
+		{
+			result.add(0, getBundle().getString("consent.title.type_ALL"));
+		}
+		return result;
+	}
+
+	private List<String> getDocumentColors(boolean includeAll)
+	{
+		List<String> result = new ArrayList<>(Arrays.asList(
+				CONSENT_COLOR,
+				REVOCATION_COLOR,
+				REFUSAL_COLOR));
+		if (includeAll)
+		{
+			result.add(0, "#7A7A7A");
+		}
+		return result;
+	}
+
+	private List<String> getDocumentTypes(boolean includeAll)
+	{
+		List<String> result = new ArrayList<>(Arrays.asList(
+				StatisticKeys.CONSENTS,
+				StatisticKeys.REVOCATIONS,
+				StatisticKeys.REFUSALS));
+		if (includeAll)
+		{
+			result.add(0, StatisticKeys.DOCUMENTS);
+		}
+		return result;
+	}
+
+	private List<String> getQcLabels()
+	{
+		return Stream.concat(validQcTypes.stream(), invalidQcTypes.stream()).map(this::getQcTypeLabel).collect(Collectors.toList());
+	}
+
+	private List<String> getQcColors()
+	{
+		return Stream.concat(validQcTypes.stream(), invalidQcTypes.stream()).map(t -> qcColors.get(t)).collect(Collectors.toList());
+	}
+
+	private List<String> getQcTypes()
+	{
+		return Stream.concat(validQcTypes.stream(), invalidQcTypes.stream()).collect(Collectors.toList());
 	}
 
 	private StreamedContent getMapAsCsv(Map<String, Number> map, Date date, String details)
@@ -555,12 +795,14 @@ public class DashboardController extends AbstractGICSBean
 	public boolean getInit()
 	{
 		return latestStats != null && latestStats.getMappedStatValue().containsKey(StatisticKeys.CALCULATION_TIME)
-				&& latestStats.getMappedStatValue().containsKey(new StatisticKeys(StatisticKeys.CONSENTS).perDomain(getSelectedDomain().getName()).build());
+				&& latestStats.getMappedStatValue().containsKey(new StatisticKeys(StatisticKeys.CONSENTS).perDomain(getSelectedDomainName()).build());
 	}
 
 	/**
 	 * Sets the managed property to color graphs according to selected theme
-	 * @param themeBean web-common theme bean with information about darkmode/lightmode
+	 *
+	 * @param themeBean
+	 *            web-common theme bean with information about darkmode/lightmode
 	 */
 	public void setThemeBean(ThemeBean themeBean)
 	{
@@ -575,5 +817,35 @@ public class DashboardController extends AbstractGICSBean
 	public void setIncludeUnknownPolicyStatus(boolean includeUnknownPolicyStatus)
 	{
 		this.includeUnknownPolicyStatus = includeUnknownPolicyStatus;
+	}
+
+	public Chart.BarScale[] getAvailableBarScales()
+	{
+		return Chart.BarScale.values();
+	}
+
+	public Chart.BarScale getDocumentsBarScale()
+	{
+		return documentsBarScale;
+	}
+
+	public void setDocumentsBarScale(Chart.BarScale documentsBarScale)
+	{
+		this.documentsBarScale = documentsBarScale;
+	}
+
+	public Chart.BarScale getQcBarScale()
+	{
+		return qcBarScale;
+	}
+
+	public void setQcBarScale(Chart.BarScale qcBarScale)
+	{
+		this.qcBarScale = qcBarScale;
+	}
+
+	private enum BarStatType
+	{
+		DOCUMENTS, QC
 	}
 }

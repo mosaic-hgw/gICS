@@ -4,7 +4,7 @@
   ###license-information-start###
   gICS - a Generic Informed Consent Service
   __
-  Copyright (C) 2014 - 2022 Trusted Third Party of the University Medicine Greifswald -
+  Copyright (C) 2014 - 2023 Trusted Third Party of the University Medicine Greifswald -
   							kontakt-ths@uni-greifswald.de
   
   							concept and implementation
@@ -17,8 +17,8 @@
   							r. schuldt
   
   							The gICS was developed by the University Medicine Greifswald and published
-   							in 2014 as part of the research project "MOSAIC" (funded by the DFG HO 1937/2-1).
-   
+  							in 2014 as part of the research project "MOSAIC" (funded by the DFG HO 1937/2-1).
+  
   							Selected functionalities of gICS were developed as
   							part of the following research projects:
   							- MAGIC (funded by the DFG HO 1937/5-1)
@@ -26,6 +26,7 @@
   							- NUM-CODEX (funded by the German Federal Ministry of Education and Research 01KX2021)
   
   							please cite our publications
+  							https://doi.org/10.1186/s12911-022-02081-4
   							https://doi.org/10.1186/s12967-020-02457-y
   							http://dx.doi.org/10.3414/ME14-01-0133
   							http://dx.doi.org/10.1186/s12967-015-0545-6
@@ -50,8 +51,8 @@
 <!-- author: Arne Blumentritt -->
 
 <html xmlns="http://www.w3.org/1999/xhtml" xmlns:h="http://java.sun.com/jsf/html" xmlns:f="http://java.sun.com/jsf/core"
-	  xmlns:p="http://primefaces.org/ui" xmlns:composite="http://java.sun.com/jsf/composite"
-	  xmlns:consent="http://java.sun.com/jsf/composite/components/consent">
+	  xmlns:p="http://primefaces.org/ui" xmlns:composite="http://java.sun.com/jsf/composite" xmlns:components="http://java.sun.com/jsf/composite/components"
+>
 
 <!-- INTERFACE -->
 <composite:interface>
@@ -59,76 +60,84 @@
 
 <!-- IMPLEMENTATION -->
 <composite:implementation>
-	<f:event listener="#{signerController.init(consentController.searchSignerId)}" type="preRenderComponent" />
+	<h:form>
+		<f:event listener="#{signerController.init(consentController.searchSignerId)}" type="preRenderComponent" />
 
-	<div class="ui-g" style="margin-bottom: 15px;">
-		<div class="ui-g-12 ui-lg-6">
-			<p:panel>
-				<div style="position: relative; min-height: 151px;">
-					<h2 style="margin-bottom: 0;">
-						<h:outputText value="#{msg['page.consents.signer']} #{consentController.searchSignerId.id}" />
-					</h2>
-					<div style="position: absolute; top: 35px; right: 0; text-align: right;">
-						<p:outputLabel onclick="#{signerController.acceptedPolicies.size() > 0 ? 'PF(\'acceptedPolicies\').show()' : ''}"
-									   style="#{signerController.acceptedPolicies.size() > 0 ? 'cursor:pointer;' : ''} margin-bottom: 5px;" styleClass="tag tag_green"
-									   value="#{signerController.acceptedPolicies.size()} #{msg['page.consents.signer.policies.accepted']}" />
-						<br />
-						<consent:policy_list id="acceptedPolicies" policies="#{signerController.acceptedPolicies}"
-											 title="#{msg['page.consents.signer.policies.title.accepted']}" />
+		<div class="ui-g">
+			<div class="ui-g-12 ui-lg-6">
+				<p:panel>
+					<div style="position: relative; min-height: 151px;">
+						<h2 style="margin-bottom: 0;">
+							<h:outputText value="#{msg['page.consents.signer']} #{consentController.searchSignerId.id}" />
+							<components:tooltip value="#{msg['page.consents.signer.hasConsentsWithSameLegalDate']}" icon="alert-circle-outline"
+												rendered="#{signerController.hasConsentsWithSameLegalDate}" />
+							<a href="/gpas-web/html/internal/edit.xhtml?originalValue=#{consentController.searchSignerId.id}" target="_blank" class="ttp-logo-button">
+								<i class="mdi mdi-share"></i>
+								<p:graphicImage value="/html/public/assets/images/gPAS-Logo-ohne-Text-160y.png" />
+							</a>
+						</h2>
 
-						<p:outputLabel onclick="#{signerController.declinedPolicies.size() > 0 ? 'PF(\'declinedPolicies\').show()' : ''}"
-									   style="#{signerController.declinedPolicies.size() > 0 ? 'cursor:pointer;' : ''} margin-bottom: 5px;" styleClass="tag tag_red"
-									   value="#{signerController.declinedPolicies.size()} #{msg['page.consents.signer.policies.declined']}" />
-						<br />
-						<consent:policy_list id="declinedPolicies" policies="#{signerController.declinedPolicies}"
-											 title="#{msg['page.consents.signer.policies.title.declined']}" />
-
-						<p:outputLabel onclick="#{signerController.unknownPolicies.size() > 0 ? 'PF(\'unknownPolicies\').show()' : ''}"
-									   style="#{signerController.unknownPolicies.size() > 0 ? 'cursor:pointer;' : ''} margin-bottom: 5px;" styleClass="tag tag_lightgrey"
-									   value="#{signerController.unknownPolicies.size()} #{msg['page.consents.signer.policies.unknown']}" />
-						<br />
-						<consent:policy_list id="unknownPolicies" policies="#{signerController.unknownPolicies}"
-											 title="#{msg['page.consents.signer.policies.title.unknown']}" />
-					</div>
-
-					<h:outputText
-							value="#{msg['page.consents.signer.created']} #{consentController.dateToString(consentController.searchSignerId.creationDate, 'datetime')}"
-							styleClass="grey" />
-					<h:panelGroup layout="block" rendered="#{not empty signerController.aliases}">
-						<br/>
-						<br/>
-						<h3 style="margin-bottom: 0">
-							<h:outputText value="#{msg['page.consents.signer.aliases']}" />
-						</h3>
-						<p:repeat value="#{signerController.aliases}" var="_signerId">
-							<h:outputText value="#{_signerId.idType}: " style="font-weight: bold" />
-							<h:outputText value="#{_signerId.id}" />
+						<h:outputText
+								value="#{msg['page.consents.signer.created']} #{consentController.dateToString(consentController.searchSignerId.creationDate, 'datetime')}"
+								styleClass="grey" />
+						<h:panelGroup layout="block" rendered="#{not empty signerController.aliases}">
 							<br />
-						</p:repeat>
-					</h:panelGroup>
-				</div>
-			</p:panel>
+							<br />
+							<h3 style="margin-bottom: 0">
+								<h:outputText value="#{msg['page.consents.signer.aliases']}" />
+							</h3>
+							<p:repeat value="#{signerController.aliases}" var="_signerId">
+								<p:link href="consents.xhtml?sidKey=#{_signerId.idType}&amp;sidValue=#{_signerId.id}"
+										value="#{(domainSelector.selectedDomain.signerIdTypes.size()) > 1 ? _signerId.idType : ''} #{_signerId.id}" style="text-decoration: none" />
+								<p:commandButton actionListener="#{signerController.onDeactivateAlias(_signerId)}" update="@form, main"
+												 title="#{msg['page.consents.signer.deactivateAlias']}" icon="mdi mdi-close mdi-18" styleClass="secondary red">
+									<p:confirm header="#{msg['common.confirmation']}" icon="mdi mdi-account-multiple-remove"
+											   message="#{msg['page.consents.signer.deactivateAlias.confirm']}" />
+								</p:commandButton>
+								<br />
+							</p:repeat>
+						</h:panelGroup>
+						<h:panelGroup layout="block" rendered="#{not empty signerController.signerIdsForAlias}">
+							<br />
+							<br />
+							<h3 style="margin-bottom: 0">
+								<h:outputText value="#{msg['page.consents.signer.signerIdsForAlias']}" />
+							</h3>
+							<p:repeat value="#{signerController.signerIdsForAlias}" var="_signerId">
+								<p:link href="consents.xhtml?sidKey=#{_signerId.idType}&amp;sidValue=#{_signerId.id}"
+										value="#{(domainSelector.selectedDomain.signerIdTypes.size()) > 1 ? _signerId.idType : ''} #{_signerId.id}" style="text-decoration: none" />
+								<br />
+							</p:repeat>
+						</h:panelGroup>
+					</div>
+				</p:panel>
+			</div>
+			<div class="ui-g-12 ui-lg-6">
+				<p:panel>
+					<h4>
+						<h:outputText value="#{cmsg['common.actions']}" />
+					</h4>
+					<p:commandButton actionListener="#{consentController.onNewConsentForCurrentSigner('CONSENT')}" update="@form, new, signer_details, :title, :help"
+									 value="#{msg['consent.create.type_CONSENT']}" icon="mdi icon_CONSENT" styleClass="secondary" />
+					<br />
+					<p:commandButton actionListener="#{consentController.onNewConsentForCurrentSigner('REVOCATION')}" update="@form, new, signer_details, :title, :help"
+									 value="#{msg['consent.create.type_REVOCATION']}" icon="mdi icon_REVOCATION" styleClass="secondary" />
+					<br />
+					<p:commandButton actionListener="#{signerController.onNewMerge}"
+									 icon="mdi mdi-account-multiple-plus"
+									 oncomplete="PF('signer_merge_dialog').show();"
+									 styleClass="secondary"
+									 update="signer_merge_component:signer_merge_dialog"
+									 value="#{msg['page.consents.signer.merge']}" />
+				</p:panel>
+			</div>
 		</div>
-		<div class="ui-g-12 ui-lg-6">
-			<p:panel>
-				<h4>
-					<h:outputText value="#{cmsg['common.actions']}" />
-				</h4>
-				<p:commandButton actionListener="#{consentController.onNewConsentForCurrentSigner('CONSENT')}" update="@form, main, :title"
-								 value="#{msg['consent.create.type_CONSENT']}" icon="mdi icon_CONSENT" styleClass="secondary" />
-				<br />
-				<p:commandButton actionListener="#{consentController.onNewConsentForCurrentSigner('REVOCATION')}" update="@form, main, :title"
-								 value="#{msg['consent.create.type_REVOCATION']}" icon="mdi icon_REVOCATION" styleClass="secondary" />
-				<br />
-				<p:commandButton actionListener="#{signerController.onNewMerge}"
-								 icon="mdi mdi-account-multiple-plus"
-								 oncomplete="PF('signer_merge_dialog').show();"
-								 styleClass="secondary"
-								 update="signer_merge_component:signer_merge_dialog"
-								 value="#{msg['page.consents.signer.merge']}" />
-			</p:panel>
-		</div>
-	</div>
+		<p:confirmDialog closeOnEscape="true" global="true">
+			<p:commandButton icon="mdi mdi-check" styleClass="ui-confirmdialog-yes" type="button" value="#{cmsg['ui.button.yes']}" />
+			<p:commandButton icon="mdi mdi-close" styleClass="ui-confirmdialog-no" type="button" value="#{cmsg['ui.button.no']}" />
+			<h:outputText />
+		</p:confirmDialog>
+	</h:form>
 </composite:implementation>
 
 </html>

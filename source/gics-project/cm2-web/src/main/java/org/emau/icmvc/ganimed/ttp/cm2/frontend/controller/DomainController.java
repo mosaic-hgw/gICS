@@ -4,9 +4,9 @@ package org.emau.icmvc.ganimed.ttp.cm2.frontend.controller;
  * ###license-information-start###
  * gICS - a Generic Informed Consent Service
  * __
- * Copyright (C) 2014 - 2022 Trusted Third Party of the University Medicine Greifswald -
+ * Copyright (C) 2014 - 2023 Trusted Third Party of the University Medicine Greifswald -
  * 							kontakt-ths@uni-greifswald.de
- * 
+ *
  * 							concept and implementation
  * 							l.geidel, c.hampf
  * 							web client
@@ -15,17 +15,18 @@ package org.emau.icmvc.ganimed.ttp.cm2.frontend.controller;
  * 							m.bialke
  * 							docker
  * 							r. schuldt
- * 
+ *
  * 							The gICS was developed by the University Medicine Greifswald and published
- *  							in 2014 as part of the research project "MOSAIC" (funded by the DFG HO 1937/2-1).
- *  
+ * 							in 2014 as part of the research project "MOSAIC" (funded by the DFG HO 1937/2-1).
+ *
  * 							Selected functionalities of gICS were developed as
  * 							part of the following research projects:
  * 							- MAGIC (funded by the DFG HO 1937/5-1)
  * 							- MIRACUM (funded by the German Federal Ministry of Education and Research 01ZZ1801M)
  * 							- NUM-CODEX (funded by the German Federal Ministry of Education and Research 01KX2021)
- * 
+ *
  * 							please cite our publications
+ * 							https://doi.org/10.1186/s12911-022-02081-4
  * 							https://doi.org/10.1186/s12967-020-02457-y
  * 							http://dx.doi.org/10.3414/ME14-01-0133
  * 							http://dx.doi.org/10.1186/s12967-015-0545-6
@@ -35,20 +36,22 @@ package org.emau.icmvc.ganimed.ttp.cm2.frontend.controller;
  * it under the terms of the GNU Affero General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  * ###license-information-end###
  */
 
+import java.io.Serial;
 import java.io.Serializable;
 import java.text.MessageFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Base64;
 import java.util.List;
 
@@ -80,6 +83,7 @@ import org.primefaces.event.FileUploadEvent;
 @ViewScoped
 public class DomainController extends AbstractConsentController implements Serializable
 {
+	@Serial
 	private static final long serialVersionUID = 1285364203849974795L;
 	private DomainDTO selectedDomain;
 
@@ -100,11 +104,10 @@ public class DomainController extends AbstractConsentController implements Seria
 
 	public static String parseProperty(String properties, DomainProperties key)
 	{
-		// start
-		int start = properties.indexOf(key.name()) + key.name().length() + 3;
-		// end
-		int end = properties.indexOf(';', start) == -1 ? properties.length() : properties.indexOf(';', start);
-		return properties.substring(start, end);
+		return Arrays.stream(properties.split(";"))
+				.filter(line -> line.contains(key.name()))
+				.map(line -> line + "=") // ensure splitting by "=" always yields at least two arguments
+				.findFirst().orElse("").split("=")[1];
 	}
 
 	public void onShowDetails(DomainDTO domain)
@@ -121,7 +124,7 @@ public class DomainController extends AbstractConsentController implements Seria
 		qualityControlOptional = parseProperty(selectedDomain.getProperties(), DomainProperties.VALID_QC_TYPES).contains(NOT_CHECKED);
 		expiration = new WebExpiration();
 		expiration.getEditExpiration().setExpirationProperties(selectedDomain.getExpirationProperties());
-		
+
 		pageMode = PageMode.READ;
 	}
 
@@ -178,7 +181,7 @@ public class DomainController extends AbstractConsentController implements Seria
 			{
 				if (selectedDomain.getFinalised())
 				{
-					service.updateDomainInUse(selectedDomain.getName(), selectedDomain.getLabel(), selectedDomain.getLogo(), selectedDomain.getExternProperties(),
+					manager.updateDomainInUse(selectedDomain.getName(), selectedDomain.getLabel(), selectedDomain.getLogo(), selectedDomain.getExternProperties(),
 							selectedDomain.getComment());
 				}
 				else
@@ -186,17 +189,20 @@ public class DomainController extends AbstractConsentController implements Seria
 					selectedDomain.setProperties(generatePropertiesString());
 					setVersioning();
 
-					service.updateDomain(selectedDomain);
+					manager.updateDomain(selectedDomain);
 				}
 				logMessage(new MessageFormat(getBundle().getString("page.domains.message.info.updated")).format(args), Severity.INFO);
 			}
 			else
 			{
-				selectedDomain.setName(selectedDomain.getLabel());
+				if (StringUtils.isEmpty(selectedDomain.getName()))
+				{
+					selectedDomain.setName(selectedDomain.getLabel());
+				}
 				selectedDomain.setProperties(generatePropertiesString());
 				setVersioning();
 
-				service.addDomain(selectedDomain);
+				manager.addDomain(selectedDomain);
 				logMessage(new MessageFormat(getBundle().getString("page.domains.message.info.added")).format(args), Severity.INFO);
 			}
 
@@ -208,6 +214,11 @@ public class DomainController extends AbstractConsentController implements Seria
 		{
 			logMessage(getBundle().getString("page.domains.message.error.duplicate"), Severity.WARN);
 		}
+		catch (InvalidParameterException e)
+		{
+			Object[] args = { selectedDomain.getName() };
+			logMessage(new MessageFormat(getBundle().getString("page.domains.message.error.invalidParameterDomainName")).format(args), Severity.WARN);
+		}
 		catch (VersionConverterClassException | UnknownDomainException | ObjectInUseException e)
 		{
 			logMessage(e.getLocalizedMessage(), Severity.ERROR);
@@ -218,13 +229,13 @@ public class DomainController extends AbstractConsentController implements Seria
 	{
 		try
 		{
-			service.deleteDomain(selectedDomain.getName());
+			manager.deleteDomain(selectedDomain.getName());
 			Object[] args = { selectedDomain.getName() };
 			logMessage(new MessageFormat(getBundle().getString("page.domains.message.info.deleted")).format(args), Severity.INFO);
 			domainSelector.loadDomains();
 			selectedDomain = null;
 		}
-		catch (ObjectInUseException e)
+		catch (ObjectInUseException | InvalidParameterException e)
 		{
 			logMessage(getBundle().getString("page.domains.message.error.deleteInUse"), Severity.WARN);
 		}
@@ -252,7 +263,7 @@ public class DomainController extends AbstractConsentController implements Seria
 			int size = service.listConsentTemplates(domainName, false).size();
 			return size > 0 ? String.valueOf(size) : "-";
 		}
-		catch (UnknownDomainException | InvalidVersionException e)
+		catch (UnknownDomainException | InvalidVersionException | InvalidParameterException e)
 		{
 			return null;
 		}
@@ -265,7 +276,7 @@ public class DomainController extends AbstractConsentController implements Seria
 			int size = service.listModules(domainName, false).size();
 			return size > 0 ? String.valueOf(size) : "-";
 		}
-		catch (UnknownDomainException | InvalidVersionException e)
+		catch (UnknownDomainException | InvalidVersionException | InvalidParameterException e)
 		{
 			return null;
 		}
@@ -278,7 +289,7 @@ public class DomainController extends AbstractConsentController implements Seria
 			int size = service.listPolicies(domainName, false).size();
 			return size > 0 ? String.valueOf(size) : "-";
 		}
-		catch (UnknownDomainException | InvalidVersionException e)
+		catch (UnknownDomainException | InvalidVersionException | InvalidParameterException e)
 		{
 			return null;
 		}
@@ -313,7 +324,7 @@ public class DomainController extends AbstractConsentController implements Seria
 		selectedDomain.getSignerIdTypes().remove(Integer.parseInt(index));
 	}
 
-	public Boolean isDeletable(DomainDTO domain) throws UnknownDomainException, InvalidVersionException
+	public Boolean isDeletable(DomainDTO domain) throws UnknownDomainException, InvalidVersionException, InvalidParameterException
 	{
 		if (domain.getName() != null)
 		{

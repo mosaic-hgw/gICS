@@ -4,9 +4,9 @@ package org.emau.icmvc.ganimed.ttp.cm2.frontend.controller;
  * ###license-information-start###
  * gICS - a Generic Informed Consent Service
  * __
- * Copyright (C) 2014 - 2022 Trusted Third Party of the University Medicine Greifswald -
+ * Copyright (C) 2014 - 2023 Trusted Third Party of the University Medicine Greifswald -
  * 							kontakt-ths@uni-greifswald.de
- * 
+ *
  * 							concept and implementation
  * 							l.geidel, c.hampf
  * 							web client
@@ -15,17 +15,18 @@ package org.emau.icmvc.ganimed.ttp.cm2.frontend.controller;
  * 							m.bialke
  * 							docker
  * 							r. schuldt
- * 
+ *
  * 							The gICS was developed by the University Medicine Greifswald and published
- *  							in 2014 as part of the research project "MOSAIC" (funded by the DFG HO 1937/2-1).
- *  
+ * 							in 2014 as part of the research project "MOSAIC" (funded by the DFG HO 1937/2-1).
+ *
  * 							Selected functionalities of gICS were developed as
  * 							part of the following research projects:
  * 							- MAGIC (funded by the DFG HO 1937/5-1)
  * 							- MIRACUM (funded by the German Federal Ministry of Education and Research 01ZZ1801M)
  * 							- NUM-CODEX (funded by the German Federal Ministry of Education and Research 01KX2021)
- * 
+ *
  * 							please cite our publications
+ * 							https://doi.org/10.1186/s12911-022-02081-4
  * 							https://doi.org/10.1186/s12967-020-02457-y
  * 							http://dx.doi.org/10.3414/ME14-01-0133
  * 							http://dx.doi.org/10.1186/s12967-015-0545-6
@@ -35,12 +36,12 @@ package org.emau.icmvc.ganimed.ttp.cm2.frontend.controller;
  * it under the terms of the GNU Affero General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  * ###license-information-end###
@@ -48,22 +49,26 @@ package org.emau.icmvc.ganimed.ttp.cm2.frontend.controller;
 
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
+import java.io.Serial;
 import java.io.Serializable;
 import java.nio.charset.StandardCharsets;
 import java.text.MessageFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
-import javax.ejb.EJB;
 import javax.faces.bean.ManagedBean;
 import javax.faces.bean.ViewScoped;
 
-import org.emau.icmvc.ganimed.ttp.cm2.GICSFhirService;
 import org.emau.icmvc.ganimed.ttp.cm2.dto.ConsentTemplateDTO;
 import org.emau.icmvc.ganimed.ttp.cm2.dto.ConsentTemplateKeyDTO;
+import org.emau.icmvc.ganimed.ttp.cm2.dto.DomainDTO;
 import org.emau.icmvc.ganimed.ttp.cm2.dto.ImportResultDTO;
 import org.emau.icmvc.ganimed.ttp.cm2.dto.ModuleDTO;
 import org.emau.icmvc.ganimed.ttp.cm2.dto.ModuleKeyDTO;
@@ -72,6 +77,7 @@ import org.emau.icmvc.ganimed.ttp.cm2.dto.PolicyKeyDTO;
 import org.emau.icmvc.ganimed.ttp.cm2.dto.enums.FhirExportMode;
 import org.emau.icmvc.ganimed.ttp.cm2.exceptions.InternalException;
 import org.emau.icmvc.ganimed.ttp.cm2.exceptions.InvalidExchangeFormatException;
+import org.emau.icmvc.ganimed.ttp.cm2.exceptions.InvalidParameterException;
 import org.emau.icmvc.ganimed.ttp.cm2.exceptions.InvalidVersionException;
 import org.emau.icmvc.ganimed.ttp.cm2.exceptions.UnknownDomainException;
 import org.emau.icmvc.ganimed.ttp.cm2.frontend.controller.common.AbstractGICSBean;
@@ -95,10 +101,9 @@ import org.primefaces.model.file.UploadedFile;
 @ViewScoped
 public class BatchController extends AbstractGICSBean implements Serializable
 {
+	@Serial
 	private static final long serialVersionUID = 8305310169562399180L;
 	public int currentStep = 1;
-	@EJB(lookup = "java:global/gics/cm2-ejb/GICSFhirServiceImpl!org.emau.icmvc.ganimed.ttp.cm2.GICSFhirService")
-	protected GICSFhirService fhirService;
 	private BatchPageMode batchPageMode = null;
 	private transient UploadedFile importFile;
 	private Boolean importAllowUpdates = false;
@@ -296,16 +301,22 @@ public class BatchController extends AbstractGICSBean implements Serializable
 	{
 		try
 		{
-			policies.setSource(service.listPolicies(domainSelector.getSelectedDomainName(), false));
+			policies.setSource(service.listPolicies(domainSelector.getSelectedDomainName(), false).stream()
+					.sorted(Comparator.comparing(p -> p.getLabelOrName().toLowerCase()))
+					.collect(Collectors.toList()));
 			policies.setTarget(new ArrayList<>());
 
-			modules.setSource(service.listModules(domainSelector.getSelectedDomainName(), false));
+			modules.setSource(service.listModules(domainSelector.getSelectedDomainName(), false).stream()
+					.sorted(Comparator.comparing(m -> m.getLabelOrName().toLowerCase()))
+					.collect(Collectors.toList()));
 			modules.setTarget(new ArrayList<>());
 
-			templates.setSource(service.listConsentTemplates(domainSelector.getSelectedDomainName(), false));
+			templates.setSource(service.listConsentTemplates(domainSelector.getSelectedDomainName(), false).stream()
+					.sorted(Comparator.comparing(t -> t.getLabelOrName().toLowerCase()))
+					.collect(Collectors.toList()));
 			templates.setTarget(new ArrayList<>());
 		}
-		catch (UnknownDomainException | InvalidVersionException e)
+		catch (UnknownDomainException | InvalidVersionException | InvalidParameterException e)
 		{
 			logMessage(e.getLocalizedMessage(), Severity.ERROR);
 		}
@@ -330,23 +341,38 @@ public class BatchController extends AbstractGICSBean implements Serializable
 
 		if (result != null)
 		{
+			Map<String, DomainDTO> domains = new HashMap<>();
+
+			result.getIgnoredDomains().forEach(d -> domains.put(d.getName(), d));
+			result.getAddedDomains().forEach(d -> domains.put(d.getName(), d));
+			result.getUpdatedDomains().forEach(d -> domains.put(d.getName(), d));
+
 			// added objects
 			result.getAddedDomains().forEach(d -> importedObjects.add(new WebImport(Type.DOMAIN, d.getName(), null, Status.ADDED)));
-			result.getAddedTemplates().forEach(t -> importedObjects.add(new WebImport(Type.TEMPLATE, t.getName(), t.getVersion(), Status.ADDED)));
-			result.getAddedModules().forEach(m -> importedObjects.add(new WebImport(Type.MODULE, m.getName(), m.getVersion(), Status.ADDED)));
-			result.getAddedPolicies().forEach(p -> importedObjects.add(new WebImport(Type.POLICY, p.getName(), p.getVersion(), Status.ADDED)));
+			result.getAddedTemplates()
+					.forEach(t -> importedObjects.add(new WebImport(Type.TEMPLATE, t.getName(), t.getVersion(), Status.ADDED, domains.get(t.getDomainName()).getCtVersionConverterInstance())));
+			result.getAddedModules()
+					.forEach(m -> importedObjects.add(new WebImport(Type.MODULE, m.getName(), m.getVersion(), Status.ADDED, domains.get(m.getDomainName()).getModuleVersionConverterInstance())));
+			result.getAddedPolicies()
+					.forEach(p -> importedObjects.add(new WebImport(Type.POLICY, p.getName(), p.getVersion(), Status.ADDED, domains.get(p.getDomainName()).getPolicyVersionConverterInstance())));
 
 			// updated objects
 			result.getUpdatedDomains().forEach(d -> importedObjects.add(new WebImport(Type.DOMAIN, d.getName(), null, Status.UPDATED)));
-			result.getUpdatedTemplates().forEach(t -> importedObjects.add(new WebImport(Type.TEMPLATE, t.getName(), t.getVersion(), Status.UPDATED)));
-			result.getUpdatedModules().forEach(m -> importedObjects.add(new WebImport(Type.MODULE, m.getName(), m.getVersion(), Status.UPDATED)));
-			result.getUpdatedPolicies().forEach(p -> importedObjects.add(new WebImport(Type.POLICY, p.getName(), p.getVersion(), Status.UPDATED)));
+			result.getUpdatedTemplates()
+					.forEach(t -> importedObjects.add(new WebImport(Type.TEMPLATE, t.getName(), t.getVersion(), Status.UPDATED, domains.get(t.getDomainName()).getCtVersionConverterInstance())));
+			result.getUpdatedModules()
+					.forEach(m -> importedObjects.add(new WebImport(Type.MODULE, m.getName(), m.getVersion(), Status.UPDATED, domains.get(m.getDomainName()).getModuleVersionConverterInstance())));
+			result.getUpdatedPolicies()
+					.forEach(p -> importedObjects.add(new WebImport(Type.POLICY, p.getName(), p.getVersion(), Status.UPDATED, domains.get(p.getDomainName()).getPolicyVersionConverterInstance())));
 
 			// ignored objects
 			result.getIgnoredDomains().forEach(d -> importedObjects.add(new WebImport(Type.DOMAIN, d.getName(), null, Status.IGNORED)));
-			result.getIgnoredTemplates().forEach(t -> importedObjects.add(new WebImport(Type.TEMPLATE, t.getName(), t.getVersion(), Status.IGNORED)));
-			result.getIgnoredModules().forEach(m -> importedObjects.add(new WebImport(Type.MODULE, m.getName(), m.getVersion(), Status.IGNORED)));
-			result.getIgnoredPolicies().forEach(p -> importedObjects.add(new WebImport(Type.POLICY, p.getName(), p.getVersion(), Status.IGNORED)));
+			result.getIgnoredTemplates()
+					.forEach(t -> importedObjects.add(new WebImport(Type.TEMPLATE, t.getName(), t.getVersion(), Status.IGNORED, domains.get(t.getDomainName()).getCtVersionConverterInstance())));
+			result.getIgnoredModules()
+					.forEach(m -> importedObjects.add(new WebImport(Type.MODULE, m.getName(), m.getVersion(), Status.IGNORED, domains.get(m.getDomainName()).getModuleVersionConverterInstance())));
+			result.getIgnoredPolicies()
+					.forEach(p -> importedObjects.add(new WebImport(Type.POLICY, p.getName(), p.getVersion(), Status.IGNORED, domains.get(p.getDomainName()).getPolicyVersionConverterInstance())));
 		}
 	}
 

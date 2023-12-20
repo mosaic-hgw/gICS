@@ -1,8 +1,120 @@
-![context](https://user-images.githubusercontent.com/12081369/49164555-a27e5180-f32f-11e8-8725-7b97e35134b5.png)
+${ttp.gics.readme.header}
 
-Current Docker-Compose-Version of gICS: 2.14.1 (April 2022)
+# gICS 2023.1.3
 
-Current Docker-Version of TTP-FHIR-Gateway: 2.1.1 (March 2022), Details from [ReleaseNotes](https://www.ths-greifswald.de/fhirgw/releasenotes/2-1-1)
+## Bug Fixes
+*  Allgemeine Fehlerbehebungen im Frontend
+
+# gICS 2023.1.2
+
+## Bug Fixes
+*  Mögliche NullPointerException bei Benutzung des SOAP-Interfaces ohne Authentifizierung
+
+
+# gICS 2023.1.1
+
+## Bug Fixes
+*  Aktualisierung ca.uhn.hapi.fhir aufgrund von Vulnerabilities
+*  Aktualisierung von slf4j-log4j12 in ths-notification-client aufgrund von Vulnerabilities in log4j 1.2.16
+*  Rechtsklick "Teilnehmer ID kopieren" defekt
+*  Sprung-URL zum gPAS fehlerhaft
+*  Modulstatus in Consentdetails zeigt in seltenen Fällen zeitweise falsche Werte
+
+## Docker
+*  Aktualisierung Dependencies aufgrund von Vulnerabilities
+
+
+# gICS 2023.1.0
+
+## New Features
+*  Funktion getAliasesForSignerIds
+*  Domänenspezifische Vergabe von Berechtigungen
+*  Auswahl der Spalten in der Einwilligungsliste
+*  Verknüpfung zum gPAS von Teilnehmerseite aus
+*  Funktion getConsentLightDto
+
+## API-Changes
+* Funktion getConsentLightDto
+* Anpassung aller ServiceMethoden mit KeyParametern (z.B. ConsentKey, ConsentDate, TemplateKey) im Zuge der Verbesserung Eingabeparameter
+* Anpassungen im Zuge domänenspezifische Vergabe von Berechtigungen
+* Anpassungen im Zuge Einführung gICS-Cache
+
+## Improvements
+*  Detaillierterer Policystatus auf Teilnehmerseite
+*  Festlegung zulässiger Einwilligungs-/Widerrufs- und Ablehnungsvorlagen
+*  Konfigurierbare Verwendung des historischen Datenstandes bei Abfragen zur Vergangenheit
+*  Hinweis bei 2 Dokumenten mit exakt gleichem LegalConsentDate
+*  Optionale Angabe des Schlüssels bei der Erstellung von Policy, Modul, Vorlage
+*  Anzeige des Gültig bis Datums in der Einwilligungsliste
+*  Berücksichtigung der Reihenfolge bei der Auflistung von SignerIds verschiedener Typen
+*  Intuitive Angabe des Ablaufs von Modulen und Policies
+*  Alphabetische Sortierung von Objekten in der Weboberfläche
+*  Verbesserte Validierung von Eingabeparametern
+*  Anzeige des lesbaren Benutzernamens bei Login via OIDC (Keycloak)
+*  Reduzierung des Loggings auf INFO Level
+
+## Bug Fixes
+*  [SQLIntegrityConstraintViolationException bei schnellem mehrfachen Aufruf von addConsent](https://github.com/mosaic-hgw/gICS/issues/1)
+*  Import des GICS-Exchange-Format funktioniert nicht nach Wechsel Major-Version
+*  Berücksichtigung der Reihenfolge bei der Auflistung von SignerIds verschiedener Typen
+*  [Stored XSS Vulnerability in der Weboberfläche](https://github.com/mosaic-hgw/gICS/issues/2)
+*  Fehler bei der Anzeige von Domänen-Eigenschaften im Frontend
+*  Anzeige des lesbaren Benutzernamens bei Login via OIDC (Keycloak)
+
+# gICS 2.15.2
+
+## Improvements
+*  Anpassung fester Ablaufdaten bei finalisierten Vorlagen
+*  Beibehaltung der farblichen Unterscheidung von akzeptieren und abgelehnten Modulen nach Ablauf oder Invalidierung
+*  Halbtransparente Darstellung von vollständig abgelaufenen ICs
+
+## Bug Fixes
+*  Fehlerhafte Sortierung bei mehrstelligen Versionsnummern
+*  Fehlende Werte in Dashboad Legende
+
+## Docker
+*  Fail-Fast-Strategie für Docker-CLI-Skripte im gICS
+
+# gICS 2.15.1
+
+## Bug Fixes
+*  Einstellungen einer Domäne werden beim Import nicht übernommen
+*  Interner Fehler bei Unterschriftsdatum vor 1.2.1970
+*  Fix CVE-2022-42889
+
+# gICS 2.15.0
+
+## New Features
+*  Keycloak-basierte Absicherung der SOAP-Requests
+*  Deaktivierung von Aliasen
+*  Öffnen einer Teilnehmer-ID aus der Einwilligungsliste heraus
+*  Dashboard Statistik für QC Zu- und Abnahme
+*  Automatisches Erkennen von Policies aus CSV bei Ermittlung des Einwilligungsstatus
+
+## Improvements
+*  Dashboard Statistik für Dokumentenzunahme
+*  Anzeige des Auswertungsdatums in Einwilligungsanalyse
+*  Verbesserte Darstellung von QC invaliden Dokumenten
+*  Anzeige des rechtlich gültigen Einwilligungsdatums
+*  Auftrennung des SOAP-Interfaces in allgemeine und administrative Aufgaben
+*  Upgrade auf Java 17
+*  Anzeige der Uhrzeit bei digitalen Unterschriften
+*  Anzeige vorhandener Haupt-IDs auch beim Alias-Verlierer
+*  Klickbare Verlinkung von verknüpften Teilnehmer-IDs
+
+## Bug Fixes
+*  Fehlerhafte Bezeichnung des Feldes sinerIdTypes in SOAP Response
+*  Frontend akzeptiert ungültige Datumsangaben und rechnet sie automatisch um
+*  Fehler bei Policyauswahl in Einwilligungsanalyse
+*  Filterung von Dokumenten anhand des Vorlagen-Name statt Vorlagen-Label
+
+## Docker
+*  Docker Upgrade auf Wildfly 26
+*  Erhöhung von MAX_ALLOWED_PACKETSIZE für MySQL8 in Docker auf 10MB
+*  Vereinfachung Zusammenführung der separaten Docker-Compose-Pakete der einzelnen Tools
+*  OIDC-Compliance: Unterstützung KeyCloak 19 für ALLE Schnittstellen
+*  Vereinheitlichung der Konfiguration der Keycloak-basierten Authentifizierung für alle Schnittstellen
+*  Unterstützung Client-basierter Rollen in KeyCloak
 
 # gICS 2.14.1
 
@@ -132,7 +244,6 @@ Current Docker-Version of TTP-FHIR-Gateway: 2.1.1 (March 2022), Details from [Re
 * Dashboard
 * Formatierung bereinigen Funktion im Texteditor
 
-
 ## Improvements
 * Festlegung der Reihenfolge von Teilnehmer-ID Typen
 * Anmeldung auf der Startseite
@@ -148,7 +259,6 @@ Current Docker-Version of TTP-FHIR-Gateway: 2.1.1 (March 2022), Details from [Re
 * Import von bereits finalisierter Vorlage kann zu Fehlermeldung führen
 * Konsentierungsabfrage wirft bei unbekannter Version einen Fehler trotz ignoreVersion=true
 
-
 ## TTP-FHIR Gateway für gICS
 Das TTP-FHIR Gateway (Version 2.0.0) für gICS umfasst die Anbindung ausgewählter gICS-Funktionalitäten zur FHIR-konformen Bereitstellung der gICS-Inhalte als FHIR-Ressourcen, so wie in der AG Einwilligungsmanagement abgestimmt.
 
@@ -162,55 +272,13 @@ Das TTP-FHIR Gateway realisiert keine Anwendungslogik. Die Auswertung der überm
 
 Die Profilierung der erforderlichen Ressourcen und Definition der nötigen FHIR-Operations erfolgte von März 2021-Juni 2021 in Zusammenarbeit mit gefyra.
 
-### Funktionsumfang
-Der Funktionsumfang in der Version 2.0.0 umfasst:
-* https://simplifier.net/guide/ttp-fhir-gateway-ig/allConsentsForDomain
-* https://simplifier.net/guide/ttp-fhir-gateway-ig/currentConsentForPersonAndTemplate
-* https://simplifier.net/guide/ttp-fhir-gateway-ig/isConsented
-* https://simplifier.net/guide/ttp-fhir-gateway-ig/policyStatesForPerson
-* https://simplifier.net/guide/ttp-fhir-gateway-ig/getAllConsentedIdsFor
-
-
 ### Beispiele
 Sämtliche Beispiel-Requests, Beispiel-Responses und weiterführende Informationen werden im zugehörigen Simplifier-Projekt und Implementation Guide beschrieben.
 
-https://simplifier.net/guide/ttp-fhir-gateway-ig/Einwilligungsmanagement
-
-https://simplifier.net/ths-greifswald
+https://www.ths-greifswald.de/gics/fhir
 
 ### Weitere Details
 
-Weitere Details sind dem Anwwenderhandbuch zu entnehmen: https://www.ths-greifswald.de/gics/handbuch/
+Weitere Details sind dem Anwenderhandbuch zu entnehmen: https://www.ths-greifswald.de/gics/handbuch/
 
-# Additional Information #
-
-The gICS was developed by the University Medicine Greifswald and published in 2014 as part of the [MOSAIC-Project](https://ths-greifswald.de/mosaic "")  (funded by the DFG HO 1937/2-1). Selected
-functionalities of gICS were developed as part of the following research projects:
-
-- MAGIC (funded by the DFG HO 1937/5-1)
-- MIRACUM (funded by the German Federal Ministry of Education and Research 01ZZ1801M)
-- NUM-CODEX (funded by the German Federal Ministry of Education and Research 01KX2021)
-
-## Credits ##
-
-Concept and implementation: L. Geidel
-
-Web-Client: A. Blumentritt, M. Bialke, F.M.Moser
-
-TTP-FHIR Gateway für gICS: M. Bialke, P. Penndorf, L. Geidel, S. Lang
-
-Docker: R. Schuldt
-
-## License ##
-
-License: AGPLv3, https://www.gnu.org/licenses/agpl-3.0.en.html
-Copyright: 2014 - 2022 University Medicine Greifswald Contact: https://www.ths-greifswald.de/kontakt/
-
-## Publications ##
-https://rdcu.be/b5Yck
-
-https://rdcu.be/6LJd 
-
-http://dx.doi.org/10.3414/ME14-01-0133
-
-http://dx.doi.org/10.1186/s12967-015-0545-6
+${ttp.gics.readme.footer}

@@ -4,7 +4,7 @@ package org.emau.icmvc.ganimed.ttp.cm2.internal;
  * ###license-information-start###
  * gICS - a Generic Informed Consent Service
  * __
- * Copyright (C) 2014 - 2022 Trusted Third Party of the University Medicine Greifswald -
+ * Copyright (C) 2014 - 2023 Trusted Third Party of the University Medicine Greifswald -
  * 							kontakt-ths@uni-greifswald.de
  * 
  * 							concept and implementation
@@ -17,8 +17,8 @@ package org.emau.icmvc.ganimed.ttp.cm2.internal;
  * 							r. schuldt
  * 
  * 							The gICS was developed by the University Medicine Greifswald and published
- *  							in 2014 as part of the research project "MOSAIC" (funded by the DFG HO 1937/2-1).
- *  
+ * 							in 2014 as part of the research project "MOSAIC" (funded by the DFG HO 1937/2-1).
+ * 
  * 							Selected functionalities of gICS were developed as
  * 							part of the following research projects:
  * 							- MAGIC (funded by the DFG HO 1937/5-1)
@@ -26,6 +26,7 @@ package org.emau.icmvc.ganimed.ttp.cm2.internal;
  * 							- NUM-CODEX (funded by the German Federal Ministry of Education and Research 01KX2021)
  * 
  * 							please cite our publications
+ * 							https://doi.org/10.1186/s12911-022-02081-4
  * 							https://doi.org/10.1186/s12967-020-02457-y
  * 							http://dx.doi.org/10.3414/ME14-01-0133
  * 							http://dx.doi.org/10.1186/s12967-015-0545-6
@@ -51,8 +52,8 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.emau.icmvc.ganimed.ttp.cm2.dto.ConsentDateValuesDTO;
 import org.emau.icmvc.ganimed.ttp.cm2.dto.ModuleKeyDTO;
 import org.emau.icmvc.ganimed.ttp.cm2.dto.PolicyKeyDTO;
@@ -67,12 +68,12 @@ import org.emau.icmvc.ganimed.ttp.cm2.model.PolicyKey;
 
 public class ConsentDateValues implements Serializable
 {
-	private static final long serialVersionUID = 3926519285636638051L;
+	private static final long serialVersionUID = 7462019177454201250L;
 	private static final Logger logger = LogManager.getLogger(ConsentDateValues.class);
 	public static final Date START_DATE = new Date(0l);
-	private Long gicsConsentTimestamp = 0l;
-	private Long legalConsentTimestamp = 0l;
-	private Long consentExpirationTimestamp = Long.MAX_VALUE;
+	private long gicsConsentTimestamp = 0l;
+	private long legalConsentTimestamp = 0l;
+	private long consentExpirationTimestamp = Long.MAX_VALUE;
 	private Map<PolicyKey, Long> policyExpirations = new HashMap<>();
 	private ConsentDateValuesDTO consentDateValuesDTO = null;
 	private final Object consentDateValuesDTOSyncObject = new Object();
@@ -82,32 +83,32 @@ public class ConsentDateValues implements Serializable
 		super();
 	}
 
-	public Long getGicsConsentTimestamp()
+	public long getGicsConsentTimestamp()
 	{
 		return gicsConsentTimestamp;
 	}
 
-	public void setGicsConsentTimestamp(Long gicsConsentTimestamp)
+	public void setGicsConsentTimestamp(long gicsConsentTimestamp)
 	{
 		this.gicsConsentTimestamp = gicsConsentTimestamp;
 	}
 
-	public Long getLegalConsentTimestamp()
+	public long getLegalConsentTimestamp()
 	{
 		return legalConsentTimestamp;
 	}
 
-	public void setLegalConsentTimestamp(Long legalConsentTimestamp)
+	public void setLegalConsentTimestamp(long legalConsentTimestamp)
 	{
 		this.legalConsentTimestamp = legalConsentTimestamp;
 	}
 
-	public Long getConsentExpirationTimestamp()
+	public long getConsentExpirationTimestamp()
 	{
 		return consentExpirationTimestamp;
 	}
 
-	public void setConsentExpirationTimestamp(Long consentExpirationTimestamp)
+	public void setConsentExpirationTimestamp(long consentExpirationTimestamp)
 	{
 		this.consentExpirationTimestamp = consentExpirationTimestamp;
 	}
@@ -122,23 +123,23 @@ public class ConsentDateValues implements Serializable
 		this.policyExpirations = policyExpirations;
 	}
 
-	public Long getTimestampForPolicy(PolicyKey policyKey) throws UnknownPolicyException
+	public long getTimestampForPolicy(PolicyKey policyKey) throws UnknownPolicyException
 	{
 		Long result = policyExpirations.get(policyKey);
 		if (result == null)
 		{
 			throw new UnknownPolicyException(policyKey + " is not part of this consent");
 		}
-		return result;
+		return result.longValue();
 	}
 
 	public ConsentDateValuesDTO calculateConsentDateValuesDTO(ConsentTemplate template)
 	{
 		ConsentDateValuesDTO result = new ConsentDateValuesDTO();
-		Date legalConsentDate = new Date(legalConsentTimestamp.longValue());
-		Date consentExpiration = new Date(consentExpirationTimestamp.longValue());
+		Date legalConsentDate = new Date(legalConsentTimestamp);
+		Date consentExpiration = new Date(consentExpirationTimestamp);
 		result.setLegalConsentDate(legalConsentDate);
-		result.setGicsConsentDate(new Date(gicsConsentTimestamp.longValue()));
+		result.setGicsConsentDate(new Date(gicsConsentTimestamp));
 		result.setConsentExpirationDate(consentExpiration);
 		try
 		{
@@ -192,9 +193,10 @@ public class ConsentDateValues implements Serializable
 	{
 		final int prime = 31;
 		int result = 1;
-		result = prime * result + (consentExpirationTimestamp == null ? 0 : consentExpirationTimestamp.hashCode());
-		result = prime * result + (gicsConsentTimestamp == null ? 0 : gicsConsentTimestamp.hashCode());
-		result = prime * result + (legalConsentTimestamp == null ? 0 : legalConsentTimestamp.hashCode());
+		result = prime * result + (consentDateValuesDTO == null ? 0 : consentDateValuesDTO.hashCode());
+		result = prime * result + (int) (consentExpirationTimestamp ^ consentExpirationTimestamp >>> 32);
+		result = prime * result + (int) (gicsConsentTimestamp ^ gicsConsentTimestamp >>> 32);
+		result = prime * result + (int) (legalConsentTimestamp ^ legalConsentTimestamp >>> 32);
 		result = prime * result + (policyExpirations == null ? 0 : policyExpirations.hashCode());
 		return result;
 	}
@@ -215,36 +217,26 @@ public class ConsentDateValues implements Serializable
 			return false;
 		}
 		ConsentDateValues other = (ConsentDateValues) obj;
-		if (consentExpirationTimestamp == null)
+		if (consentDateValuesDTO == null)
 		{
-			if (other.consentExpirationTimestamp != null)
+			if (other.consentDateValuesDTO != null)
 			{
 				return false;
 			}
 		}
-		else if (!consentExpirationTimestamp.equals(other.consentExpirationTimestamp))
+		else if (!consentDateValuesDTO.equals(other.consentDateValuesDTO))
 		{
 			return false;
 		}
-		if (gicsConsentTimestamp == null)
-		{
-			if (other.gicsConsentTimestamp != null)
-			{
-				return false;
-			}
-		}
-		else if (!gicsConsentTimestamp.equals(other.gicsConsentTimestamp))
+		if (consentExpirationTimestamp != other.consentExpirationTimestamp)
 		{
 			return false;
 		}
-		if (legalConsentTimestamp == null)
+		if (gicsConsentTimestamp != other.gicsConsentTimestamp)
 		{
-			if (other.legalConsentTimestamp != null)
-			{
-				return false;
-			}
+			return false;
 		}
-		else if (!legalConsentTimestamp.equals(other.legalConsentTimestamp))
+		if (legalConsentTimestamp != other.legalConsentTimestamp)
 		{
 			return false;
 		}

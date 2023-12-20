@@ -4,7 +4,7 @@ package org.emau.icmvc.ganimed.ttp.cm2.frontend.model;
  * ###license-information-start###
  * gICS - a Generic Informed Consent Service
  * __
- * Copyright (C) 2014 - 2022 Trusted Third Party of the University Medicine Greifswald -
+ * Copyright (C) 2014 - 2023 Trusted Third Party of the University Medicine Greifswald -
  * 							kontakt-ths@uni-greifswald.de
  * 
  * 							concept and implementation
@@ -17,8 +17,8 @@ package org.emau.icmvc.ganimed.ttp.cm2.frontend.model;
  * 							r. schuldt
  * 
  * 							The gICS was developed by the University Medicine Greifswald and published
- *  							in 2014 as part of the research project "MOSAIC" (funded by the DFG HO 1937/2-1).
- *  
+ * 							in 2014 as part of the research project "MOSAIC" (funded by the DFG HO 1937/2-1).
+ * 
  * 							Selected functionalities of gICS were developed as
  * 							part of the following research projects:
  * 							- MAGIC (funded by the DFG HO 1937/5-1)
@@ -26,6 +26,7 @@ package org.emau.icmvc.ganimed.ttp.cm2.frontend.model;
  * 							- NUM-CODEX (funded by the German Federal Ministry of Education and Research 01KX2021)
  * 
  * 							please cite our publications
+ * 							https://doi.org/10.1186/s12911-022-02081-4
  * 							https://doi.org/10.1186/s12967-020-02457-y
  * 							http://dx.doi.org/10.3414/ME14-01-0133
  * 							http://dx.doi.org/10.1186/s12967-015-0545-6
@@ -47,6 +48,7 @@ package org.emau.icmvc.ganimed.ttp.cm2.frontend.model;
  */
 
 import java.io.Serializable;
+import java.text.SimpleDateFormat;
 import java.util.Comparator;
 import java.util.stream.Collectors;
 
@@ -54,11 +56,10 @@ import org.apache.commons.lang3.StringUtils;
 import org.emau.icmvc.ganimed.ttp.cm2.dto.AssignedModuleDTO;
 import org.emau.icmvc.ganimed.ttp.cm2.dto.AssignedPolicyDTO;
 import org.emau.icmvc.ganimed.ttp.cm2.dto.ConsentTemplateDTO;
-import org.icmvc.ttp.web.controller.AbstractBean;
 import org.primefaces.model.DefaultTreeNode;
 import org.primefaces.model.TreeNode;
 
-public class TemplateTree extends AbstractBean implements Serializable
+public class TemplateTree implements Serializable
 {
 	private static final long serialVersionUID = 8216994479288745258L;
 
@@ -69,11 +70,11 @@ public class TemplateTree extends AbstractBean implements Serializable
 	private Boolean showDraft = true;
 	private Boolean showComment = false;
 
-	public TemplateTree(ConsentTemplateDTO template)
+	public TemplateTree(ConsentTemplateDTO template, SimpleDateFormat sdf)
 	{
 		// Template
 		tree = new DefaultTreeNode(new TemplateTreeNode(template.getKey(), template.getLabel(), template.getVersionLabelAndVersion(), template.getFinalised(), template.getExternProperties(),
-				template.getExpirationProperties(), template.getComment()), null);
+				template.getExpirationProperties(), template.getComment(), sdf), null);
 		tree.setExpanded(true);
 
 		// Modules
@@ -83,7 +84,7 @@ public class TemplateTree extends AbstractBean implements Serializable
 					new TemplateTreeNode(module.getModule().getKey(), module.getModule().getLabel(), module.getModule().getFinalised(),
 							(StringUtils.isNotEmpty(module.getExternProperties()) ? module.getExternProperties() + " " : "")
 									+ (StringUtils.isNotEmpty(module.getModule().getExternProperties()) ? module.getModule().getExternProperties() : ""), module.getExpirationProperties(),
-							module.getMandatory(), module.getModule().getComment()),
+							module.getMandatory(), module.getModule().getComment(), sdf),
 					tree);
 			moduleNode.setExpanded(true);
 
@@ -93,7 +94,7 @@ public class TemplateTree extends AbstractBean implements Serializable
 				TreeNode policyNode = new DefaultTreeNode(
 						new TemplateTreeNode(policy.getPolicy().getKey(), policy.getPolicy().getLabel(), policy.getPolicy().getFinalised(),
 								(StringUtils.isNotEmpty(policy.getExternProperties()) ? policy.getExternProperties() + " " : "") + policy.getPolicy().getExternProperties(),
-								policy.getExpirationProperties(), policy.getPolicy().getComment()),
+								policy.getExpirationProperties(), policy.getPolicy().getComment(), sdf),
 						moduleNode);
 				moduleNode.getChildren().add(policyNode);
 			}

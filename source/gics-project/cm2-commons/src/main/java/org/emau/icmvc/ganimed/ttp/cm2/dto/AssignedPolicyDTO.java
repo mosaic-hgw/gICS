@@ -4,9 +4,9 @@ package org.emau.icmvc.ganimed.ttp.cm2.dto;
  * ###license-information-start###
  * gICS - a Generic Informed Consent Service
  * __
- * Copyright (C) 2014 - 2022 Trusted Third Party of the University Medicine Greifswald -
+ * Copyright (C) 2014 - 2023 Trusted Third Party of the University Medicine Greifswald -
  * 							kontakt-ths@uni-greifswald.de
- * 
+ *
  * 							concept and implementation
  * 							l.geidel, c.hampf
  * 							web client
@@ -15,17 +15,18 @@ package org.emau.icmvc.ganimed.ttp.cm2.dto;
  * 							m.bialke
  * 							docker
  * 							r. schuldt
- * 
+ *
  * 							The gICS was developed by the University Medicine Greifswald and published
- *  							in 2014 as part of the research project "MOSAIC" (funded by the DFG HO 1937/2-1).
- *  
+ * 							in 2014 as part of the research project "MOSAIC" (funded by the DFG HO 1937/2-1).
+ *
  * 							Selected functionalities of gICS were developed as
  * 							part of the following research projects:
  * 							- MAGIC (funded by the DFG HO 1937/5-1)
  * 							- MIRACUM (funded by the German Federal Ministry of Education and Research 01ZZ1801M)
  * 							- NUM-CODEX (funded by the German Federal Ministry of Education and Research 01KX2021)
- * 
+ *
  * 							please cite our publications
+ * 							https://doi.org/10.1186/s12911-022-02081-4
  * 							https://doi.org/10.1186/s12967-020-02457-y
  * 							http://dx.doi.org/10.3414/ME14-01-0133
  * 							http://dx.doi.org/10.1186/s12967-015-0545-6
@@ -35,17 +36,18 @@ package org.emau.icmvc.ganimed.ttp.cm2.dto;
  * it under the terms of the GNU Affero General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  * ###license-information-end###
  */
 
+import java.io.Serial;
 import java.io.Serializable;
 import java.util.Comparator;
 
@@ -54,13 +56,14 @@ import java.util.Comparator;
  *
  * @author geidell
  */
-public class AssignedPolicyDTO extends FhirIdDTO implements Serializable, Comparable<AssignedPolicyDTO>
+public class AssignedPolicyDTO extends FhirIdDTO implements Serializable, Comparable<AssignedPolicyDTO>, DomainRelated
 {
-	private static final long serialVersionUID = 7181774427028531682L;
+	@Serial
+	private static final long serialVersionUID = -4815332620867309612L;
 	private PolicyDTO policy;
 	private String comment;
 	private String externProperties;
-	private ExpirationPropertiesDTO expirationProperties;
+	private ExpirationPropertiesDTO expirationProperties = new ExpirationPropertiesDTO();
 
 	public AssignedPolicyDTO()
 	{
@@ -70,16 +73,21 @@ public class AssignedPolicyDTO extends FhirIdDTO implements Serializable, Compar
 	public AssignedPolicyDTO(PolicyDTO policy)
 	{
 		super(null);
-		this.policy = policy;
+		setPolicy(policy);
 	}
 
 	public AssignedPolicyDTO(PolicyDTO policy, String comment, String externProperties, ExpirationPropertiesDTO expirationProperties, String fhirID)
 	{
 		super(fhirID);
-		this.policy = policy;
+		setPolicy(policy);
 		this.comment = comment;
 		this.externProperties = externProperties;
-		this.expirationProperties = expirationProperties;
+		setExpirationProperties(expirationProperties);
+	}
+
+	public AssignedPolicyDTO(AssignedPolicyDTO dto)
+	{
+		this(dto.getPolicy(), dto.getComment(), dto.getExternProperties(), dto.getExpirationProperties(), dto.getFhirID());
 	}
 
 	public PolicyDTO getPolicy()
@@ -89,7 +97,14 @@ public class AssignedPolicyDTO extends FhirIdDTO implements Serializable, Compar
 
 	public void setPolicy(PolicyDTO policy)
 	{
-		this.policy = policy;
+		if (policy != null)
+		{
+			this.policy = new PolicyDTO(policy);
+		}
+		else
+		{
+			this.policy = null;
+		}
 	}
 
 	public String getComment()
@@ -119,12 +134,20 @@ public class AssignedPolicyDTO extends FhirIdDTO implements Serializable, Compar
 
 	public void setExpirationProperties(ExpirationPropertiesDTO expirationProperties)
 	{
-		this.expirationProperties = expirationProperties;
+		if (expirationProperties != null)
+		{
+			this.expirationProperties = new ExpirationPropertiesDTO(expirationProperties);
+		}
+		else
+		{
+			this.expirationProperties = new ExpirationPropertiesDTO();
+		}
 	}
 
-	public static long getSerialversionuid()
+	@Override
+	public String getDomainName()
 	{
-		return serialVersionUID;
+		return getPolicy().getKey().getDomainName();
 	}
 
 	@Override
@@ -271,11 +294,12 @@ public class AssignedPolicyDTO extends FhirIdDTO implements Serializable, Compar
 	}
 
 	private static final Comparator<AssignedPolicyDTO> COMPARATOR = Comparator
-			.comparing((AssignedPolicyDTO ap) -> ap.getPolicy().getLabel(), Comparator.nullsLast(Comparator.naturalOrder()))
-			.thenComparing((AssignedPolicyDTO ap) -> ap.getPolicy().getKey().getName())
+			.comparing((AssignedPolicyDTO ap) -> ap.getPolicy().getLabel() != null ? ap.getPolicy().getLabel().toLowerCase() : null, Comparator.nullsLast(Comparator.naturalOrder()))
+			.thenComparing((AssignedPolicyDTO ap) -> ap.getPolicy().getKey().getName().toLowerCase())
 			.thenComparing((AssignedPolicyDTO ap) -> ap.getPolicy().getKey().getVersion());
 
-	@Override public int compareTo(AssignedPolicyDTO o)
+	@Override
+	public int compareTo(AssignedPolicyDTO o)
 	{
 		return COMPARATOR.compare(this, o);
 	}

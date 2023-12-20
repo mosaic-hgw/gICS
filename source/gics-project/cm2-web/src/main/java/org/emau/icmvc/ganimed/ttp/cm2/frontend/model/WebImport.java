@@ -4,7 +4,7 @@ package org.emau.icmvc.ganimed.ttp.cm2.frontend.model;
  * ###license-information-start###
  * gICS - a Generic Informed Consent Service
  * __
- * Copyright (C) 2014 - 2022 Trusted Third Party of the University Medicine Greifswald -
+ * Copyright (C) 2014 - 2023 Trusted Third Party of the University Medicine Greifswald -
  * 							kontakt-ths@uni-greifswald.de
  * 
  * 							concept and implementation
@@ -17,8 +17,8 @@ package org.emau.icmvc.ganimed.ttp.cm2.frontend.model;
  * 							r. schuldt
  * 
  * 							The gICS was developed by the University Medicine Greifswald and published
- *  							in 2014 as part of the research project "MOSAIC" (funded by the DFG HO 1937/2-1).
- *  
+ * 							in 2014 as part of the research project "MOSAIC" (funded by the DFG HO 1937/2-1).
+ * 
  * 							Selected functionalities of gICS were developed as
  * 							part of the following research projects:
  * 							- MAGIC (funded by the DFG HO 1937/5-1)
@@ -26,6 +26,7 @@ package org.emau.icmvc.ganimed.ttp.cm2.frontend.model;
  * 							- NUM-CODEX (funded by the German Federal Ministry of Education and Research 01KX2021)
  * 
  * 							please cite our publications
+ * 							https://doi.org/10.1186/s12911-022-02081-4
  * 							https://doi.org/10.1186/s12967-020-02457-y
  * 							http://dx.doi.org/10.3414/ME14-01-0133
  * 							http://dx.doi.org/10.1186/s12967-015-0545-6
@@ -49,22 +50,31 @@ package org.emau.icmvc.ganimed.ttp.cm2.frontend.model;
 
 import java.io.Serializable;
 
+import org.emau.icmvc.ganimed.ttp.cm2.version.VersionConverter;
+
 /**
  * Model that stores information about import(ed) gICS objects
  */
 public class WebImport implements Serializable
 {
-	private Type type;
-	private String name;
-	private String version;
-	private Status status;
+	private final Type type;
+	private final String name;
+	private final String version;
+	private final Status status;
+	private final transient VersionConverter versionConverter;
 
 	public WebImport(Type type, String name, String version, Status status)
+	{
+		this(type, name, version, status, null);
+	}
+
+	public WebImport(Type type, String name, String version, Status status, VersionConverter versionConverter)
 	{
 		this.type = type;
 		this.name = name;
 		this.version = version;
 		this.status = status;
+		this.versionConverter = versionConverter;
 	}
 
 	public Type getType()
@@ -85,6 +95,11 @@ public class WebImport implements Serializable
 	public Status getStatus()
 	{
 		return status;
+	}
+
+	public VersionConverter getVersionConverter()
+	{
+		return versionConverter;
 	}
 
 	public enum Type

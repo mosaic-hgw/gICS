@@ -4,9 +4,9 @@ package org.emau.icmvc.ganimed.ttp.cm2;
  * ###license-information-start###
  * gICS - a Generic Informed Consent Service
  * __
- * Copyright (C) 2014 - 2022 Trusted Third Party of the University Medicine Greifswald -
+ * Copyright (C) 2014 - 2023 Trusted Third Party of the University Medicine Greifswald -
  * 							kontakt-ths@uni-greifswald.de
- * 
+ *
  * 							concept and implementation
  * 							l.geidel, c.hampf
  * 							web client
@@ -15,17 +15,18 @@ package org.emau.icmvc.ganimed.ttp.cm2;
  * 							m.bialke
  * 							docker
  * 							r. schuldt
- * 
+ *
  * 							The gICS was developed by the University Medicine Greifswald and published
- *  							in 2014 as part of the research project "MOSAIC" (funded by the DFG HO 1937/2-1).
- *  
+ * 							in 2014 as part of the research project "MOSAIC" (funded by the DFG HO 1937/2-1).
+ *
  * 							Selected functionalities of gICS were developed as
  * 							part of the following research projects:
  * 							- MAGIC (funded by the DFG HO 1937/5-1)
  * 							- MIRACUM (funded by the German Federal Ministry of Education and Research 01ZZ1801M)
  * 							- NUM-CODEX (funded by the German Federal Ministry of Education and Research 01KX2021)
- * 
+ *
  * 							please cite our publications
+ * 							https://doi.org/10.1186/s12911-022-02081-4
  * 							https://doi.org/10.1186/s12967-020-02457-y
  * 							http://dx.doi.org/10.3414/ME14-01-0133
  * 							http://dx.doi.org/10.1186/s12967-015-0545-6
@@ -35,12 +36,12 @@ package org.emau.icmvc.ganimed.ttp.cm2;
  * it under the terms of the GNU Affero General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  * ###license-information-end###
@@ -53,14 +54,11 @@ import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
 
-import javax.ejb.EJB;
 import javax.ejb.Remote;
 import javax.ejb.Stateless;
 import javax.jws.WebService;
@@ -68,8 +66,7 @@ import javax.jws.soap.SOAPBinding;
 
 import ca.uhn.fhir.context.FhirContext;
 import ca.uhn.fhir.parser.DataFormatException;
-import org.apache.logging.log4j.Logger;
-import org.apache.logging.log4j.LogManager;
+import org.apache.commons.lang3.StringUtils;
 import org.emau.icmvc.ganimed.ttp.cm2.dto.AssignedModuleDTO;
 import org.emau.icmvc.ganimed.ttp.cm2.dto.AssignedPolicyDTO;
 import org.emau.icmvc.ganimed.ttp.cm2.dto.ConsentTemplateDTO;
@@ -101,6 +98,7 @@ import org.emau.icmvc.ganimed.ttp.cm2.exceptions.UnknownModuleException;
 import org.emau.icmvc.ganimed.ttp.cm2.exceptions.UnknownPolicyException;
 import org.emau.icmvc.ganimed.ttp.cm2.exceptions.VersionConverterClassException;
 import org.emau.icmvc.ganimed.ttp.cm2.internal.ExpirationPropertiesObject;
+import org.emau.icmvc.ganimed.ttp.cm2.version.MajorMinorVersionConverter;
 import org.emau.icmvc.magic.fhir.datatypes.AssignedConsentModule;
 import org.emau.icmvc.magic.fhir.datatypes.AssignedConsentModule.PatientConsentStatus;
 import org.emau.icmvc.magic.fhir.datatypes.AssignedConsentPolicy;
@@ -116,12 +114,8 @@ import org.hl7.fhir.r4.model.Type;
 @SOAPBinding(style = SOAPBinding.Style.RPC)
 @Stateless
 @Remote(GICSFhirService.class)
-public class GICSFhirServiceImpl implements GICSFhirService
+public class GICSFhirServiceImpl extends GICSServiceBase implements GICSFhirService
 {
-	private static final Logger logger = LogManager.getLogger(GICSFhirServiceImpl.class);
-	@EJB
-	private DAO dao;
-
 	private final FhirContext ctx = FhirContext.forR4();
 
 	// worklist for user feedback
@@ -145,10 +139,54 @@ public class GICSFhirServiceImpl implements GICSFhirService
 	private final static String DEFAULT_INVALID_QC_TYPES = "INVALID_QC_TYPES=checked_major_faults,invalidated";
 	private final static String DEFAULT_QC_TYPE = "DEFAULT_QC_TYPE=not_checked";
 
+	protected void checkAllowedDomain(ImportResultDTO importResult) throws InvalidExchangeFormatException
+	{
+		try
+		{
+			for (DomainDTO d : importResult.getUpdatedDomains())
+			{
+				checkAllowedDomain(d.getName());
+			}
+			for (DomainDTO d : importResult.getAddedDomains())
+			{
+				checkAllowedDomain(d.getName());
+			}
+			for (ConsentTemplateKeyDTO t : importResult.getAddedTemplates())
+			{
+				checkAllowedDomain(t);
+			}
+			for (ConsentTemplateKeyDTO t : importResult.getUpdatedTemplates())
+			{
+				checkAllowedDomain(t);
+			}
+			for (ModuleKeyDTO m : importResult.getAddedModules())
+			{
+				checkAllowedDomain(m.getDomainName());
+			}
+			for (ModuleKeyDTO m : importResult.getUpdatedModules())
+			{
+				checkAllowedDomain(m);
+			}
+			for (PolicyKeyDTO p : importResult.getAddedPolicies())
+			{
+				checkAllowedDomain(p);
+			}
+			for (PolicyKeyDTO p : importResult.getUpdatedPolicies())
+			{
+				checkAllowedDomain(p);
+			}
+		}
+		catch (UnknownDomainException e)
+		{
+			throw new InvalidExchangeFormatException(e.getMessage(), e);
+		}
+	}
+
 	@Override
 	public ImportResultDTO previewImportDefinition(String definition, boolean allowUpdates, String fileFormat) throws InvalidExchangeFormatException
 	{
 		ImportResultDTO result = processDefinition(definition, allowUpdates, fileFormat, true);
+		checkAllowedDomain(result);
 		logger.debug("verarbeitung erfolgreich");
 		return result;
 	}
@@ -157,10 +195,10 @@ public class GICSFhirServiceImpl implements GICSFhirService
 	public ImportResultDTO importDefinition(String definition, boolean allowUpdates, String fileFormat) throws InvalidExchangeFormatException
 	{
 		ImportResultDTO result = processDefinition(definition, allowUpdates, fileFormat, false);
+		checkAllowedDomain(result);
 		logger.debug("verarbeitung erfolgreich");
 		return result;
 	}
-
 
 	private ImportResultDTO processDefinition(String definition, boolean allowUpdates, String fileFormat, boolean preview) throws InvalidExchangeFormatException
 	{
@@ -200,7 +238,7 @@ public class GICSFhirServiceImpl implements GICSFhirService
 
 			return result;
 		}
-			catch (RuntimeException e)
+		catch (RuntimeException e)
 		{
 			if (e.getCause() instanceof InvalidExchangeFormatException)
 			{
@@ -245,18 +283,25 @@ public class GICSFhirServiceImpl implements GICSFhirService
 		ignoredModules = new ArrayList<>();
 		ignoredPolicies = new ArrayList<>();
 		ignoredDomains = new ArrayList<>();
-
 	}
 
 	@Override
 	public String exportDefinition(String domainName, FhirExportMode exportMode, List<String> itemList, boolean exportLogo, String fileFormat) throws InternalException, InvalidExchangeFormatException
 	{
+		try
+		{
+			checkAllowedDomain(domainName);
+		}
+		catch (UnknownDomainException e)
+		{
+			throw new InternalException(e.getMessage(), e);
+		}
 		ExchangeFormatDefinition def = prepareExport();
 
 		DomainDTO domain;
 		try
 		{
-			domain = dao.getDomain(domainName);
+			domain = dad.getDomain(domainName);
 
 			switch (exportMode)
 			{
@@ -343,29 +388,19 @@ public class GICSFhirServiceImpl implements GICSFhirService
 	 * @return exchangeformat
 	 * @throws UnknownDomainException
 	 *             domain is not known
-	 * @throws InternalException
-	 *             version invalid or conflict
 	 */
 	private ExchangeFormatDefinition exportDefinition(DomainDTO domain, ExchangeFormatDefinition def,
-			Boolean exportLogo) throws UnknownDomainException, InternalException
+			Boolean exportLogo) throws UnknownDomainException
 	{
 		logger.debug("Exporting ALL");
-		try
-		{
-			def.setDomain(convertToFhirConsentDomain(domain, exportLogo));
+		def.setDomain(convertToFhirConsentDomain(domain, exportLogo));
 
-			def.setPolicies(convertToFhirConsentPolices(dao.listPolicies(domain.getName(), false)));
+		def.setPolicies(convertToFhirConsentPolices(dad.listPolicies(domain.getName(), false)));
 
-			def.setModules(convertToFhirConsentModules(dao.listModules(domain.getName(), false)));
+		def.setModules(convertToFhirConsentModules(dad.listModules(domain.getName(), false)));
 
-			def.setTemplates(convertToFhirConsentTemplates(dao.listConsentTemplates(domain.getName(), false)));
+		def.setTemplates(convertToFhirConsentTemplates(dad.listConsentTemplates(domain.getName(), false)));
 
-		}
-		catch (InvalidVersionException e)
-		{
-			logger.error(e.getLocalizedMessage());
-			throw new InternalException("Unable to create export format MODE.ALL " + e.getMessage());
-		}
 		return def;
 	}
 
@@ -394,12 +429,12 @@ public class GICSFhirServiceImpl implements GICSFhirService
 				for (String keystring : itemList)
 				{
 					PolicyKeyDTO key = (PolicyKeyDTO) convertKeystringTo(PolicyKeyDTO.class, keystring);
-					policies.add(dao.getPolicy(key));
+					policies.add(dad.getPolicy(key));
 				}
 			}
 			else
 			{
-				policies = dao.listPolicies(domain.getName(), false);
+				policies = dad.listPolicies(domain.getName(), false);
 			}
 
 			def.setPolicies(convertToFhirConsentPolices(policies));
@@ -438,12 +473,12 @@ public class GICSFhirServiceImpl implements GICSFhirService
 				for (String keystring : itemList)
 				{
 					ModuleKeyDTO key = (ModuleKeyDTO) convertKeystringTo(ModuleKeyDTO.class, keystring);
-					modules.add(dao.getModule(key));
+					modules.add(dad.getModule(key));
 				}
 			}
 			else
 			{
-				modules = dao.listModules(domain.getName(), false);
+				modules = dad.listModules(domain.getName(), false);
 			}
 
 			// get relevant policies only
@@ -494,12 +529,12 @@ public class GICSFhirServiceImpl implements GICSFhirService
 				for (String keystring : itemList)
 				{
 					ConsentTemplateKeyDTO key = (ConsentTemplateKeyDTO) convertKeystringTo(ConsentTemplateKeyDTO.class, keystring);
-					templates.add(dao.getConsentTemplate(key));
+					templates.add(dad.getConsentTemplate(key));
 				}
 			}
 			else
 			{
-				templates = dao.listConsentTemplates(domain.getName(), false);
+				templates = dad.listConsentTemplates(domain.getName(), false);
 			}
 
 			// get relevant modules
@@ -985,7 +1020,7 @@ public class GICSFhirServiceImpl implements GICSFhirService
 						if (!preview)
 						{
 							// skip in preview
-							dao.getModule((ModuleKeyDTO) convertKeystringTo(ModuleKeyDTO.class, checkModule.getModuleKey()));
+							dad.getModule((ModuleKeyDTO) convertKeystringTo(ModuleKeyDTO.class, checkModule.getModuleKey()));
 						}
 					}
 
@@ -998,7 +1033,7 @@ public class GICSFhirServiceImpl implements GICSFhirService
 
 						ConsentTemplateFreeText ft = (ConsentTemplateFreeText) current;
 
-						//if import contains specific order info: use it, else order by importorder
+						// if import contains specific order info: use it, else order by importorder
 						if (ft.getPosition() != null)
 						{
 							currentPosition = ft.getPosition();
@@ -1032,7 +1067,7 @@ public class GICSFhirServiceImpl implements GICSFhirService
 
 						try
 						{
-							gicsAssMod.setModule(dao.getModule(mkdto));
+							gicsAssMod.setModule(dad.getModule(mkdto));
 						}
 						catch (UnknownDomainException | UnknownModuleException maybe)
 						{
@@ -1116,7 +1151,7 @@ public class GICSFhirServiceImpl implements GICSFhirService
 							importedTemplate.getLabel(),
 							importedTemplate.getVersionLabel(),
 							// FMM: the finalized status of the template is intentionally ignored, see
-							//  https://git.icm.med.uni-greifswald.de/ths/gics-project/-/issues/357
+							// https://git.icm.med.uni-greifswald.de/ths/gics-project/-/issues/357
 							// templates (as well as modules and policies) always should be considered as
 							// not finalized on import otherwise you'll get an error on importing finalized templates
 							// when previously existing children of this template are not yet finalized
@@ -1127,10 +1162,13 @@ public class GICSFhirServiceImpl implements GICSFhirService
 							new Date(),
 							new Date(),
 							// FHIR ID by templates wird nicht importiert
-							null);
+							null,
+							null,
+							// no support for mapped consent templates
+							null, null, null);
 
 					// existing, update if applicable
-					ConsentTemplateDTO existingTemplate = dao.getConsentTemplate(importTemplateKeyDTO);
+					ConsentTemplateDTO existingTemplate = dad.getConsentTemplate(importTemplateKeyDTO);
 
 					// changes occured?
 					if (existingTemplate != null && !existingTemplate.equalsForFhirSerice(importTemplateDTO))
@@ -1142,7 +1180,7 @@ public class GICSFhirServiceImpl implements GICSFhirService
 								// finalised, only selected changes allowed
 								if (!preview)
 								{
-									dao.updateConsentTemplateInUse(importTemplateDTO);
+									dad.updateConsentTemplateInUse(importTemplateDTO);
 									logger.info("Template " + existingTemplate.getKey().toString() + " updated.");
 								}
 							}
@@ -1151,7 +1189,7 @@ public class GICSFhirServiceImpl implements GICSFhirService
 								// not finalised, change all
 								if (!preview)
 								{
-									dao.updateConsentTemplate(importTemplateDTO, false);
+									dad.updateConsentTemplate(importTemplateDTO, false);
 									logger.info("Template " + existingTemplate.getKey().toString() + " replaced.");
 								}
 							}
@@ -1176,13 +1214,13 @@ public class GICSFhirServiceImpl implements GICSFhirService
 						if (!preview)
 						{
 							finaliseDomain(importTemplateKeyDTO.getDomainName());
-							dao.addConsentTemplate(importTemplateDTO, false);
+							dad.addConsentTemplate(importTemplateDTO, false);
 							logger.info("template " + importedTemplate.toKeyString() + " added.");
 						}
 						addedTemplates.add(importTemplateKeyDTO);
 					}
-					catch (DuplicateEntryException | FreeTextConverterStringException | InvalidPropertiesException | UnknownModuleException | InvalidParameterException | InvalidVersionException
-							| RequirementsNotFullfilledException | UnknownDomainException e)
+					catch (DuplicateEntryException | FreeTextConverterStringException | InvalidPropertiesException | UnknownModuleException | InvalidParameterException | InvalidVersionException |
+						   RequirementsNotFullfilledException | UnknownDomainException | UnknownConsentTemplateException e)
 					{
 						ignoredTemplates.add(importTemplateKeyDTO);
 						String errorMessage = "Error while processing template " + importedTemplate.toKeyString();
@@ -1292,7 +1330,7 @@ public class GICSFhirServiceImpl implements GICSFhirService
 
 				try
 				{
-					ModuleDTO existingModule = dao.getModule(moduleKeyDTO);
+					ModuleDTO existingModule = dad.getModule(moduleKeyDTO);
 					// module update necessary or number of policies different?
 					if (!newModule.equalsForFhirSerice(existingModule))
 					{
@@ -1303,7 +1341,7 @@ public class GICSFhirServiceImpl implements GICSFhirService
 								// finalised, only selected changes allowed
 								if (!preview)
 								{
-									dao.updateModuleInUse(
+									dad.updateModuleInUse(
 											existingModule.getKey(),
 											newModule.getLabel(),
 											newModule.getShortText(),
@@ -1317,7 +1355,7 @@ public class GICSFhirServiceImpl implements GICSFhirService
 								// not finalised, change all
 								if (!preview)
 								{
-									dao.updateModule(newModule, false);
+									dad.updateModule(newModule, false);
 								}
 							}
 							logger.info("Module " + existingModule.getKey().toString() + " updated.");
@@ -1349,7 +1387,7 @@ public class GICSFhirServiceImpl implements GICSFhirService
 						try
 						{
 							finaliseDomain(domainName);
-							dao.addModule(newModule, false);
+							dad.addModule(newModule, false);
 							logger.info("module " + newModule.getKey().toString() + " added");
 						}
 						catch (UnknownDomainException | DuplicateEntryException | InvalidVersionException | RequirementsNotFullfilledException | UnknownPolicyException e)
@@ -1426,7 +1464,7 @@ public class GICSFhirServiceImpl implements GICSFhirService
 				for (String policykey : currentModule.getDeprecatedPolicyKeys())
 				{
 					// nur key, da restliche information durch deprecated variante fehlen
-					PolicyDTO existingGicsPolicy = dao.getPolicy((PolicyKeyDTO) convertKeystringTo(PolicyKeyDTO.class, policykey));
+					PolicyDTO existingGicsPolicy = dad.getPolicy((PolicyKeyDTO) convertKeystringTo(PolicyKeyDTO.class, policykey));
 					AssignedPolicyDTO gicsAssignedPolicyDTO = new AssignedPolicyDTO(existingGicsPolicy);
 					policies.add(gicsAssignedPolicyDTO);
 				}
@@ -1463,15 +1501,15 @@ public class GICSFhirServiceImpl implements GICSFhirService
 				throw new InvalidExchangeFormatException(e.getMessage() + "; " + msg);
 			}
 		}
-
 		catch (InvalidVersionException e)
 		{
-			logger.debug("One or more policy key(s) are not available for the module " + currentModule.toKeyString() + " " + e.getMessage());
-			throw new InvalidExchangeFormatException(e.getMessage());
+			String msg = "The imported module or policy contains an invalid version string:" + e.getMessage();
+			logger.error(msg, e);
+			throw new InvalidExchangeFormatException(e.getMessage() + "; " + msg, e);
 		}
 
 		// FMM: the finalized status of the module is intentionally ignored, see
-		//  https://git.icm.med.uni-greifswald.de/ths/gics-project/-/issues/357
+		// https://git.icm.med.uni-greifswald.de/ths/gics-project/-/issues/357
 		return new ModuleDTO(new ModuleKeyDTO(currentModule.getDomainName(), currentModule.getModuleName(), currentModule.getModuleVersion()),
 				currentModule.getModuleText(), currentModule.getModuleTitle(), currentModule.getModuleComment(), currentModule.getExternProperties(),
 				policies,
@@ -1491,9 +1529,9 @@ public class GICSFhirServiceImpl implements GICSFhirService
 			PolicyDTO existingGicsPolicy = null;
 			try
 			{
-				existingGicsPolicy = dao.getPolicy(key);
+				existingGicsPolicy = dad.getPolicy(key);
 			}
-			catch (UnknownDomainException | UnknownPolicyException maybe)
+			catch (UnknownDomainException | UnknownPolicyException | InvalidVersionException maybe)
 			{
 				String msg = "Invalid policy " + policy.getPolicyKeyString() + " in module " + currentModule.getModuleName();
 				if (!preview)
@@ -1519,11 +1557,6 @@ public class GICSFhirServiceImpl implements GICSFhirService
 						throw new InvalidExchangeFormatException(msg, maybe);
 					}
 				}
-			}
-			catch (InvalidVersionException e)
-			{
-				logger.debug("One or more policy key(s) are not available for the module " + currentModule.toKeyString() + " " + e.getMessage());
-				throw new InvalidExchangeFormatException(e.getMessage());
 			}
 
 			AssignedPolicyDTO gicsAssignedPolicyDTO = new AssignedPolicyDTO(existingGicsPolicy);
@@ -1611,14 +1644,14 @@ public class GICSFhirServiceImpl implements GICSFhirService
 			if (domainName.equals(p.getDomainName()))
 			{
 				// FMM: the finalized status of the policy is intentionally ignored, see
-				//  https://git.icm.med.uni-greifswald.de/ths/gics-project/-/issues/357
+				// https://git.icm.med.uni-greifswald.de/ths/gics-project/-/issues/357
 				PolicyDTO newPolicy = new PolicyDTO(keyDTO, p.getComment(), p.getExternProperties(), p.getLabel(), false, new Date(), new Date(),
-						// TODO in Klaerung ob fhirID exportiert werden muss. @bialkem
+						// do not import or export fhir id
 						null);
 				try
 				{
 					// update policy if possible
-					PolicyDTO existingPolicy = dao.getPolicy(keyDTO);
+					PolicyDTO existingPolicy = dad.getPolicy(keyDTO);
 
 					if (allowUpdates)
 					{
@@ -1631,7 +1664,7 @@ public class GICSFhirServiceImpl implements GICSFhirService
 								// finalised=label, comment,extprop editable
 								if (!preview)
 								{
-									dao.updatePolicyInUse(existingPolicy.getKey(), p.getLabel(), p.getExternProperties(), p.getComment());
+									dad.updatePolicyInUse(existingPolicy.getKey(), p.getLabel(), p.getExternProperties(), p.getComment());
 									logger.info("Policy " + p.toKeyString() + " updated.");
 								}
 							}
@@ -1640,7 +1673,7 @@ public class GICSFhirServiceImpl implements GICSFhirService
 								// all editable
 								if (!preview)
 								{
-									dao.updatePolicy(newPolicy);
+									dad.updatePolicy(newPolicy);
 									logger.info("Policy " + p.toKeyString() + " updated.");
 								}
 							}
@@ -1672,7 +1705,7 @@ public class GICSFhirServiceImpl implements GICSFhirService
 						try
 						{
 							finaliseDomain(domainName);
-							dao.addPolicy(newPolicy);
+							dad.addPolicy(newPolicy);
 							logger.info("Policy " + p.toKeyString() + " added.");
 						}
 						catch (UnknownDomainException | DuplicateEntryException | InvalidVersionException | RequirementsNotFullfilledException e)
@@ -1750,6 +1783,9 @@ public class GICSFhirServiceImpl implements GICSFhirService
 			logo = Base64.getEncoder().encodeToString(logoBytes);
 		}
 
+		// fix properties-string problems
+		newDomain.setProperties(removeBracketsAndSpaces(newDomain.getProperties()));
+
 		// default:not finalized
 		DomainDTO newDomainDTO = new DomainDTO(newDomain.getName(), newDomain.getLabel(),
 				newDomain.getConsentTemplateVersionConverter(), newDomain.getModuleVersionConverter(),
@@ -1757,18 +1793,18 @@ public class GICSFhirServiceImpl implements GICSFhirService
 				newDomain.getExternProperties(), logo, newDomain.getSignerIdTypes(), false, new Date(), new Date(),
 				/* expirationProperties intentionally will be set later (could throw a ParseException!) */
 				null,
-				// TODO in Klaerung ob fhirID exportiert werden muss. @bialkem
+				// fhirid muss nicht exportiert oder importiert werden, allein der gics entscheidet
 				null);
 
 		// check if import domain contains QC properties
-		if (!newDomainDTO.getExternProperties().contains("DEFAULT_QC_TYPE"))
+		if (!newDomainDTO.getProperties().contains("DEFAULT_QC_TYPE"))
 		{
 			// add default QC types
-			String appendedProperties = newDomainDTO.getExternProperties();
-			appendedProperties = appendedProperties + ";" + DEFAULT_VALID_QC_TYPES;
-			appendedProperties = appendedProperties + ";" + DEFAULT_INVALID_QC_TYPES;
-			appendedProperties = appendedProperties + ";" + DEFAULT_QC_TYPE;
-			newDomainDTO.setProperties(appendedProperties);
+			StringBuilder properties = new StringBuilder(newDomainDTO.getProperties());
+			properties.append(";").append(DEFAULT_VALID_QC_TYPES);
+			properties.append(";").append(DEFAULT_INVALID_QC_TYPES);
+			properties.append(";").append(DEFAULT_QC_TYPE);
+			newDomainDTO.setProperties(properties.toString());
 		}
 
 		DomainDTO existingDomain = null;
@@ -1779,7 +1815,7 @@ public class GICSFhirServiceImpl implements GICSFhirService
 			// and creating an expiration properties object (possibly throwing a ParseException)
 			// is important and influences the later logic: e.g. creating the e.p.o. first would leave
 			// the existingDomain null which would be missed in the list of ignoredDomains afterwards
-			existingDomain = dao.getDomain(newDomain.getName());
+			existingDomain = dad.getDomain(newDomain.getName());
 			newDomainDTO.setExpirationProperties(new ExpirationPropertiesObject(newDomain.getExpirationProperties()).toDTO());
 
 			String propertyPrefix = "domain properties: ";
@@ -1799,7 +1835,7 @@ public class GICSFhirServiceImpl implements GICSFhirService
 						// update necessary, keep current property settings
 						if (!preview)
 						{
-							dao.updateDomainInUse(existingDomain.getName(), newDomainDTO.getLabel(), newDomainDTO.getLogo(),
+							dad.updateDomainInUse(existingDomain.getName(), newDomainDTO.getLabel(), newDomainDTO.getLogo(),
 									newDomainDTO.getExternProperties(), newDomainDTO.getComment());
 							logger.info("Domain updated: " + existingDomain.getName());
 						}
@@ -1809,7 +1845,7 @@ public class GICSFhirServiceImpl implements GICSFhirService
 					{
 						if (!preview)
 						{
-							dao.updateDomain(newDomainDTO);
+							dad.updateDomain(newDomainDTO);
 							logger.info("Domain updated: " + newDomainDTO.getName());
 						}
 					}
@@ -1835,7 +1871,7 @@ public class GICSFhirServiceImpl implements GICSFhirService
 				newDomainDTO.setExpirationProperties(new ExpirationPropertiesObject(newDomain.getExpirationProperties()).toDTO());
 				if (!preview)
 				{
-					dao.addDomain(newDomainDTO);
+					dad.addDomain(newDomainDTO);
 					logger.info("Domain added " + newDomainDTO);
 				}
 				addedDomains.add(newDomainDTO);
@@ -1857,8 +1893,22 @@ public class GICSFhirServiceImpl implements GICSFhirService
 		}
 	}
 
+	private static String removeBracketsAndSpaces(String cleanMe)
+	{
+		// fix [ ] problem in domainproperties
+		String fixed = cleanMe;
+		if (StringUtils.isNotEmpty(fixed))
+		{
+			// remove brackets and empty spaces
+			fixed = fixed.replaceAll("\\[", "");
+			fixed = fixed.replaceAll("\\]", "");
+			fixed = fixed.replaceAll(" ", "");
+		}
+		return fixed;
+	}
+
 	/**
-	 * Finalize the given domain, e.g. before adding policies or modules to the DAO.
+	 * Finalize the given domain, e.g. before adding policies or modules to the dad.
 	 *
 	 * @param domainName
 	 *            the name of the domain to finalize
@@ -1866,10 +1916,11 @@ public class GICSFhirServiceImpl implements GICSFhirService
 	 */
 	public void finaliseDomain(String domainName) throws UnknownDomainException
 	{
-		if (!dao.getDomain(domainName).getFinalised())
+		if (!dad.getDomain(domainName).getFinalised())
 		{
 			logger.info("finalizing domain: " + domainName);
-			dao.finaliseDomain(domainName);
+			checkAllowedDomain(domainName);
+			dad.finaliseDomain(domainName);
 		}
 	}
 
@@ -1919,7 +1970,7 @@ public class GICSFhirServiceImpl implements GICSFhirService
 							// that these methods won't throw exceptions later
 							// (in the case of duplicate names or labels when ignoring case)
 							String info = "domain: '" + template.getDomainName() + "', "
-									 + "name: '" + template.getName() + "', "
+									+ "name: '" + template.getName() + "', "
 									+ "label: '" + template.getLabel() + "', "
 									+ "version: '" + template.getVersion() + "'";
 
@@ -1962,7 +2013,7 @@ public class GICSFhirServiceImpl implements GICSFhirService
 	 *
 	 * @return versionInfo
 	 */
-	private String getCurrentVersion()
+	String getCurrentVersion()
 	{
 		String version = "unable to read project version";
 
@@ -1986,98 +2037,29 @@ public class GICSFhirServiceImpl implements GICSFhirService
 	}
 
 	/**
-	 * check if the given version info corresponds
+	 * {@return true if the current gICS version is not lower than the specified version ignoring the third Bugfix part in the version string}
 	 *
-	 * @param formatVersion
-	 * @return false if gicsversion smaller than format version
+	 * @param version the version string to test for compatibility with the current version
 	 */
-	private boolean checkImportVersion(String formatVersion)
+	boolean checkImportVersion(String version)
 	{
-		String gicsVersion = getCurrentVersion();
+		String currentVersion = getCurrentVersion();
 
-		if (gicsVersion != null && formatVersion != null && gicsVersion.contains(".") && formatVersion.contains("."))
+		try
 		{
-			// check first digit
-			double gicsDoubleDigit1 = 0;
-			double formatDoubleDigit1 = 0;
-
-			double gicsDoubleDigit2 = 0;
-			double formatDoubleDigit2 = 0;
-
-			try
+			if (new MajorMinorVersionConverter().compareRelevantParts(currentVersion, version) >= 0) // ignore maintenance part
 			{
-				gicsDoubleDigit1 = Double.parseDouble(gicsVersion.substring(0, gicsVersion.indexOf('.')));
-				formatDoubleDigit1 = Double.parseDouble(formatVersion.substring(0, formatVersion.indexOf('.')));
-
-				gicsDoubleDigit2 = Double.parseDouble(gicsVersion.substring(gicsVersion.indexOf('.') + 1, gicsVersion.lastIndexOf('.')));
-				formatDoubleDigit2 = Double.parseDouble(formatVersion.substring(formatVersion.indexOf('.') + 1, formatVersion.lastIndexOf('.')));
-			}
-			catch (NumberFormatException e)
-			{
-				logger.error("Invalid Version format: " + formatVersion);
-				return false;
-			}
-
-			boolean firstDigitOk = gicsDoubleDigit1 >= formatDoubleDigit1;
-			boolean secondDigitOk = gicsDoubleDigit2 >= formatDoubleDigit2;
-
-			if (firstDigitOk && secondDigitOk)
-			{
-				logger.info("Version Check: success (gICS=" + gicsVersion + ", format=" + formatVersion + ")");
+				logger.info("Version Check: success (gICS=" + currentVersion + ", format=" + version + ")");
 				return true;
 			}
-
-			// gicsDouble < formatDouble
-			logger.error("Version Check: error (gICS=" + gicsVersion + ", format=" + formatVersion + "). Please install newer version of gICS.");
+			logger.error("Version Check: error (gICS=" + currentVersion + ", format=" + version + "). Please install newer version of gICS.");
+		}
+		catch (InvalidVersionException e)
+		{
+			logger.error("Version Check: error (gICS=" + currentVersion + ", format=" + version + "). Invalid Version format: " + version, e);
 		}
 
 		return false;
-	}
-
-	/**
-	 * split property key value string from DTO
-	 *
-	 * @param concatProperties
-	 * @return splitted key/value pairs as map
-	 */
-	private Map<String, String> splitPropertiesAndValues(String concatProperties)
-	{
-		String propSep = ";";
-		String keyValSep = "=";
-		String prefix = "domainproperties:";
-
-		Map<String, String> result = new HashMap<>();
-
-		if (concatProperties != null && !concatProperties.isEmpty())
-		{
-			String[] properties = concatProperties.split(propSep);
-			if (properties != null && properties.length > 0)
-			{
-				for (String p : properties)
-				{
-					if (p != null && !p.isEmpty())
-					{
-						String[] pair = p.split(keyValSep);
-
-						if (pair.length == 2)
-						{
-							// remove empty spaces if necessary
-							String key = pair[0].replace(" ", "");
-
-							if (!key.isEmpty() && key.startsWith(prefix))
-							{
-								key = key.replaceAll(prefix, "");
-							}
-							String value = pair[1].replace(" ", "");
-							result.put(key, value);
-						}
-
-					}
-				}
-			}
-		}
-
-		return result;
 	}
 
 	/**

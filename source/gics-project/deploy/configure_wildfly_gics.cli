@@ -1,57 +1,83 @@
 # add datasource for gics
-set gicsDbHost=${GICS_DB_HOST}
-if (outcome != "success") of :resolve-expression(expression=${env.GICS_DB_HOST})
-	set gicsDbHost=mysql
+##########################
+set gicsDbHost=mysql
+if (outcome == "success") of :resolve-expression(expression=${env.GICS_DB_HOST})
+	set gicsDbHost=${env.GICS_DB_HOST}
 end-if
-set gicsDbPort=${GICS_DB_PORT}
-if (outcome != "success") of :resolve-expression(expression=${env.GICS_DB_PORT})
-	set gicsDbPort=3306
+if (outcome == "success") of :resolve-expression(expression=${env.TTP_GICS_DB_HOST})
+	set gicsDbHost=${env.TTP_GICS_DB_HOST}
 end-if
-set gicsDbName=${GICS_DB_NAME}
-if (outcome != "success") of :resolve-expression(expression=${env.GICS_DB_NAME})
-	set gicsDbName=gics
+
+set gicsDbPort=3306
+if (outcome == "success") of :resolve-expression(expression=${env.GICS_DB_PORT})
+	set gicsDbPort=${env.GICS_DB_PORT}
 end-if
-set gicsDbUser=${GICS_DB_USER}
-if (outcome != "success") of :resolve-expression(expression=${env.GICS_DB_USER})
-	set gicsDbUser=gics_user
+if (outcome == "success") of :resolve-expression(expression=${env.TTP_GICS_DB_PORT})
+	set gicsDbPort=${env.TTP_GICS_DB_PORT}
 end-if
-set gicsDbPass=${GICS_DB_PASS}
-if (outcome != "success") of :resolve-expression(expression=${env.GICS_DB_PASS})
-	set gicsDbPass=gics_password
+
+set gicsDbName=gics
+if (outcome == "success") of :resolve-expression(expression=${env.GICS_DB_NAME})
+	set gicsDbName=${env.GICS_DB_NAME}
+end-if
+if (outcome == "success") of :resolve-expression(expression=${env.TTP_GICS_DB_NAME})
+	set gicsDbName=${env.TTP_GICS_DB_NAME}
+end-if
+
+set gicsDbUser=gics_user
+if (outcome == "success") of :resolve-expression(expression=${env.GICS_DB_USER})
+	set gicsDbUser=${env.GICS_DB_USER}
+end-if
+if (outcome == "success") of :resolve-expression(expression=${env.TTP_GICS_DB_USER})
+	set gicsDbUser=${env.TTP_GICS_DB_USER}
+end-if
+
+set gicsDbPass=gics_password
+if (outcome == "success") of :resolve-expression(expression=${env.GICS_DB_PASS})
+	set gicsDbPass=${env.GICS_DB_PASS}
+end-if
+if (outcome == "success") of :resolve-expression(expression=${env.TTP_GICS_DB_PASS})
+	set gicsDbPass=${env.TTP_GICS_DB_PASS}
 end-if
 
 if (outcome != "success") of /subsystem=datasources/data-source=gicsDS:read-resource
-	try
-		echo \>\>\> add datasources gicsDS
-		data-source add \
-			--name=CM12SqlDS \
-			--driver-name=mysql \
-			--jndi-name=java:jboss/datasources/gicsDS \	
-			--connection-url=jdbc:mysql://$gicsDbHost:$gicsDbPort/$gicsDbName?useSSL=false&allowPublicKeyRetrieval=true&useJDBCCompliantTimezoneShift=true&useLegacyDatetimeCode=false&serverTimezone=Europe/Berlin \
-			--user-name=$gicsDbUser \
-			--password=$gicsDbPass \
-			--use-ccm=true \
-			--min-pool-size=0 \
-			--max-pool-size=20 \
-			--flush-strategy=FailingConnectionOnly \
-			--use-java-context=true \
-			--jta=false \
-			--enabled=true
-	catch
-		echo \<\<\< FAILED add datasources gicsDS
-		data-source remove --name=CM12SqlDS
-	end-try
+    echo \>\>\> add datasources gicsDS
+    data-source add \
+        --name=CM12SqlDS \
+        --driver-name=mysql \
+        --jndi-name=java:jboss/datasources/gicsDS \
+        --connection-url=jdbc:mysql://$gicsDbHost:$gicsDbPort/$gicsDbName?useSSL=false&allowPublicKeyRetrieval=true&useJDBCCompliantTimezoneShift=true&useLegacyDatetimeCode=false&serverTimezone=Europe/Berlin \
+        --user-name=$gicsDbUser \
+        --password=$gicsDbPass \
+        --use-ccm=true \
+        --min-pool-size=0 \
+        --max-pool-size=20 \
+        --flush-strategy=FailingConnectionOnly \
+        --use-java-context=true \
+        --jta=true \
+        --enabled=true \
+        --check-valid-connection-sql="select 1" \
+        --validate-on-match=false \
+        --background-validation=true \
+        --background-validation-millis=10000
 end-if
 
 
 # add logger for gics
+######################
 set gicsLogLevel=${GICS_LOG_LEVEL}
+if (outcome == "success") of :resolve-expression(expression=${env.TTP_GICS_LOG_LEVEL})
+	set gicsLogLevel=${env.TTP_GICS_LOG_LEVEL}
+end-if
 if (result ~= "(TRACE|DEBUG|INFO|WARN|ERROR|FATAL)") of :resolve-expression(expression=$gicsLogLevel)
 	echo \>\>\> set gics-log-level to $gicsLogLevel
 else
 	set gicsLogLevel="INFO"
 end-if
 set gicsFileLog=${GICS_FILE_LOG}
+if (outcome == "success") of :resolve-expression(expression=${env.TTP_GICS_LOG_TO_FILE})
+	set gicsFileLog=${env.TTP_GICS_LOG_TO_FILE}
+end-if
 if (result ~= "(?i)(on|true|yes|1)") of :resolve-expression(expression=$gicsFileLog)
 	echo \>\>\> add gics-logger as separate file
 	/subsystem=logging/size-rotating-file-handler=gics-handler:add(file={"relative-to"=>"jboss.server.log.dir", "path"=>"gics.log"})
@@ -72,64 +98,176 @@ else
 end-if
 
 
+set wfOverlaysDir=${docker.wildfly.jboss}
+if (outcome == "success") of :resolve-expression(expression=${env.WF_OVERLAYS_DIR})
+	set wfOverlaysDir=${env.WF_OVERLAYS_DIR}
+end-if
 set authMode=${GICS_AUTH_MODE}
-# gRAS-Authentication
+if (outcome == "success") of :resolve-expression(expression=${env.TTP_GICS_WEB_AUTH_MODE})
+	set authMode=${env.TTP_GICS_WEB_AUTH_MODE}
+end-if
+# gRAS-Authentication for WEB
+##############################
 if (result ~= "(?i)(gras)") of :resolve-expression(expression=$authMode)
-	try
-		echo \>\>\> install gics-Authentication for $authMode-Authentication
-		deployment-overlay add \
-			--name=gicsGrasAuth \
-			--content=/WEB-INF/web.xml=/entrypoint-wildfly-cli/gics_gras_web.xml,/WEB-INF/jboss-web.xml=/entrypoint-wildfly-cli/gics_gras_jboss-web.xml \
-			--deployments=gics-web-*.war \
-			--redeploy-affected
-	catch
-		echo \<\<\< FAILED install gics-Authentication for $authMode-Authentication
-		deployment-overlay remove \
-			--name=gicsGrasAuth \
-			--redeploy-affected
-	end-try
+    echo \>\>\> install gics-Authentication for $authMode-Authentication
+    deployment-overlay add \
+        --name=gicsGrasAuth \
+        --content=/WEB-INF/web.xml=$wfOverlaysDir/gics_gras_web.xml,/WEB-INF/jboss-web.xml=$wfOverlaysDir/gics_gras_jboss-web.xml \
+        --deployments=gics-web-*.war \
+        --redeploy-affected
 end-if
 
-# KeyCloak-Authentication
+
+# KeyCloak-Authentication for WEB
+##################################
 if (result ~= "(?i)(keycloak-json)") of :resolve-expression(expression=$authMode)
+    echo \>\>\> install gics-Authentication for $authMode-Authentication
+    deployment-overlay add \
+        --name=gicsOIDCAuth \
+        --content=/WEB-INF/web.xml=$wfOverlaysDir/gics_oidc_web.xml,/WEB-INF/oidc.json=$wfOverlaysDir/oidc.json \
+        --deployments=gics-web-*.war \
+        --redeploy-affected
+end-if
+
+# KeyCloak-Authentication for WEB (alternative Methode)
+########################################################
+set ttpWebKeycloakRealm=ttp
+if (outcome == "success") of :resolve-expression(expression=${env.KEYCLOAK_REALM})
+	set ttpWebKeycloakRealm=${env.KEYCLOAK_REALM}
+end-if
+if (outcome == "success") of :resolve-expression(expression=${env.TTP_KEYCLOAK_REALM})
+	set ttpWebKeycloakRealm=${env.TTP_KEYCLOAK_REALM}
+end-if
+if (outcome == "success") of :resolve-expression(expression=${env.TTP_WEB_KEYCLOAK_REALM})
+	set ttpWebKeycloakRealm=${env.TTP_WEB_KEYCLOAK_REALM}
+end-if
+
+set ttpWebKeycloakClientId=ths
+if (outcome == "success") of :resolve-expression(expression=${env.KEYCLOAK_RESOURCE})
+	set ttpWebKeycloakClientId=${env.KEYCLOAK_RESOURCE}
+end-if
+if (outcome == "success") of :resolve-expression(expression=${env.KEYCLOAK_CLIENT_ID})
+	set ttpWebKeycloakClientId=${env.KEYCLOAK_CLIENT_ID}
+end-if
+if (outcome == "success") of :resolve-expression(expression=${env.TTP_KEYCLOAK_CLIENT_ID})
+	set ttpWebKeycloakClientId=${env.TTP_KEYCLOAK_CLIENT_ID}
+end-if
+if (outcome == "success") of :resolve-expression(expression=${env.TTP_WEB_KEYCLOAK_CLIENT_ID})
+	set ttpWebKeycloakClientId=${env.TTP_WEB_KEYCLOAK_CLIENT_ID}
+end-if
+
+set ttpWebKeycloakBaseUrl=<PROTOCOL://HOST_OR_IP:PORT/auth/>
+if (outcome == "success") of :resolve-expression(expression=${env.KEYCLOAK_SERVER_URL})
+	set ttpWebKeycloakBaseUrl=${env.KEYCLOAK_SERVER_URL}
+end-if
+if (outcome == "success") of :resolve-expression(expression=${env.TTP_KEYCLOAK_SERVER_URL})
+	set ttpWebKeycloakBaseUrl=${env.TTP_KEYCLOAK_SERVER_URL}
+end-if
+if (outcome == "success") of :resolve-expression(expression=${env.TTP_WEB_KEYCLOAK_SERVER_URL})
+	set ttpWebKeycloakBaseUrl=${env.TTP_WEB_KEYCLOAK_SERVER_URL}
+end-if
+
+set ttpWebKeycloakSecret=<CLIENT_SECRET>
+if (outcome == "success") of :resolve-expression(expression=${env.KEYCLOAK_CLIENT_SECRET})
+	set ttpWebKeycloakSecret=${env.KEYCLOAK_CLIENT_SECRET}
+end-if
+if (outcome == "success") of :resolve-expression(expression=${env.TTP_KEYCLOAK_CLIENT_SECRET})
+	set ttpWebKeycloakSecret=${env.TTP_KEYCLOAK_CLIENT_SECRET}
+end-if
+if (outcome == "success") of :resolve-expression(expression=${env.TTP_WEB_KEYCLOAK_CLIENT_SECRET})
+	set ttpWebKeycloakSecret=${env.TTP_WEB_KEYCLOAK_CLIENT_SECRET}
+end-if
+
+set ttpWebKeycloakSslRequired=external
+if (outcome == "success") of :resolve-expression(expression=${env.KEYCLOAK_SSL_REQUIRED})
+	set ttpWebKeycloakSslRequired=${env.KEYCLOAK_SSL_REQUIRED}
+end-if
+if (outcome == "success") of :resolve-expression(expression=${env.TTP_KEYCLOAK_SSL_REQUIRED})
+	set ttpWebKeycloakSslRequired=${env.TTP_KEYCLOAK_SSL_REQUIRED}
+end-if
+if (outcome == "success") of :resolve-expression(expression=${env.TTP_WEB_KEYCLOAK_SSL_REQUIRED})
+	set ttpWebKeycloakSslRequired=${env.TTP_WEB_KEYCLOAK_SSL_REQUIRED}
+end-if
+
+set ttpWebKeycloakConfidentialPort=8443
+if (outcome == "success") of :resolve-expression(expression=${env.KEYCLOAK_CONFIDENTIAL_PORT})
+	set ttpWebKeycloakConfidentialPort=${env.KEYCLOAK_CONFIDENTIAL_PORT}
+end-if
+if (outcome == "success") of :resolve-expression(expression=${env.TTP_KEYCLOAK_CONFIDENTIAL_PORT})
+	set ttpWebKeycloakConfidentialPort=${env.TTP_KEYCLOAK_CONFIDENTIAL_PORT}
+end-if
+if (outcome == "success") of :resolve-expression(expression=${env.TTP_WEB_KEYCLOAK_CONFIDENTIAL_PORT})
+	set ttpWebKeycloakConfidentialPort=${env.TTP_WEB_KEYCLOAK_CONFIDENTIAL_PORT}
+end-if
+
+set ttpWebKeycloakUseResourceRoleMappings=false
+if (outcome == "success") of :resolve-expression(expression=${env.KEYCLOAK_USE_RESOURCE_ROLE_MAPPINGS})
+	set ttpWebKeycloakUseResourceRoleMappings=${env.KEYCLOAK_USE_RESOURCE_ROLE_MAPPINGS}
+end-if
+if (outcome == "success") of :resolve-expression(expression=${env.TTP_KEYCLOAK_USE_RESOURCE_ROLE_MAPPINGS})
+	set ttpWebKeycloakUseResourceRoleMappings=${env.TTP_KEYCLOAK_USE_RESOURCE_ROLE_MAPPINGS}
+end-if
+if (outcome == "success") of :resolve-expression(expression=${env.TTP_WEB_KEYCLOAK_USE_RESOURCE_ROLE_MAPPINGS})
+	set ttpWebKeycloakUseResourceRoleMappings=${env.TTP_WEB_KEYCLOAK_USE_RESOURCE_ROLE_MAPPINGS}
+end-if
+if (result ~= "(?i)(keycloak)") of :resolve-expression(expression=$authMode)
+    echo \>\>\> install gics-Authentication for $authMode-Authentication
+    deployment-overlay add \
+        --name=gicsOIDCAuth \
+        --content=/WEB-INF/web.xml=$wfOverlaysDir/gics_oidc_web.xml \
+        --deployments=gics-web-*.war \
+        --redeploy-affected
+    set gicsVersion=${GICS_VERSION}
+    /subsystem=elytron-oidc-client/secure-deployment=gics-web-$gicsVersion.war:add( \
+        provider-url=$ttpWebKeycloakBaseUrl/realms/$ttpWebKeycloakRealm, \
+        client-id=$ttpWebKeycloakClientId, \
+        ssl-required=$ttpWebKeycloakSslRequired, \
+        confidential-port=$ttpWebKeycloakConfidentialPort, \
+        use-resource-role-mappings=$ttpWebKeycloakUseResourceRoleMappings \
+    )
+    /subsystem=elytron-oidc-client/secure-deployment=gics-web-$gicsVersion.war/credential=secret:add(secret=$ttpWebKeycloakSecret)
+end-if
+
+# KeyCloak-Authentication for SOAP
+###################################
+if (result ~= "(?i)(on|true|yes|1)") of :resolve-expression(expression=${env.TTP_GICS_SOAP_KEYCLOAK_ENABLE})
+    echo \>\>\> set system-property for TTP_GICS_SOAP_KEYCLOAK_ENABLE
+    /system-property=ttp.auth.soap.keycloak.gics.enabled:add(value=true)
+else
 	try
-		echo \>\>\> install gics-Authentication for $authMode-Authentication
-		deployment-overlay add \
-			--name=gicsKeycloakAuth \
-			--content=/WEB-INF/web.xml=/entrypoint-wildfly-cli/gics_keycloak_web.xml,/WEB-INF/keycloak.json=/entrypoint-wildfly-cli/keycloak.json \
-			--deployments=gics-web-*.war \
-			--redeploy-affected
+		/system-property=ttp.auth.soap.keycloak.gics.enabled:add(value=false)
 	catch
-		echo \<\<\< FAILED install gics-Authentication for $authMode-Authentication
-		deployment-overlay remove \
-			--name=gicsKeycloakAuth \
-			--redeploy-affected
 	end-try
 end-if
 
-# KeyCloak-Authentication (alternative Methode)
-if (result ~= "(?i)(keycloak)") of :resolve-expression(expression=$authMode)
-	try
-		echo \>\>\> install gics-Authentication for $authMode-Authentication
-		deployment-overlay add \
-			--name=gicsKeycloakAuth \
-			--content=/WEB-INF/web.xml=/entrypoint-wildfly-cli/gics_keycloak_web.xml \
-			--deployments=gics-web-*.war \
-			--redeploy-affected
-		set gicsVersion=${GICS_VERSION}
-		/subsystem=keycloak/secure-deployment=gics-web-$gicsVersion.war:add( \
-			realm=${env.KEYCLOAK_REALM}, \
-			resource=${env.KEYCLOAK_RESOURCE}, \
-			auth-server-url=${env.KEYCLOAK_SERVER_URL}, \
-			ssl-required=${env.KEYCLOAK_SSL_REQUIRED}, \
-			confidential-port=${env.KEYCLOAK_CONFIDENTIAL_PORT}, \
-			use-resource-role-mappings=${env.KEYCLOAK_USE_RESOURCE_ROLE_MAPPINGS} \
-		)
-		/subsystem=keycloak/secure-deployment=gics-web-$gicsVersion.war/credential=secret:add(value=${env.KEYCLOAK_CLIENT_SECRET})
-	catch
-		echo \<\<\< FAILED install gics-Authentication for $authMode-Authentication
-		deployment-overlay remove \
-			--name=gicsKeycloakAuth \
-			--redeploy-affected
-	end-try
+# Authentication-Roles for SOAP
+###################################
+# roles (role.gics.[user|admin].[name|services])
+if (outcome == "success") of :resolve-expression(expression=${env.TTP_GICS_SOAP_ROLE_USER_NAME})
+    set temp="${env.TTP_GICS_SOAP_ROLE_USER_NAME}"
+    echo \>\>\> set system-property for TTP_GICS_SOAP_ROLE_USER_NAME
+    /system-property=ttp.auth.soap.role.gics.user.name:add(value=$temp)
+end-if
+if (outcome == "success") of :resolve-expression(expression=${env.TTP_GICS_SOAP_ROLE_USER_SERVICES})
+    set temp="${env.TTP_GICS_SOAP_ROLE_USER_SERVICES}"
+    echo \>\>\> set system-property for TTP_GICS_SOAP_ROLE_USER_SERVICES
+    /system-property=ttp.auth.soap.role.gics.user.services:add(value=$temp)
+end-if
+if (outcome == "success") of :resolve-expression(expression=${env.TTP_GICS_SOAP_ROLE_ADMIN_NAME})
+    set temp="${env.TTP_GICS_SOAP_ROLE_ADMIN_NAME}"
+    echo \>\>\> set system-property for TTP_GICS_SOAP_ROLE_ADMIN_NAME
+    /system-property=ttp.auth.soap.role.gics.admin.name:add(value=$temp)
+end-if
+if (outcome == "success") of :resolve-expression(expression=${env.TTP_GICS_SOAP_ROLE_ADMIN_SERVICES})
+    set temp="${env.TTP_GICS_SOAP_ROLE_ADMIN_SERVICES}"
+    echo \>\>\> set system-property for TTP_GICS_SOAP_ROLE_ADMIN_SERVICES
+    /system-property=ttp.auth.soap.role.gics.admin.services:add(value=$temp)
+end-if
+
+# Domain-based Auth-Roles
+##########################
+if (outcome == "success") of :resolve-expression(expression=${env.TTP_GICS_AUTH_DOMAIN_ROLES})
+    set temp=${env.TTP_GICS_AUTH_DOMAIN_ROLES}
+    echo \>\>\> set system-property for TTP_GICS_AUTH_DOMAIN_ROLES
+    /system-property=ttp.auth.gics.domain.roles:add(value=$temp)
 end-if

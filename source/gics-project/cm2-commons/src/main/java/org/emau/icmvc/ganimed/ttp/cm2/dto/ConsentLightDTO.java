@@ -4,7 +4,7 @@ package org.emau.icmvc.ganimed.ttp.cm2.dto;
  * ###license-information-start###
  * gICS - a Generic Informed Consent Service
  * __
- * Copyright (C) 2014 - 2022 Trusted Third Party of the University Medicine Greifswald -
+ * Copyright (C) 2014 - 2023 Trusted Third Party of the University Medicine Greifswald -
  * 							kontakt-ths@uni-greifswald.de
  *
  * 							concept and implementation
@@ -17,7 +17,7 @@ package org.emau.icmvc.ganimed.ttp.cm2.dto;
  * 							r. schuldt
  *
  * 							The gICS was developed by the University Medicine Greifswald and published
- *  							in 2014 as part of the research project "MOSAIC" (funded by the DFG HO 1937/2-1).
+ * 							in 2014 as part of the research project "MOSAIC" (funded by the DFG HO 1937/2-1).
  *
  * 							Selected functionalities of gICS were developed as
  * 							part of the following research projects:
@@ -26,6 +26,7 @@ package org.emau.icmvc.ganimed.ttp.cm2.dto;
  * 							- NUM-CODEX (funded by the German Federal Ministry of Education and Research 01KX2021)
  *
  * 							please cite our publications
+ * 							https://doi.org/10.1186/s12911-022-02081-4
  * 							https://doi.org/10.1186/s12967-020-02457-y
  * 							http://dx.doi.org/10.3414/ME14-01-0133
  * 							http://dx.doi.org/10.1186/s12967-015-0545-6
@@ -46,10 +47,12 @@ package org.emau.icmvc.ganimed.ttp.cm2.dto;
  * ###license-information-end###
  */
 
+import java.io.Serial;
 import java.io.Serializable;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Map.Entry;
 
 import org.emau.icmvc.ganimed.ttp.cm2.dto.enums.ConsentTemplateType;
 
@@ -61,9 +64,10 @@ import org.emau.icmvc.ganimed.ttp.cm2.dto.enums.ConsentTemplateType;
  * @author geidell
  *
  */
-public class ConsentLightDTO extends FhirIdDTO implements Serializable
+public class ConsentLightDTO extends FhirIdDTO implements Serializable, DomainRelated
 {
-	private static final long serialVersionUID = 1816404865190966405L;
+	@Serial
+	private static final long serialVersionUID = -7225102544986077075L;
 	public static final String NO_REAL_SIGNATURE = "no real signature";
 	public static final String NO_SIGNATURE = "no signature";
 	private ConsentKeyDTO key;
@@ -77,7 +81,7 @@ public class ConsentLightDTO extends FhirIdDTO implements Serializable
 	private String comment;
 	private String externProperties;
 	private ConsentTemplateType templateType;
-	private Map<ModuleKeyDTO, ModuleStateDTO> moduleStates = new HashMap<>();
+	private final Map<ModuleKeyDTO, ModuleStateDTO> moduleStates = new HashMap<>();
 	private Date creationDate;
 	private Date updateDate;
 	private Date validFromDate;
@@ -93,21 +97,17 @@ public class ConsentLightDTO extends FhirIdDTO implements Serializable
 	public ConsentLightDTO(ConsentKeyDTO key)
 	{
 		super(null);
-		this.key = key;
+		setKey(key);
 	}
 
 	public ConsentLightDTO(ConsentLightDTO lightDTO)
 	{
 		super(lightDTO.getFhirID());
-		key = lightDTO.getKey();
+		setKey(lightDTO.getKey());
 		setComment(lightDTO.getComment());
 		setExternProperties(lightDTO.getExternProperties());
-
-		// fixes #467
-		setExpirationProperties(new ExpirationPropertiesDTO(lightDTO.getExpirationProperties()));
-
-		Map<ModuleKeyDTO, ModuleStateDTO> newModuleStates = new HashMap<>(lightDTO.getModuleStates());
-		setModuleStates(newModuleStates);
+		setExpirationProperties(lightDTO.getExpirationProperties());
+		setModuleStates(lightDTO.getModuleStates());
 		setPatientSignatureIsFromGuardian(lightDTO.getPatientSignatureIsFromGuardian());
 		setHasPatientSignature(lightDTO.getHasPatientSignature());
 		setPatientSigningDate(lightDTO.getPatientSigningDate());
@@ -121,7 +121,7 @@ public class ConsentLightDTO extends FhirIdDTO implements Serializable
 		setUpdateDate(lightDTO.getUpdateDate());
 		setQualityControl(lightDTO.getQualityControl());
 		setFhirID(lightDTO.getFhirID());
-		setConsentDates(new ConsentDateValuesDTO(lightDTO.getConsentDates()));
+		setConsentDates(lightDTO.getConsentDates());
 	}
 
 	public ConsentKeyDTO getKey()
@@ -134,6 +134,10 @@ public class ConsentLightDTO extends FhirIdDTO implements Serializable
 		if (key != null)
 		{
 			this.key = key;
+		}
+		else
+		{
+			this.key = null;
 		}
 	}
 
@@ -174,7 +178,14 @@ public class ConsentLightDTO extends FhirIdDTO implements Serializable
 
 	public void setPatientSigningDate(Date patientSigningDate)
 	{
-		this.patientSigningDate = patientSigningDate;
+		if (patientSigningDate != null)
+		{
+			this.patientSigningDate = new Date(patientSigningDate.getTime());
+		}
+		else
+		{
+			this.patientSigningDate = null;
+		}
 	}
 
 	public String getPatientSigningPlace()
@@ -194,7 +205,14 @@ public class ConsentLightDTO extends FhirIdDTO implements Serializable
 
 	public void setPhysicianSigningDate(Date physicianSigningDate)
 	{
-		this.physicianSigningDate = physicianSigningDate;
+		if (physicianSigningDate != null)
+		{
+			this.physicianSigningDate = new Date(physicianSigningDate.getTime());
+		}
+		else
+		{
+			this.physicianSigningDate = null;
+		}
 	}
 
 	public String getPhysicianSigningPlace()
@@ -244,9 +262,16 @@ public class ConsentLightDTO extends FhirIdDTO implements Serializable
 
 	public void setModuleStates(Map<ModuleKeyDTO, ModuleStateDTO> moduleStates)
 	{
-		if (moduleStates != null)
+		if (this.moduleStates != moduleStates)
 		{
-			this.moduleStates = moduleStates;
+			this.moduleStates.clear();
+			if (moduleStates != null)
+			{
+				for (Entry<ModuleKeyDTO, ModuleStateDTO> entry : moduleStates.entrySet())
+				{
+					this.moduleStates.put(new ModuleKeyDTO(entry.getKey()), new ModuleStateDTO(entry.getValue()));
+				}
+			}
 		}
 	}
 
@@ -257,7 +282,14 @@ public class ConsentLightDTO extends FhirIdDTO implements Serializable
 
 	public void setCreationDate(Date creationDate)
 	{
-		this.creationDate = creationDate;
+		if (creationDate != null)
+		{
+			this.creationDate = new Date(creationDate.getTime());
+		}
+		else
+		{
+			this.creationDate = null;
+		}
 	}
 
 	public Date getUpdateDate()
@@ -267,7 +299,14 @@ public class ConsentLightDTO extends FhirIdDTO implements Serializable
 
 	public void setUpdateDate(Date updateDate)
 	{
-		this.updateDate = updateDate;
+		if (updateDate != null)
+		{
+			this.updateDate = new Date(updateDate.getTime());
+		}
+		else
+		{
+			this.updateDate = null;
+		}
 	}
 
 	public Date getValidFromDate()
@@ -277,7 +316,14 @@ public class ConsentLightDTO extends FhirIdDTO implements Serializable
 
 	public void setValidFromDate(Date validFromDate)
 	{
-		this.validFromDate = validFromDate;
+		if (validFromDate != null)
+		{
+			this.validFromDate = new Date(validFromDate.getTime());
+		}
+		else
+		{
+			this.validFromDate = null;
+		}
 	}
 
 	public QCDTO getQualityControl()
@@ -287,7 +333,14 @@ public class ConsentLightDTO extends FhirIdDTO implements Serializable
 
 	public void setQualityControl(QCDTO qualityControl)
 	{
-		this.qualityControl = qualityControl;
+		if (qualityControl != null)
+		{
+			this.qualityControl = new QCDTO(qualityControl);
+		}
+		else
+		{
+			this.qualityControl = null;
+		}
 	}
 
 	public ConsentDateValuesDTO getConsentDates()
@@ -297,7 +350,14 @@ public class ConsentLightDTO extends FhirIdDTO implements Serializable
 
 	public void setConsentDates(ConsentDateValuesDTO consentDates)
 	{
-		this.consentDates = consentDates;
+		if (consentDates != null)
+		{
+			this.consentDates = new ConsentDateValuesDTO(consentDates);
+		}
+		else
+		{
+			this.consentDates = new ConsentDateValuesDTO();
+		}
 	}
 
 	public ExpirationPropertiesDTO getExpirationProperties()
@@ -307,7 +367,20 @@ public class ConsentLightDTO extends FhirIdDTO implements Serializable
 
 	public void setExpirationProperties(ExpirationPropertiesDTO expirationProperties)
 	{
-		this.expirationProperties = expirationProperties;
+		if (expirationProperties != null)
+		{
+			this.expirationProperties = new ExpirationPropertiesDTO(expirationProperties);
+		}
+		else
+		{
+			this.expirationProperties = new ExpirationPropertiesDTO();
+		}
+	}
+
+	@Override
+	public String getDomainName()
+	{
+		return getKey().getConsentTemplateKey().getDomainName();
 	}
 
 	@Override

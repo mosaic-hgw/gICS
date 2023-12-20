@@ -2,7 +2,7 @@
   ###license-information-start###
   gICS - a Generic Informed Consent Service
   __
-  Copyright (C) 2014 - 2022 Trusted Third Party of the University Medicine Greifswald -
+  Copyright (C) 2014 - 2023 Trusted Third Party of the University Medicine Greifswald -
   							kontakt-ths@uni-greifswald.de
   
   							concept and implementation
@@ -15,8 +15,8 @@
   							r. schuldt
   
   							The gICS was developed by the University Medicine Greifswald and published
-   							in 2014 as part of the research project "MOSAIC" (funded by the DFG HO 1937/2-1).
-   
+  							in 2014 as part of the research project "MOSAIC" (funded by the DFG HO 1937/2-1).
+  
   							Selected functionalities of gICS were developed as
   							part of the following research projects:
   							- MAGIC (funded by the DFG HO 1937/5-1)
@@ -24,6 +24,7 @@
   							- NUM-CODEX (funded by the German Federal Ministry of Education and Research 01KX2021)
   
   							please cite our publications
+  							https://doi.org/10.1186/s12911-022-02081-4
   							https://doi.org/10.1186/s12967-020-02457-y
   							http://dx.doi.org/10.3414/ME14-01-0133
   							http://dx.doi.org/10.1186/s12967-015-0545-6
@@ -73,7 +74,7 @@
 
 	<ui:define name="content">
 		<h:form id="main" onkeypress="if (event.keyCode === 13) { return false; }">
-			<components:print />
+			<components:print autoClose="true" />
 			<p:focus context="@form" />
 
 			<f:event listener="#{consentController.init(param['templateType'], param['sidKey'], param['sidValue'])}" type="preRenderView" />
@@ -82,18 +83,16 @@
 				<h4>
 					<h:outputText value="#{msg['consent.label.new.type_'.concat(consentController.templateType.name())]}" />
 				</h4>
-				<p:commandButton actionListener="#{consentController.onNewConsent}" icon="mdi mdi-playlist-edit" update="@form, :title"
+				<p:commandButton actionListener="#{consentController.onNewConsent}" icon="mdi mdi-playlist-edit" update="@form, :title, list, new"
 								 value="#{msg['consent.button.add']}" />
 				<h:outputText class="or" value="#{cmsg['ui.button.or']}" />
-				<p:commandButton actionListener="#{consentController.onNewParse}" icon="mdi mdi-upload" update="@form, :title"
+				<p:commandButton actionListener="#{consentController.onNewParse}" icon="mdi mdi-upload" update="@form, :title, list, new, parse"
 								 value="#{msg['consent.button.fromScan']}" />
 			</p:panel>
+		</h:form>
 
-			<h:panelGroup id="signerDetails" layout="block" rendered="#{consentController.consentPageMode == 'SEARCH'}">
-				<consentComponents:signer_details />
-			</h:panelGroup>
-
-			<p:panel id="list" rendered="#{consentController.consentPageMode == 'LIST' || consentController.consentPageMode == 'SEARCH'}" style="margin-top: 15px;">
+		<h:panelGroup layout="block" id="list">
+			<p:panel rendered="#{consentController.consentPageMode == 'LIST'}" style="margin-top: 15px;">
 				<h4>
 					<h:panelGroup id="rowCount" layout="block">
 						<h:outputFormat value="#{msg['consent.exist.amount.type_'.concat(consentController.templateType.name())]}">
@@ -102,226 +101,116 @@
 					</h:panelGroup>
 				</h4>
 
-				<p:blockUI animate="false" block="consents" widgetVar="blockConsents">
-					<h:outputText escape="false" value="#{msg['consent.label.filteringEntries']}" />
-				</p:blockUI>
-				<p:dataTable id="consents"
-							 currentPageReportTemplate="#{props.currentPageReport}"
-							 emptyMessage="#{cmsg['ui.table.empty']}"
-							 globalFilter="#{consentController.globalFilter}"
-							 lazy="true"
-							 pageLinks="3" paginator="true" paginatorPosition="bottom" paginatorTemplate="#{props.paginatorTemplate}"
-							 rows="10"
-							 selection="#{consentController.selectedConsent}" selectionMode="single"
-							 sortMode="single"
-							 value="#{consentController.consentsLazyModel}"
-							 var="_consent" widgetVar="consents">
-					<p:ajax event="filter" oncomplete="unBlockDataTable('blockConsents');" onstart="blockDataTable('blockConsents');" delay="700" />
-					<p:ajax event="contextMenu" ignoreAutoUpdate="true" listener="#{consentController.onRowSelect}" update="main:consents_menu, main:selectedSignerIds" />
-
-					<f:facet name="header" style="text-align:left; padding: 0;">
-						<p:inputText id="globalFilter" oninput="PF('consents').filter()" placeholder="#{cmsg['ui.table.filter']}"
-									 rendered="#{consentController.consentPageMode != 'SEARCH'}" value="#{consentController.globalFilter}" />
-					</f:facet>
-
-					<p:column id="type" headerText="#{msg['template.type']}" rendered="#{consentController.templateType == null}"
-							  style="width:40px; text-align:center;" styleClass="mdi icon_#{_consent.template.type.name()}"
-							  title="#{msg['template.type.'.concat(_consent.template.type.name())]}">
-					</p:column>
-					<p:column id="date" filterBy="#{_consent.key.consentDate}" filterStyle="display: none" headerText="#{msg['consent.label.date']}"
-							  sortBy="#{_consent.key.consentDate}" sortOrder="desc" style="min-width: 150px;">
-						<h:outputText value="#{_consent.key.consentDate}" converter="datetime"/>
-					</p:column>
-					<p:column filterBy="#{_consent.key.orderedSignerIds}" filterStyle="display: none" headerText="#{msg['module.signerIds']}" style="min-width: 100px;">
-						<ui:repeat value="#{_consent.key.orderedSignerIds.toArray()}" var="id" varStatus="_i">
-							<ui:fragment rendered="_i.index > 0">
-								<br />
-							</ui:fragment>
-							<h:outputText rendered="#{(domainSelector.selectedDomain.signerIdTypes.size()) > 1}" value="#{id.idType}: " />
-							#{id.id}
-						</ui:repeat>
-					</p:column>
-					<p:column filterBy="#{_consent.template.label}" filterStyle="display: none" headerText="#{msg['common.template']}" sortBy="#{_consent.template.label}"
-							  style="min-width: 200px;" width="100%">
-						<h:outputText value="#{_consent.template.label} " />
-						<h:outputText id="comment-icon" rendered="#{not empty _consent.comment}" styleClass="mdi mdi-comment-text-outline tooltip-icon comment" />
-						<p:tooltip for="comment-icon" rendered="#{not empty _consent.comment}" value="#{_consent.comment}" escape="false" />
-					</p:column>
-					<p:column filterBy="#{_consent.key.consentTemplateKey.version}" filterStyle="display: none"
-							  headerText="#{msg['common.template.version']}" sortBy="#{_consent.key.consentTemplateKey.version}" style="min-width: 80px;">
-						<h:outputText value="#{_consent.template.versionLabelAndVersion}" />
-					</p:column>
-					<p:column filterBy="#{_consent.qualityControl}" filterMatchMode="in" style="min-width: 100px;" styleClass="no-header">
-						<f:facet name="filter">
-							<p:selectCheckboxMenu label="#{msg['model.consent.qc']}" onchange="PF('consents').filter()" showHeader="false">
-								<f:selectItems value="#{consentController.qcFilterTypes}" />
-							</p:selectCheckboxMenu>
-						</f:facet>
-						<h:outputText styleClass="tag #{_consent.qualityControl.qcPassed ? 'tag_lightgreen' : 'tag_lightred'}"
-									  value="#{consentController.getQcTypeLabel(_consent.qualityControl.type)}" />
-					</p:column>
-					<p:column headerText="#{msg['consent.details']}" styleClass="icons">
-						<p:commandButton actionListener="#{consentController.setSelectedConsent(_consent)}" alt="#{msg['consent.details']}"
-										 icon="mdi mdi-format-list-bulleted" oncomplete="PF('details_dialog').show();" styleClass="secondary" title="#{msg['consent.details']}"
-										 update="consents, details_dialog" />
-					</p:column>
-					<p:column headerText="#{msg['model.consent.properties']}" style="min-width: 100px;" styleClass="icons">
-						<!-- Expires full -->
-						<ui:fragment rendered="#{_consent.expires}">
-							<i class="mdi mdi-clock-check green"
-							   title="#{consentController.formatMessage('common.expires.on', [consentController.dateToString(_consent.consentDates.consentExpirationDate, 'date')])}" />
-						</ui:fragment>
-
-						<!-- Expired full -->
-						<ui:fragment rendered="#{_consent.expired}">
-							<i class="mdi mdi-clock-alert red"
-							   title="#{consentController.formatMessage('common.expired.on', [consentController.dateToString(_consent.consentDates.consentExpirationDate, 'date')])}" />
-						</ui:fragment>
-
-						<!-- Expires partly -->
-						<ui:fragment rendered="#{_consent.partlyExpires}">
-							<i class="mdi mdi-clock-alert-outline green" title="#{msg['common.partlyExpires']}" />
-						</ui:fragment>
-
-						<!-- Expired partly -->
-						<ui:fragment rendered="#{_consent.partlyExpired}">
-							<i class="mdi mdi-clock-alert-outline red" title="#{msg['common.partlyExpired']}" />
-						</ui:fragment>
-
-						<!-- Never expires -->
-						<ui:fragment rendered="#{!_consent.expires and !_consent.expired and !_consent.partlyExpires and !_consent.partlyExpired}">
-							<i class="mdi mdi-clock-outline lightgrey" title="#{msg['common.expires.never']}" />
-						</ui:fragment>
-
-						<!-- Scan -->
-						<ui:fragment rendered="#{empty _consent.scans}">
-							<i class="mdi mdi-paperclip lightgrey" title="#{msg['consent.scan.none']}" />
-						</ui:fragment>
-						<ui:fragment rendered="#{_consent.scans.size() == 1}">
-							<p:commandButton actionListener="#{consentController.onDownloadScan(_consent, _consent.scans.get(0))}" ajax="false" icon="mdi mdi-paperclip"
-											 styleClass="no-button" title="#{msg['consent.scan.download']}">
-								<p:fileDownload value="#{mediaProvider.consentPDFStream}" />
-							</p:commandButton>
-						</ui:fragment>
-						<ui:fragment rendered="#{_consent.scans.size() gt 1}">
-							<p:badge value="#{_consent.scans.size()}" style="margin-right: -9px;">
-								<p:commandButton actionListener="#{consentController.setSelectedConsent(_consent)}" icon="mdi mdi-paperclip"
-												 oncomplete="PF('scan_dialog').show()" update="scan_dialog"
-												 styleClass="no-button" title="#{msg['consent.scans.manage']}" />
-							</p:badge>
-						</ui:fragment>
-						<!-- Digital Signature -->
-						<ui:fragment rendered="#{consentController.isDigitalSignature(_consent.patientSignatureBase64)}">
-							<i class="mdi mdi-gesture-double-tap" title="#{msg['common.digitalSigned']}" />
-						</ui:fragment>
-						<!-- Paper Signature -->
-						<ui:fragment rendered="#{!consentController.isDigitalSignature(_consent.patientSignatureBase64)}">
-							<i class="mdi mdi-fountain-pen-tip" title="#{msg['common.paperSigned']}" />
-						</ui:fragment>
-					</p:column>
-				</p:dataTable>
-				<components:rightclick />
-
-				<ui:fragment rendered="#{consentController.templateType == null}">
-					<i class="mdi icon_CONSENT" style="margin-left: 19px;" />#{msg['template.type.CONSENT']}
-					<i class="mdi icon_REVOCATION" />#{msg['template.type.REVOCATION']}
-					<i class="mdi icon_REFUSAL" />#{msg['template.type.REFUSAL']}
-					<br />
-					<br />
-				</ui:fragment>
-
-				<p:button href="search.xhtml" icon="mdi mdi-arrow-left" rendered="#{consentController.consentPageMode == 'SEARCH'}" value="#{msg['search.new']}" />
-
-				<p:contextMenu id="consents_menu" for="consents">
-					<p:menuitem icon="mdi mdi-format-list-bulleted"
-								oncomplete="PF('details_dialog').show();" update="details_dialog"
-								value="#{msg['consent.details']}" />
-					<p:separator />
-					<p:menuitem
-							icon="mdi mdi-content-copy"
-							onclick="PF('growl').renderMessage({'summary':copyToClipboard('main\:selectedSignerIds'), 'detail':
-								\' #{cmsg['message.info.copiedToClipboard']}\', 'severity':';info;'})"
-							value="#{(consentController.selectedConsent.key.signerIds.size()) == 1 ? msg['consent.signerId.copy'] : msg['consent.signerId.copyMultiple']}" />
-					<p:menuitem icon="mdi mdi-account-plus-outline" oncomplete="PF('signerId_dialog').show();" update="signerId"
-								value="#{msg['consent.signerId.add']}" />
-					<p:separator />
-					<p:menuitem icon="mdi mdi-paperclip" oncomplete="PF('scan_dialog').show();"
-								rendered="#{not empty consentController.selectedConsent.scans}"
-								update="scan_dialog" value="#{msg['consent.scans.manage']}">
-					</p:menuitem>
-					<p:menuitem icon="mdi mdi-plus" oncomplete="PF('scan_dialog').show();" rendered="#{empty consentController.selectedConsent.scans}" update="scan_dialog"
-								value="#{msg['consent.scan.add']}" />
-					<p:separator />
-					<p:menuitem actionListener="#{consentController.onNewQc}" icon="mdi mdi-check-decagram" oncomplete="PF('qc_dialog').show();"
-								rendered="#{consentController.qcEnabled}" update="qc_dialog" value="#{msg['page.consents.qc.set']}" />
-					<p:separator />
-					<p:menuitem icon="mdi mdi-comment-text-outline" oncomplete="PF('comment_dialog').show();" update="comment" value="#{msg['consent.comment']}" />
-					<p:menuitem icon="mdi mdi-tag-outline" oncomplete="PF('extern_properties_dialog').show();" update="extern_properties"
-								value="#{msg['consent.externProperties']}" />
-					<p:menuitem actionListener="#{consentController.onNewInvalidation}" disabled="#{consentController.selectedConsent.qualityControl.type == consentController.INVALIDATED}"
-								icon="mdi mdi-alert-outline" oncomplete="PF('qc_dialog').show();"
-								rendered="#{consentController.qcEnabled}" update="qc_dialog" value="#{msg['consent.invalidation.invalidate']}" />
-					<p:separator />
-					<p:menuitem action="#{consentController.onPrintConsent(consentController.selectedConsent)}" ajax="false"
-								icon="mdi mdi-printer" target="blank" value="#{msg['common.button.print']}" />
-				</p:contextMenu>
-				<h:outputText id="selectedSignerIds" styleClass="hide" value="#{consentController.selectedConsent.signerIdsAsString}" />
+				<consentComponents:consent_list />
 			</p:panel>
+		</h:panelGroup>
 
+		<h:panelGroup layout="block" id="signer_details">
+			<ui:fragment rendered="#{consentController.consentPageMode == 'SEARCH'}">
+				<consentComponents:signer_details />
+
+				<p:tabView>
+					<p:tab id="consents">
+						<f:facet name="title">
+							<i class="mdi mdi-file"></i>
+							<h:outputText value="#{consentController.consentCount} #{msg['page.consents.consents']}" style="margin-left: 25px" />
+						</f:facet>
+						<p:panel>
+							<consentComponents:consent_list tableClass="header-no-padding"
+															columnButtonStyle="position: relative;top: -18px;padding:4px;background-color: #FFF;border: 1px solid #E0E0E0;border-bottom: 0" />
+
+							<i class="mdi icon_CONSENT" style="margin-left: 13px;" />#{msg['template.type.CONSENT']}
+							<i class="mdi icon_REVOCATION" />#{msg['template.type.REVOCATION']}
+							<i class="mdi icon_REFUSAL" />#{msg['template.type.REFUSAL']}
+						</p:panel>
+					</p:tab>
+					<p:tab id="policies">
+						<f:facet name="title">
+							<i class="mdi mdi-shield-half-full"></i>
+							<h:outputText value="#{signerController.currentSignedPolicies.size()} #{msg['page.consents.policies']}" style="margin-left: 25px" />
+						</f:facet>
+						<p:panel>
+							<consentComponents:policy_list />
+						</p:panel>
+					</p:tab>
+				</p:tabView>
+
+				<p:panel style="margin-top: 15px;">
+					<p:button href="search.xhtml" icon="mdi mdi-arrow-left" value="#{msg['search.new']}" />
+				</p:panel>
+
+				<!-- Merge signer IDs -->
+				<consentComponents:signer_merge_dialog id="signer_merge_component" />
+			</ui:fragment>
+		</h:panelGroup>
+
+		<h:panelGroup layout="block" id="parse">
 			<ui:fragment rendered="#{consentController.consentPageMode == 'PARSE'}">
-				<p:panel id="newConsentFromScan">
-					<h4>
-						<h:outputText value="#{msg['consent.parse.title']}" />
-					</h4>
-					<h:outputText value="#{msg['consent.parse.hint']}" />
-					<br />
-					<br />
-					<p:fileUpload allowTypes="/(\.|\/)(pdf|PDF)$/" auto="true" fileLimit="1" label="#{msg['common.chooseFile']}" listener="#{consentController.onParse}" mode="advanced"
-								  multiple="false" oncomplete="PF('progressDialog').hide();PF('progressBar').cancel();" onstart="PF('progressDialog').show();PF('progressBar').start();"
-								  style="float: left; margin-right: 10px;" update="@form,:title, menu, progress" />
-					<p:commandButton actionListener="#{consentController.onCancelParse}" icon="mdi mdi-close" styleClass="secondary"
-									 update="@form, :title" value="#{cmsg['ui.button.cancel']}" />
-					<div style="clear: both;"></div>
-				</p:panel>
+				<h:form>
+					<p:panel id="newConsentFromScan">
+						<h4>
+							<h:outputText value="#{msg['consent.parse.title']}" />
+						</h4>
+						<h:outputText value="#{msg['consent.parse.hint']}" />
+						<br />
+						<br />
+						<p:fileUpload allowTypes="/(\.|\/)(pdf|PDF)$/" auto="true" fileLimit="1" label="#{msg['common.chooseFile']}" listener="#{consentController.onParse}" mode="advanced"
+									  multiple="false" oncomplete="PF('progressDialog').hide();PF('progressBar').cancel();" onstart="PF('progressDialog').show();PF('progressBar').start();"
+									  style="float: left; margin-right: 10px;" update="parse,:title, menu, progress, new" />
+						<p:commandButton actionListener="#{consentController.onCancelParse}" icon="mdi mdi-close" styleClass="secondary"
+										 update="parse, :title, list" value="#{cmsg['ui.button.cancel']}" />
+						<div style="clear: both;"></div>
+					</p:panel>
+				</h:form>
 			</ui:fragment>
+		</h:panelGroup>
 
+		<h:panelGroup layout="block" id="print">
 			<ui:fragment rendered="#{consentController.consentPageMode == 'PRINT'}">
-				<h:panelGroup layout="block" styleClass="print">
-					<ui:repeat value="#{consentController.printConsents}" var="_consent" varStatus="_status">
-						<components:consent_form consent="#{_consent}" consentController="#{consentController}" />
-						<div class="#{_status.last ? '' : 'newPage'}"></div>
-					</ui:repeat>
-				</h:panelGroup>
+				<h:form>
+					<h:panelGroup layout="block" styleClass="print">
+						<ui:repeat value="#{consentController.printConsents}" var="_consent" varStatus="_status">
+							<components:consent_form consent="#{_consent}" consentController="#{consentController}" />
+							<div class="#{_status.last ? '' : 'newPage'}"></div>
+						</ui:repeat>
+					</h:panelGroup>
+				</h:form>
 			</ui:fragment>
-			<ui:fragment rendered="#{consentController.consentPageMode == 'NEW'}">
-				<p:panel styleClass="templateSelector">
-					<h4>
-						<h:outputText value="#{msg['consent.label.template']}" />
-					</h4>
-					<p:selectOneMenu converter="genericConverter" filter="true" filterMatchMode="contains" required="true"
-									 styleClass="max" value="#{consentController.editConsent.key.consentTemplateKey}">
-						<p:ajax listener="#{consentController.onSelectTemplate()}" update="@form" />
-						<f:selectItem itemDisabled="true" itemLabel="#{msg['common.pleaseSelect']}" noSelectionOption="true" />
-						<f:selectItems itemLabel="#{_template.label} V #{_template.versionLabelAndVersion} #{!_template.finalised ? '*'.concat(msg['common.notFinalised']).concat('*') : ''}"
-									   itemValue="#{_template.key}"
-									   value="#{consentController.templates}"
-									   var="_template" />
-					</p:selectOneMenu>
-				</p:panel>
-				<components:consent_form consent="#{consentController.editConsent}" consentController="#{consentController}"
-										 rendered="#{not empty consentController.editConsent.template}" />
+		</h:panelGroup>
 
-				<p:panel style="margin-top: 15px;" styleClass="formNavigation">
-					<p:commandButton actionListener="#{consentController.onSaveConsent}" disabled="#{!consentController.editConsent.template.finalised}" icon="mdi mdi-check"
-									 onclick="PF('loading').show();" oncomplete="PF('loading').hide();if (args &amp;&amp; args.validationFailed) window.scrollTo(0, 0); else PF('consents').filter(); "
-									 rendered="#{not empty consentController.editConsent.template}"
-									 update="@form, :title" value="#{cmsg['ui.button.save']}"
-									 widgetVar="saveConsentButton" />
-					<p:commandButton actionListener="#{consentController.onCancelEdit}" icon="mdi mdi-close" immediate="true"
-									 styleClass="secondary" update="@form, :title" value="#{cmsg['ui.button.cancel']}" />
-				</p:panel>
+		<h:panelGroup layout="block" id="new">
+			<ui:fragment rendered="#{consentController.consentPageMode == 'NEW'}">
+				<h:form>
+					<p:panel styleClass="templateSelector">
+						<h4>
+							<h:outputText value="#{msg['consent.label.template']}" />
+						</h4>
+						<p:selectOneMenu converter="genericConverter" filter="true" filterMatchMode="contains" required="true"
+										 styleClass="max" value="#{consentController.editConsent.key.consentTemplateKey}">
+							<p:ajax listener="#{consentController.onSelectTemplate()}" update="@form" />
+							<f:selectItem itemDisabled="true" itemLabel="#{msg['common.pleaseSelect']}" noSelectionOption="true" />
+							<f:selectItems itemLabel="#{_template.label} V #{_template.versionLabelAndVersion} #{!_template.finalised ? '*'.concat(msg['common.notFinalised']).concat('*') : ''}"
+										   itemValue="#{_template.key}"
+										   value="#{consentController.templates}"
+										   var="_template" />
+						</p:selectOneMenu>
+					</p:panel>
+					<components:consent_form consent="#{consentController.editConsent}" consentController="#{consentController}"
+											 rendered="#{not empty consentController.editConsent.template}" />
+
+					<p:panel style="margin-top: 15px;" styleClass="formNavigation">
+						<p:commandButton actionListener="#{consentController.onSaveConsent}" disabled="#{!consentController.editConsent.template.finalised}" icon="mdi mdi-check"
+										 onclick="PF('loading').show();"
+										 oncomplete="PF('loading').hide();if (args &amp;&amp; args.validationFailed) window.scrollTo(0, 0); else PF('consents').filter(); "
+										 rendered="#{not empty consentController.editConsent.template}"
+										 update="@form, :main, :title, list, signer_details, new" value="#{cmsg['ui.button.save']}"
+										 widgetVar="saveConsentButton" />
+						<p:commandButton actionListener="#{consentController.onCancelEdit}" icon="mdi mdi-close" immediate="true"
+										 styleClass="secondary" update="@form, :main, :title, list, signer_details, new" value="#{cmsg['ui.button.cancel']}" />
+					</p:panel>
+				</h:form>
 			</ui:fragment>
-		</h:form>
+		</h:panelGroup>
 
 		<!-- Preview scan of new consent -->
 		<h:panelGroup id="new_consent_scan_preview_dialog_container" layout="block">
@@ -329,15 +218,6 @@
 												   base64="#{consentController.editConsent.getScanByFhirId(consentController.editConsent.selectedScan).base64}"
 												   scanId="#{consentController.editConsent.selectedScan}" />
 		</h:panelGroup>
-
-		<!-- Merge signer IDs -->
-		<consentComponents:signer_merge_dialog id="signer_merge_component" />
-
-		<!-- Consent Details -->
-		<p:dialog id="details_dialog" appendTo="@(body)" blockScroll="true" closeOnEscape="true" modal="true" styleClass="details-dialog no-title"
-				  widgetVar="details_dialog" width="#{empty consentController.selectedConsent.scans ? 'auto' : '95%'}">
-			<components:consent_details consent="#{consentController.selectedConsent}" rendered="#{not empty consentController.selectedConsent.template}" />
-		</p:dialog>
 
 		<!-- Add Signer ID -->
 		<p:dialog blockScroll="true" closeOnEscape="true" header="#{msg['consent.signerId.add']}" modal="true" widgetVar="signerId_dialog">
@@ -358,161 +238,6 @@
 									 oncomplete="if (args &amp;&amp; !args.validationFailed) PF('signerId_dialog').hide();"
 									 update="@form, main" value="#{cmsg['ui.button.add']}" />
 					<p:commandButton icon="mdi mdi-close" immediate="true" onclick="PF('signerId_dialog').hide();" styleClass="secondary"
-									 value="#{cmsg['ui.button.cancel']}" />
-				</h:form>
-			</h:panelGroup>
-		</p:dialog>
-
-		<!-- Set QC -->
-		<p:dialog blockScroll="true" closeOnEscape="true" modal="true" styleClass="no-title" widgetVar="qc_dialog">
-			<h:panelGroup id="qc_dialog" layout="block">
-				<h:form rendered="#{not empty consentController.selectedConsent}">
-					<h3>
-						<h:outputText value="#{consentController.newQc.type == 'invalidated' ? msg['consent.invalidation.invalidate'] : msg['page.consents.qc.set']}" />
-					</h3>
-					<p:focus for="qcType" />
-					<p:messages escape="false" />
-					<h:outputText escape="false" rendered="#{consentController.newQc.type == 'invalidated'}" value="#{msg['consent.invalidation.hint']}" />
-					<p:panelGrid columnClasses="ui-grid-col-6,ui-grid-col-6" columns="2" layout="grid">
-						<p:outputLabel for="qcType" rendered="#{consentController.newQc.type != 'invalidated'}" value="#{msg['model.consent.qc.type']}" />
-						<p:selectOneMenu id="qcType" rendered="#{consentController.newQc.type != 'invalidated'}" required="true"
-										 value="#{consentController.newQc.type}">
-							<f:selectItems value="#{consentController.qcSelectionTypes}" />
-						</p:selectOneMenu>
-
-						<p:outputLabel for="qcInspector" value="#{msg['model.consent.qc.inspector']}" />
-						<p:inputText id="qcInspector" disabled="#{not empty consentController.newQc.inspector}" required="true"
-									 value="#{consentController.newQc.inspector}" />
-
-						<p:outputLabel for="qcComment" value="#{msg['model.consent.qc.comment']}" />
-						<p:inputTextarea id="qcComment" counter="qcComment_counter" counterTemplate="#{msg['common.characters.remaining']}" maxlength="255"
-										 value="#{consentController.newQc.comment}" />
-						<p:column />
-						<h:outputText id="qcComment_counter" styleClass="textCounter" />
-					</p:panelGrid>
-					<p:commandButton actionListener="#{consentController.onSaveQc}" ajax="true" icon="mdi mdi-check"
-									 oncomplete="if (args &amp;&amp; !args.validationFailed) {PF('qc_dialog').hide();PF('details_dialog').hide()}"
-									 update="@form, main:consents" value="#{cmsg['ui.button.save']}" />
-					<p:commandButton icon="mdi mdi-close" immediate="true" onclick="PF('qc_dialog').hide();" styleClass="secondary"
-									 value="#{cmsg['ui.button.cancel']}" />
-				</h:form>
-			</h:panelGroup>
-		</p:dialog>
-
-		<!-- Manage Scans -->
-		<p:dialog id="scan_dialog" blockScroll="true" closeOnEscape="true" modal="true" widgetVar="scan_dialog">
-			<p:ajax event="close" ignoreAutoUpdate="true" update="main:consents" />
-			<f:facet name="header">
-				<h:outputText escape="false"
-							  value="#{empty consentController.selectedConsent.scans ? msg['consent.scan.add'] : msg['consent.scans.manage']}" />
-			</f:facet>
-			<h:form id="scan_dialog_form" rendered="#{not empty consentController.selectedConsent}">
-				<p:messages escape="false" />
-
-				<p:dataTable value="#{consentController.selectedConsent.scans}" var="_scan" rowIndexVar="_i" styleClass="">
-					<p:column headerText="Scan">
-						<h:outputText value="#{_i + 1}." />
-					</p:column>
-					<p:column headerText="#{cmsg['ui.file']}">
-						<h:outputText value="#{not empty _scan.fileName ? _scan.fileName : '-' }" />
-					</p:column>
-					<p:column headerText="#{msg['consent.scan.uploadDate']}" sortBy="#{_scan.uploadDate}" sortOrder="asc">
-						<h:outputText value="#{not empty _scan.uploadDate ? consentController.dateToString(_scan.uploadDate, 'datetime') : '-'}" />
-					</p:column>
-					<p:column styleClass="icons">
-						<p:commandButton icon="mdi mdi-eye"
-										 actionListener="#{consentController.selectedConsent.setSelectedScan(_scan.fhirID)}"
-										 oncomplete="PF('scan_preview_dialog').show()"
-										 styleClass="secondary"
-										 title="#{cmsg['ui.button.view']}"
-										 update="scan_preview_dialog_container" />
-
-						<p:commandButton actionListener="#{scan.prepareDownload(_scan.fhirID, _scan.base64)}" ajax="false" icon="mdi mdi-download"
-										 title="#{cmsg['ui.button.download']}" immediate="true" styleClass="secondary">
-							<p:fileDownload value="#{scan.stream}" />
-						</p:commandButton>
-
-						<p:commandButton actionListener="#{consentController.selectedConsent.setSelectedScan(_scan.fhirID)}"
-										 icon="mdi mdi-delete-empty" oncomplete="PF('scan_delete_dialog').show()" process="@this"
-										 styleClass="secondary" title="#{msg['consent.scan.delete']}" update="scan_delete_dialog" />
-					</p:column>
-				</p:dataTable>
-
-				<br />
-				<p:fileUpload listener="#{consentController.onSaveScanForSelectedConsent}"
-							  sizeLimit="#{cc.attrs.consentController.selectedDomain.getProperty('SCANS_SIZE_LIMIT')}" fileLimit="1" label="#{msg['consent.scan.upload']}"
-							  uploadLabel="#{msg['common.button.upload']}" cancelLabel="#{cmsg['ui.button.cancel']}" allowTypes="/(\.|\/)(pdf|PDF)$/"
-							  update="@parent" process="@this" immediate="true" auto="true"
-							  invalidSizeMessage="#{msg['consent.message.warn.scan.size']} #{cc.attrs.consentController.selectedDomain.getProperty('SCANS_SIZE_LIMIT')} bytes." />
-
-				<br />
-				<p:commandButton icon="mdi mdi-close" immediate="true" onclick="PF('scan_dialog').hide();" styleClass="secondary"
-								 value="#{cmsg['ui.button.close']}" />
-			</h:form>
-		</p:dialog>
-
-		<!-- Preview scan of selected consent -->
-		<h:panelGroup id="scan_preview_dialog_container" layout="block">
-			<consentComponents:scan_preview_dialog id="scan_preview_dialog"
-												   base64="#{consentController.selectedConsent.getScanByFhirId(consentController.selectedConsent.selectedScan).base64}"
-												   scanId="#{consentController.selectedConsent.selectedScan}" />
-		</h:panelGroup>
-
-		<!-- Delete Scan hint -->
-		<p:dialog header="#{msg['consent.scan.delete']}" modal="true" widgetVar="scan_delete_dialog">
-			<h:panelGroup id="scan_delete_dialog" layout="block">
-				<h:form rendered="#{not empty consentController.selectedConsent and not empty consentController.selectedConsent.selectedScan}">
-					<p:selectBooleanCheckbox value="#{consentController.selectedConsent.deleteConfirmation}">
-						<p:ajax update="@form" />
-					</p:selectBooleanCheckbox>
-					<h:outputText escape="false" value="#{msg['consent.scan.delete.hint']}" />
-					<br />
-					<p:commandButton actionListener="#{consentController.onDeleteSelectedScan(consentController.selectedConsent)}"
-									 disabled="#{not consentController.selectedConsent.deleteConfirmation}" icon="mdi mdi-check"
-									 oncomplete="PF('scan_delete_dialog').hide();"
-									 update="scan_dialog_form"
-									 value="#{cmsg['ui.button.delete']}" />
-					<p:commandButton icon="mdi mdi-close"
-									 oncomplete="PF('scan_delete_dialog').hide();"
-									 styleClass="secondary"
-									 value="#{cmsg['ui.button.cancel']}" />
-				</h:form>
-			</h:panelGroup>
-		</p:dialog>
-
-		<!-- Set comment -->
-		<p:dialog blockScroll="true" closeOnEscape="true" header="#{msg['consent.comment']}" modal="true" widgetVar="comment_dialog">
-			<h:panelGroup id="comment" layout="block">
-				<h:form rendered="#{not empty consentController.selectedConsent}">
-					<p:focus context="@form" />
-					<p:messages escape="false" />
-					<p:panelGrid columnClasses="ui-grid-col-12" columns="1" layout="grid">
-						<p:inputTextarea counter="comment_counter" counterTemplate="#{msg['common.characters.remaining']}"
-										 maxlength="255" rows="3" value="#{consentController.selectedConsent.comment}" />
-						<h:outputText id="comment_counter" styleClass="textCounter" />
-					</p:panelGrid>
-					<p:commandButton actionListener="#{consentController.onUpdateConsent}" ajax="true" icon="mdi mdi-check"
-									 oncomplete="if (args &amp;&amp; !args.validationFailed) PF('comment_dialog').hide();" update="@form, main" value="#{cmsg['ui.button.save']}" />
-					<p:commandButton icon="mdi mdi-close" immediate="true" onclick="PF('comment_dialog').hide();" styleClass="secondary"
-									 value="#{cmsg['ui.button.cancel']}" />
-				</h:form>
-			</h:panelGroup>
-		</p:dialog>
-
-		<!-- Set extern properties -->
-		<p:dialog blockScroll="true" closeOnEscape="true" header="#{msg['consent.externProperties']}" modal="true" widgetVar="extern_properties_dialog">
-			<h:panelGroup id="extern_properties" layout="block">
-				<h:form rendered="#{not empty consentController.selectedConsent}">
-					<p:focus context="@form" />
-					<p:messages escape="false" />
-					<p:panelGrid columnClasses="ui-grid-col-12" columns="1" layout="grid">
-						<p:inputTextarea counter="extern_properties_counter" counterTemplate="#{msg['common.characters.remaining']}"
-										 maxlength="4095" rows="3" value="#{consentController.selectedConsent.externProperties}" />
-						<h:outputText id="extern_properties_counter" styleClass="textCounter" />
-					</p:panelGrid>
-					<p:commandButton actionListener="#{consentController.onUpdateConsent}" ajax="true" icon="mdi mdi-check"
-									 oncomplete="if (args &amp;&amp; !args.validationFailed) PF('extern_properties_dialog').hide();" update="@form, main" value="#{cmsg['ui.button.save']}" />
-					<p:commandButton icon="mdi mdi-close" immediate="true" onclick="PF('extern_properties_dialog').hide();" styleClass="secondary"
 									 value="#{cmsg['ui.button.cancel']}" />
 				</h:form>
 			</h:panelGroup>

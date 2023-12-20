@@ -1,7 +1,7 @@
-
 ![context](https://user-images.githubusercontent.com/12081369/49164555-a27e5180-f32f-11e8-8725-7b97e35134b5.png)
 
-Current Version: 2.14.1 (April 2022)
+Current Version: 2023.1.3 (Okt. 2023)
+Current Docker-Version of TTP-FHIR-Gateway: 2023.1.2 (October 2023), Details from [ReleaseNotes](https://www.ths-greifswald.de/ttpfhirgw/releasenotes/2023-1-2)
 
 # About #
 The Consent Management solution gICS (generic Informed Consent Administration Service) supports the management of digital informed consent documents. It facilitates checking  for various policies and modules of a consent in real time.
@@ -27,25 +27,34 @@ or visit https://ths-greifswald.de/gics for more information.
 ## SOAP
 
 All functionalities of the gICS are provided for external use via SOAP-interfaces.
+The [JavaDoc specs for the Consent Services](https://www.ths-greifswald.de/gics/doc "")
+are available online (see package `org.emau.icmvc.ganimed.ttp.cm2`).
 
-[Consent Administration-Interface (JavaDoc)](https://www.ths-greifswald.de/gics/doc "")
+Use SOAP-UI to create sample requests based on the WSDL files.
 
-The WSDL URL is <strong>http://<YOUR IPADDRESS>:8080/gics/gicsService?wsdl</strong>
+### Standard-Service-Interface
 
-Use SOAP-UI to create sample requests.
+The WSDL URL is [http://&lt;YOUR IPADDRESS&gt;:8080/gics/gicsService?wsdl](https://demo.ths-greifswald.de/gics/gicsService?wsdl)
+
+### Standard-Service-Interface with Notifications
+
+The WSDL URL is [http://&lt;YOUR IPADDRESS&gt;:8080/gics/gicsServiceWithNotification?wsdl](https://demo.ths-greifswald.de/gics/gicsServiceWithNotification?wsdl)
+
+### Management-Service-Interface
+
+The WSDL URL is [http://&lt;YOUR IPADDRESS&gt;:8080/gics/gicsManagementService?wsdl](https://demo.ths-greifswald.de/gics/gicsManagementService?wsdl)
 
 ## FHIR
 
 More details from https://www.ths-greifswald.de/gics/fhir
 
 # IT-Security Recommendations #
+Access to relevant application and database servers of the Trusted Third Party tools should only be possible for authorised personnel and via authorised end devices. We therefore recommend additionally implementing the following IT security measures:
 
-For the operation of gICS at least following IT-security measures are recommended:
-
-* use **integrated authentication and authorization mechanism (gRAS)** or **keycloak-support** to secure access and grant privileges to gics-web (see supplementary documentation for details)
-* operation in a separate network-zone
-* use of firewalls and IP-filters
-* access restriction to the gPAS-Servers with basic authentication (e.g. with nginx or apache)
+* Operation of the relevant servers in separate network zones (separate from the research and supply network).
+* Use of firewalls and IP filters
+* Access restriction at URL level with Basic Authentication (e.g. with NGINX or Apache)
+* use of Keycloak to restrict access to Web-Frontends and technical interfaces
 
 # Additional Information #
 
@@ -57,38 +66,22 @@ functionalities of gICS were developed as part of the following research project
 - NUM-CODEX (funded by the German Federal Ministry of Education and Research 01KX2021)
 
 ## Credits ##
-
-Concept and implementation: L. Geidel
-
-Web-Client: A. Blumentritt, M. Bialke, F.M.Moser
-
-Docker: R. Schuldt
-
-TTP-FHIR Gateway für gICS: M. Bialke, P. Penndorf, L. Geidel, S. Lang
+**Concept and implementation:** L. Geidel <br/>
+**Web-Client:** A. Blumentritt, M. Bialke, F.M.Moser <br/>
+**Docker:** R. Schuldt <br/>
+**TTP-FHIR Gateway für gICS:** M. Bialke, P. Penndorf, L. Geidel, S. Lang, F.M. Moser
 
 ## License ##
-
-License: AGPLv3, https://www.gnu.org/licenses/agpl-3.0.en.html
-Copyright: 2014 - 2022 University Medicine Greifswald
-Contact: https://www.ths-greifswald.de/kontakt/
+**License:** AGPLv3, https://www.gnu.org/licenses/agpl-3.0.en.html <br/>
+**Copyright:** 2014 - 2023 University Medicine Greifswald <br/>
+**Contact:** https://www.ths-greifswald.de/kontakt/
 
 ## Publications ##
-'A FHIR has been lit on gICS – Facilitating the standardized exchange of informed consents in a large network of university medicine'
-http://dx.doi.org/10.1186/s12911-022-02081-4
-
-https://rdcu.be/b5Yck
-
-https://rdcu.be/6LJd
-
-http://dx.doi.org/10.3414/ME14-01-0133
-
-http://dx.doi.org/10.1186/s12967-015-0545-6
+- https://doi.org/10.1186/s12911-022-02081-4
+- https://rdcu.be/b5Yck
+- https://rdcu.be/6LJd
+- https://dx.doi.org/10.3414/ME14-01-0133
+- https://dx.doi.org/10.1186/s12967-015-0545-6
 
 # Supported languages #
 German, English
-
-# Screenshots #
-
-![detail](https://user-images.githubusercontent.com/22166209/42631227-d0d2c688-85d9-11e8-9612-4f7994d4e49c.PNG)
-
-![tree](https://user-images.githubusercontent.com/22166209/42631235-da0df7b8-85d9-11e8-9069-a3d4ad62cd53.PNG)

@@ -4,9 +4,9 @@ package org.emau.icmvc.ganimed.ttp.cm2.dto;
  * ###license-information-start###
  * gICS - a Generic Informed Consent Service
  * __
- * Copyright (C) 2014 - 2022 Trusted Third Party of the University Medicine Greifswald -
+ * Copyright (C) 2014 - 2023 Trusted Third Party of the University Medicine Greifswald -
  * 							kontakt-ths@uni-greifswald.de
- * 
+ *
  * 							concept and implementation
  * 							l.geidel, c.hampf
  * 							web client
@@ -15,17 +15,18 @@ package org.emau.icmvc.ganimed.ttp.cm2.dto;
  * 							m.bialke
  * 							docker
  * 							r. schuldt
- * 
+ *
  * 							The gICS was developed by the University Medicine Greifswald and published
- *  							in 2014 as part of the research project "MOSAIC" (funded by the DFG HO 1937/2-1).
- *  
+ * 							in 2014 as part of the research project "MOSAIC" (funded by the DFG HO 1937/2-1).
+ *
  * 							Selected functionalities of gICS were developed as
  * 							part of the following research projects:
  * 							- MAGIC (funded by the DFG HO 1937/5-1)
  * 							- MIRACUM (funded by the German Federal Ministry of Education and Research 01ZZ1801M)
  * 							- NUM-CODEX (funded by the German Federal Ministry of Education and Research 01KX2021)
- * 
+ *
  * 							please cite our publications
+ * 							https://doi.org/10.1186/s12911-022-02081-4
  * 							https://doi.org/10.1186/s12967-020-02457-y
  * 							http://dx.doi.org/10.3414/ME14-01-0133
  * 							http://dx.doi.org/10.1186/s12967-015-0545-6
@@ -35,20 +36,21 @@ package org.emau.icmvc.ganimed.ttp.cm2.dto;
  * it under the terms of the GNU Affero General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  * ###license-information-end###
  */
 
+import java.io.Serial;
 import java.io.Serializable;
+import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -56,34 +58,38 @@ import java.util.stream.Stream;
 
 import org.apache.commons.lang3.StringUtils;
 import org.emau.icmvc.ganimed.ttp.cm2.config.DomainProperties;
+import org.emau.icmvc.ganimed.ttp.cm2.version.VersionConverter;
 
 /**
  * name - identifier<br/>
  * label - label for the web-interface<br>
- * properties - semicolon separated key-value pairs; for valid keys see enum
- * {@link DomainProperties}<br/>
+ * properties - semicolon separated key-value pairs; for valid keys see enum {@link DomainProperties}<br/>
  * comment - comment<br/>
  *
  * @author geidell
  *
  */
-public class DomainDTO extends FhirIdDTO implements Serializable
+public class DomainDTO extends FhirIdDTO implements Serializable, DomainRelated
 {
-	private static final long serialVersionUID = 3326245699921266425L;
+	@Serial
+	private static final long serialVersionUID = 7811630137389142377L;
 	private String name;
 	private String label;
 	private String ctVersionConverter;
+	private transient VersionConverter ctVersionConverterInstance;
 	private String moduleVersionConverter;
+	private transient VersionConverter moduleVersionConverterInstance;
 	private String policyVersionConverter;
+	private transient VersionConverter policyVersionConverterInstance;
 	private String properties;
 	private String comment;
 	private String externProperties;
 	private String logo;
-	private List<String> signerIdTypes;
+	private final List<String> signerIdTypes = new ArrayList<>();
 	private Date creationDate;
 	private Date updateDate;
 	private boolean finalised;
-	private ExpirationPropertiesDTO expirationProperties;
+	private ExpirationPropertiesDTO expirationProperties = new ExpirationPropertiesDTO();
 
 	public DomainDTO()
 	{
@@ -94,14 +100,11 @@ public class DomainDTO extends FhirIdDTO implements Serializable
 			List<String> signerIdTypes)
 	{
 		super(null);
-		this.name = name;
+		setName(name);
 		this.ctVersionConverter = ctVersionConverter;
 		this.moduleVersionConverter = moduleVersionConverter;
 		this.policyVersionConverter = policyVersionConverter;
-		if (signerIdTypes != null)
-		{
-			this.signerIdTypes = signerIdTypes;
-		}
+		setSignerIdTypes(signerIdTypes);
 	}
 
 	public DomainDTO(String name, String label, String ctVersionConverter, String moduleVersionConverter, String policyVersionConverter,
@@ -109,7 +112,7 @@ public class DomainDTO extends FhirIdDTO implements Serializable
 			Date updateDate, ExpirationPropertiesDTO expirationProperties, String fhirID)
 	{
 		super(fhirID);
-		this.name = name;
+		setName(name);
 		this.label = label;
 		this.ctVersionConverter = ctVersionConverter;
 		this.moduleVersionConverter = moduleVersionConverter;
@@ -118,21 +121,18 @@ public class DomainDTO extends FhirIdDTO implements Serializable
 		this.comment = comment;
 		this.externProperties = externProperties;
 		this.logo = logo;
-		if (signerIdTypes != null)
-		{
-			this.signerIdTypes = signerIdTypes;
-		}
+		setSignerIdTypes(signerIdTypes);
 		this.finalised = finalised;
-		this.creationDate = creationDate;
-		this.updateDate = updateDate;
-		if (expirationProperties != null)
-		{
-			this.expirationProperties = expirationProperties;
-		}
-		else
-		{
-			this.expirationProperties = new ExpirationPropertiesDTO();
-		}
+		setCreationDate(creationDate);
+		setUpdateDate(updateDate);
+		setExpirationProperties(expirationProperties);
+	}
+
+	public DomainDTO(DomainDTO dto)
+	{
+		this(dto.getName(), dto.getLabel(), dto.getCtVersionConverter(), dto.getModuleVersionConverter(), dto.getPolicyVersionConverter(), dto.getProperties(),
+				dto.getComment(), dto.getExternProperties(), dto.getLogo(), dto.getSignerIdTypes(), dto.getFinalised(), dto.getCreationDate(),
+				dto.getUpdateDate(), dto.getExpirationProperties(), dto.getFhirID());
 	}
 
 	public String getName()
@@ -142,7 +142,7 @@ public class DomainDTO extends FhirIdDTO implements Serializable
 
 	public void setName(String name)
 	{
-		this.name = name;
+		this.name = name != null ? name.intern() : null;
 	}
 
 	public String getLabel()
@@ -155,6 +155,11 @@ public class DomainDTO extends FhirIdDTO implements Serializable
 		this.label = label;
 	}
 
+	public String getLabelOrName()
+	{
+		return StringUtils.isNotEmpty(label) ? label : name;
+	}
+
 	public String getCtVersionConverter()
 	{
 		return ctVersionConverter;
@@ -163,6 +168,16 @@ public class DomainDTO extends FhirIdDTO implements Serializable
 	public void setCtVersionConverter(String ctVersionConverter)
 	{
 		this.ctVersionConverter = ctVersionConverter;
+		ctVersionConverterInstance = null;
+	}
+
+	public VersionConverter getCtVersionConverterInstance()
+	{
+		if (ctVersionConverterInstance == null)
+		{
+			ctVersionConverterInstance = createVersionConverter(getCtVersionConverter());
+		}
+		return ctVersionConverterInstance;
 	}
 
 	public String getModuleVersionConverter()
@@ -173,6 +188,16 @@ public class DomainDTO extends FhirIdDTO implements Serializable
 	public void setModuleVersionConverter(String moduleVersionConverter)
 	{
 		this.moduleVersionConverter = moduleVersionConverter;
+		moduleVersionConverterInstance = null;
+	}
+
+	public VersionConverter getModuleVersionConverterInstance()
+	{
+		if (moduleVersionConverterInstance == null)
+		{
+			moduleVersionConverterInstance = createVersionConverter(getModuleVersionConverter());
+		}
+		return moduleVersionConverterInstance;
 	}
 
 	public String getPolicyVersionConverter()
@@ -183,13 +208,36 @@ public class DomainDTO extends FhirIdDTO implements Serializable
 	public void setPolicyVersionConverter(String policyVersionConverter)
 	{
 		this.policyVersionConverter = policyVersionConverter;
+		policyVersionConverterInstance = null;
+	}
+
+	public VersionConverter getPolicyVersionConverterInstance()
+	{
+		if (policyVersionConverterInstance == null)
+		{
+			policyVersionConverterInstance = createVersionConverter(getPolicyVersionConverter());
+		}
+		return policyVersionConverterInstance;
+	}
+
+	private VersionConverter createVersionConverter(String className)
+	{
+		try
+		{
+			Class<? extends VersionConverter> versionConverterClass = Class.forName(className).asSubclass(VersionConverter.class);
+			return versionConverterClass.getDeclaredConstructor().newInstance();
+		}
+		catch (ClassNotFoundException | IllegalAccessException | InstantiationException | NoSuchMethodException | InvocationTargetException e)
+		{
+			return null;
+		}
 	}
 
 	public String getProperty(String key)
 	{
 		// check if key is valid
 		boolean found = false;
-		for (DomainProperties prop : Arrays.asList(DomainProperties.values()))
+		for (DomainProperties prop : DomainProperties.values())
 		{
 			if (key.equals(prop.toString()))
 			{
@@ -259,9 +307,13 @@ public class DomainDTO extends FhirIdDTO implements Serializable
 
 	public void setSignerIdTypes(List<String> signerIdTypes)
 	{
-		if (signerIdTypes != null)
+		if (this.signerIdTypes != signerIdTypes)
 		{
-			this.signerIdTypes = signerIdTypes;
+			this.signerIdTypes.clear();
+			if (signerIdTypes != null)
+			{
+				this.signerIdTypes.addAll(signerIdTypes);
+			}
 		}
 	}
 
@@ -270,9 +322,16 @@ public class DomainDTO extends FhirIdDTO implements Serializable
 		return creationDate;
 	}
 
-	public void setCreationDate(Date entryDate)
+	public void setCreationDate(Date creationDate)
 	{
-		creationDate = entryDate;
+		if (creationDate != null)
+		{
+			this.creationDate = new Date(creationDate.getTime());
+		}
+		else
+		{
+			this.creationDate = null;
+		}
 	}
 
 	public Date getUpdateDate()
@@ -282,7 +341,14 @@ public class DomainDTO extends FhirIdDTO implements Serializable
 
 	public void setUpdateDate(Date updateDate)
 	{
-		this.updateDate = updateDate;
+		if (updateDate != null)
+		{
+			this.updateDate = new Date(updateDate.getTime());
+		}
+		else
+		{
+			this.updateDate = null;
+		}
 	}
 
 	public boolean getFinalised()
@@ -302,7 +368,14 @@ public class DomainDTO extends FhirIdDTO implements Serializable
 
 	public void setExpirationProperties(ExpirationPropertiesDTO expirationProperties)
 	{
-		this.expirationProperties = expirationProperties;
+		if (expirationProperties != null)
+		{
+			this.expirationProperties = new ExpirationPropertiesDTO(expirationProperties);
+		}
+		else
+		{
+			this.expirationProperties = new ExpirationPropertiesDTO();
+		}
 	}
 
 	public List<String> getValidQcTypes()
@@ -311,7 +384,7 @@ public class DomainDTO extends FhirIdDTO implements Serializable
 		{
 			return Stream.of(getProperty("VALID_QC_TYPES").split(","))
 					.map(String::trim)
-					.map(s -> s.replace("[", ""))
+					.map(s -> s.replace("[", "")) // dieser Fall sollte jetzt nicht mehr auftreten @blumentritta
 					.map(s -> s.replace("]", ""))
 					.filter(StringUtils::isNotEmpty)
 					.collect(Collectors.toList());
@@ -328,7 +401,7 @@ public class DomainDTO extends FhirIdDTO implements Serializable
 		{
 			return Stream.of(getProperty("INVALID_QC_TYPES").split(","))
 					.map(String::trim)
-					.map(s -> s.replace("[", ""))
+					.map(s -> s.replace("[", "")) // dieser Fall sollte jetzt nicht mehr auftreten @blumentritta
 					.map(s -> s.replace("]", ""))
 					.filter(StringUtils::isNotEmpty)
 					.collect(Collectors.toList());
@@ -337,6 +410,12 @@ public class DomainDTO extends FhirIdDTO implements Serializable
 		{
 			return new ArrayList<>();
 		}
+	}
+
+	@Override
+	public String getDomainName()
+	{
+		return getName();
 	}
 
 	@Override

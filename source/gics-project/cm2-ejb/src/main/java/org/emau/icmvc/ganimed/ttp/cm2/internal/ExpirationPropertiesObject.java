@@ -4,9 +4,9 @@ package org.emau.icmvc.ganimed.ttp.cm2.internal;
  * ###license-information-start###
  * gICS - a Generic Informed Consent Service
  * __
- * Copyright (C) 2014 - 2022 Trusted Third Party of the University Medicine Greifswald -
+ * Copyright (C) 2014 - 2023 Trusted Third Party of the University Medicine Greifswald -
  * 							kontakt-ths@uni-greifswald.de
- * 
+ *
  * 							concept and implementation
  * 							l.geidel, c.hampf
  * 							web client
@@ -15,17 +15,18 @@ package org.emau.icmvc.ganimed.ttp.cm2.internal;
  * 							m.bialke
  * 							docker
  * 							r. schuldt
- * 
+ *
  * 							The gICS was developed by the University Medicine Greifswald and published
  *  							in 2014 as part of the research project "MOSAIC" (funded by the DFG HO 1937/2-1).
- *  
+ *
  * 							Selected functionalities of gICS were developed as
  * 							part of the following research projects:
  * 							- MAGIC (funded by the DFG HO 1937/5-1)
  * 							- MIRACUM (funded by the German Federal Ministry of Education and Research 01ZZ1801M)
  * 							- NUM-CODEX (funded by the German Federal Ministry of Education and Research 01KX2021)
- * 
+ *
  * 							please cite our publications
+ * 							https://doi.org/10.1186/s12911-022-02081-4
  * 							https://doi.org/10.1186/s12967-020-02457-y
  * 							http://dx.doi.org/10.3414/ME14-01-0133
  * 							http://dx.doi.org/10.1186/s12967-015-0545-6
@@ -35,12 +36,12 @@ package org.emau.icmvc.ganimed.ttp.cm2.internal;
  * it under the terms of the GNU Affero General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  * ###license-information-end###
@@ -59,10 +60,11 @@ import java.util.Properties;
 import org.emau.icmvc.ganimed.ttp.cm2.dto.ConsentDateValuesDTO;
 import org.emau.icmvc.ganimed.ttp.cm2.dto.ExpirationPropertiesDTO;
 import org.emau.icmvc.ganimed.ttp.cm2.model.enums.ExpirationProperties;
+import org.emau.icmvc.ganimed.ttp.cm2.util.Dates;
 
 public class ExpirationPropertiesObject extends PropertiesObject implements Serializable
 {
-	private static final long serialVersionUID = -5724349741953072011L;
+	private static final long serialVersionUID = -2973041221392084238L;
 	private static final String DEFAULT_DATE_FORMAT = "yyyy.MM.dd";
 	private final Date expirationDate;
 	private final Period validDuration;
@@ -121,11 +123,6 @@ public class ExpirationPropertiesObject extends PropertiesObject implements Seri
 		}
 	}
 
-	public Date getExpirationDate()
-	{
-		return expirationDate;
-	}
-
 	public Date getExpirationDateForConsentDate(Date date)
 	{
 		// muss ein festes datum sein, sonst schlagen equals-vergleiche auf consenten fehl
@@ -178,6 +175,59 @@ public class ExpirationPropertiesObject extends PropertiesObject implements Seri
 			result += ExpirationProperties.EXPIRATION_DATE_FORMAT.toString() + "=" + DEFAULT_DATE_FORMAT + ";";
 		}
 		return result;
+	}
+
+	/**
+	 * Returns a new expiration ExpirationProperties (merging this and the specified one) which
+	 * <ul>
+	 * <li>equals the specified new one if <code>finalised</code> is false, or otherwise</li>
+	 * <li>equals this old one if at least one of the fixed expiration dates dos not refer to a day in the future, or otherwise</li>
+	 * <li>contains the the new one's fixed expiration date and this one's expiration period (if finalised is true and both expiration dates refer to days in the future)</li>
+	 * </ul>
+	 *
+	 * @param expiration
+	 *            the new expiration properties
+	 * @param finalised
+	 *            true to merge in finalised mode
+	 * @return the merged expiration properties
+	 */
+	public ExpirationPropertiesObject createMergedExpirationProperties(ExpirationPropertiesDTO expiration, boolean finalised)
+	{
+		if (!finalised)
+		{
+			if (expiration == null)
+			{
+				return new ExpirationPropertiesObject(null, null);
+			}
+			else
+			{
+				// fully use the new expiration in non-finalised mode
+				return new ExpirationPropertiesObject(expiration.getFixedExpirationDate(), expiration.getValidPeriod());
+			}
+		}
+		// for finalised templates only allow to update future expiration properties (existing as well as new date must be in the future)
+		else if (hasFutureOrNoExpirationDay() && expiration.getFixedExpirationDate() != null && Dates.isFutureDay(expiration.getFixedExpirationDate()))
+		{
+			// update a future fixedExpirationDate but keep the old expirationPeriod in this case
+			return new ExpirationPropertiesObject(expiration.getFixedExpirationDate(), validDuration);
+		}
+
+		// do not update at all in finalised mode if one of the fixed expiration dates does not refer to a future day
+		return this;
+	}
+
+	/**
+	 * Returns true if there is no fixed expiration date or the fixed expiration date refers to a day in the future
+	 *
+	 * @return true if there is no fixed expiration date or the fixed expiration date refers to a day in the future
+	 */
+	private boolean hasFutureOrNoExpirationDay()
+	{
+		if (expirationDate != null)
+		{
+			return Dates.isFutureDay(expirationDate);
+		}
+		return true;
 	}
 
 	public ExpirationPropertiesDTO toDTO()

@@ -1,0 +1,119 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+		"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<!--
+  ###license-information-start###
+  gICS - a Generic Informed Consent Service
+  __
+  Copyright (C) 2014 - 2023 Trusted Third Party of the University Medicine Greifswald -
+  							kontakt-ths@uni-greifswald.de
+  
+  							concept and implementation
+  							l.geidel, c.hampf
+  							web client
+  							a.blumentritt, m.bialke, f.m.moser
+  							fhir-api
+  							m.bialke
+  							docker
+  							r. schuldt
+  
+  							The gICS was developed by the University Medicine Greifswald and published
+  							in 2014 as part of the research project "MOSAIC" (funded by the DFG HO 1937/2-1).
+  
+  							Selected functionalities of gICS were developed as
+  							part of the following research projects:
+  							- MAGIC (funded by the DFG HO 1937/5-1)
+  							- MIRACUM (funded by the German Federal Ministry of Education and Research 01ZZ1801M)
+  							- NUM-CODEX (funded by the German Federal Ministry of Education and Research 01KX2021)
+  
+  							please cite our publications
+  							https://doi.org/10.1186/s12911-022-02081-4
+  							https://doi.org/10.1186/s12967-020-02457-y
+  							http://dx.doi.org/10.3414/ME14-01-0133
+  							http://dx.doi.org/10.1186/s12967-015-0545-6
+  							http://dx.doi.org/10.3205/17gmds146
+  __
+  This program is free software: you can redistribute it and/or modify
+  it under the terms of the GNU Affero General Public License as published by
+  the Free Software Foundation, either version 3 of the License, or
+  (at your option) any later version.
+  
+  This program is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  GNU General Public License for more details.
+  
+  You should have received a copy of the GNU Affero General Public License
+  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+  ###license-information-end###
+  -->
+
+
+<!-- author: Arne Blumentritt -->
+
+<html xmlns:composite="http://java.sun.com/jsf/composite"
+	  xmlns:f="http://java.sun.com/jsf/core"
+	  xmlns:h="http://java.sun.com/jsf/html"
+	  xmlns:p="http://primefaces.org/ui"
+	  xmlns:ui="http://java.sun.com/jsf/facelets">
+
+<!-- INTERFACE -->
+<composite:interface>
+</composite:interface>
+
+<!-- IMPLEMENTATION -->
+<composite:implementation>
+	<p:dialog widgetVar="mapping_dialog" modal="true" blockScroll="true" header="#{msg['page.templates.mapping']}" style="max-width: 600px;">
+		<h:form id="form">
+			<ui:fragment rendered="#{templateController.selectedTemplate != null}">
+				<h:outputText value="#{msg['page.templates.mapping.hint']}" styleClass="block mb-3" />
+
+				<ui:fragment rendered="#{templateController.selectedTemplate.type != 'CONSENT'}">
+					<p:outputLabel for="consentMapping" value="#{msg['page.templates.mapping.consent']}" styleClass="font-bold block mb-1" />
+					<p:selectCheckboxMenu id="consentMapping"
+										  disabled="#{empty templateController.getAvailableMappingOptions('CONSENT')}"
+										  value="#{templateController.selectedTemplate.mappedConsentTemplates}"
+										  multiple="true" filter="true" filterMatchMode="contains"
+										  emptyLabel=""
+										  updateLabel="true"
+										  styleClass="w-full mb-3">
+						<f:selectItems value="#{templateController.getAvailableMappingOptions('CONSENT')}" var="_template" itemLabel="#{_template.name} #{_template.version}" />
+					</p:selectCheckboxMenu>
+				</ui:fragment>
+
+				<ui:fragment rendered="#{templateController.selectedTemplate.type != 'REVOCATION'}">
+					<p:outputLabel for="revocationMapping" value="#{msg['page.templates.mapping.revocation']}" styleClass="font-bold block mb-1" />
+					<p:selectCheckboxMenu id="revocationMapping"
+										  disabled="#{empty templateController.getAvailableMappingOptions('REVOCATION')}"
+										  value="#{templateController.selectedTemplate.mappedRevocationTemplates}"
+										  multiple="true" filter="true" filterMatchMode="contains"
+										  emptyLabel=""
+										  updateLabel="true"
+										  styleClass="w-full mb-3">
+						<f:selectItems value="#{templateController.getAvailableMappingOptions('REVOCATION')}" var="_template" itemLabel="#{_template.name} #{_template.version}" />
+					</p:selectCheckboxMenu>
+				</ui:fragment>
+
+				<ui:fragment rendered="#{templateController.selectedTemplate.type != 'REFUSAL'}">
+					<p:outputLabel for="refusalMapping" value="#{msg['page.templates.mapping.refusal']}" styleClass="font-bold block mb-1" />
+					<p:selectCheckboxMenu id="refusalMapping"
+										  disabled="#{empty templateController.getAvailableMappingOptions('REFUSAL')}"
+										  value="#{templateController.selectedTemplate.mappedRefusalTemplates}"
+										  multiple="true" filter="true" filterMatchMode="contains"
+										  emptyLabel=""
+										  updateLabel="true"
+										  styleClass="w-full mb-3">
+						<f:selectItems value="#{templateController.getAvailableMappingOptions('REFUSAL')}" var="_template" itemLabel="#{_template.name} #{_template.version}" />
+					</p:selectCheckboxMenu>
+				</ui:fragment>
+
+				<p:commandButton actionListener="#{templateController.onSaveMapping}" ajax="true" icon="mdi mdi-check"
+								 oncomplete="if (args &amp;&amp; !args.validationFailed) {PF('mapping_dialog').hide()}"
+								 update="@form" value="#{cmsg['ui.button.save']}" />
+				<p:commandButton icon="mdi mdi-close" immediate="true" onclick="PF('mapping_dialog').hide();" styleClass="secondary"
+								 value="#{cmsg['ui.button.cancel']}" />
+			</ui:fragment>
+		</h:form>
+	</p:dialog>
+</composite:implementation>
+
+</html>

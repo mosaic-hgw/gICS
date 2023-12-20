@@ -4,9 +4,9 @@ package org.emau.icmvc.ganimed.ttp.cm2.frontend.controller;
  * ###license-information-start###
  * gICS - a Generic Informed Consent Service
  * __
- * Copyright (C) 2014 - 2022 Trusted Third Party of the University Medicine Greifswald -
+ * Copyright (C) 2014 - 2023 Trusted Third Party of the University Medicine Greifswald -
  * 							kontakt-ths@uni-greifswald.de
- * 
+ *
  * 							concept and implementation
  * 							l.geidel, c.hampf
  * 							web client
@@ -15,17 +15,18 @@ package org.emau.icmvc.ganimed.ttp.cm2.frontend.controller;
  * 							m.bialke
  * 							docker
  * 							r. schuldt
- * 
+ *
  * 							The gICS was developed by the University Medicine Greifswald and published
- *  							in 2014 as part of the research project "MOSAIC" (funded by the DFG HO 1937/2-1).
- *  
+ * 							in 2014 as part of the research project "MOSAIC" (funded by the DFG HO 1937/2-1).
+ *
  * 							Selected functionalities of gICS were developed as
  * 							part of the following research projects:
  * 							- MAGIC (funded by the DFG HO 1937/5-1)
  * 							- MIRACUM (funded by the German Federal Ministry of Education and Research 01ZZ1801M)
  * 							- NUM-CODEX (funded by the German Federal Ministry of Education and Research 01KX2021)
- * 
+ *
  * 							please cite our publications
+ * 							https://doi.org/10.1186/s12911-022-02081-4
  * 							https://doi.org/10.1186/s12967-020-02457-y
  * 							http://dx.doi.org/10.3414/ME14-01-0133
  * 							http://dx.doi.org/10.1186/s12967-015-0545-6
@@ -35,17 +36,18 @@ package org.emau.icmvc.ganimed.ttp.cm2.frontend.controller;
  * it under the terms of the GNU Affero General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  * ###license-information-end###
  */
 
+import java.io.Serial;
 import java.io.Serializable;
 import java.text.MessageFormat;
 import java.util.ArrayList;
@@ -105,6 +107,7 @@ import org.primefaces.model.DualListModel;
 @ManagedBean(name = "templateController")
 public class TemplateController extends AbstractConsentController implements Serializable
 {
+	@Serial
 	private static final long serialVersionUID = -3735510572725064442L;
 
 	// Show templates
@@ -125,6 +128,9 @@ public class TemplateController extends AbstractConsentController implements Ser
 	// Edit Freetexts in template
 	private List<FreeTextDefDTO> freeTextDefs;
 
+	// Edit Mappings
+	private List<ConsentTemplateKeyDTO> templatesWithPolicies = new ArrayList<>();
+
 	@ManagedProperty(value = "#{moduleController}")
 	private ModuleController moduleController;
 
@@ -142,7 +148,7 @@ public class TemplateController extends AbstractConsentController implements Ser
 		pageMode = PageMode.READ;
 	}
 
-	public void onNewTemplate() throws UnknownDomainException, InvalidVersionException
+	public void onNewTemplate() throws UnknownDomainException, InvalidVersionException, InvalidParameterException
 	{
 		pageMode = PageMode.NEW;
 		editTemplate = new ConsentTemplateDTO(new ConsentTemplateKeyDTO());
@@ -153,7 +159,7 @@ public class TemplateController extends AbstractConsentController implements Ser
 		loadModulesAndFreeTexts(editTemplate);
 	}
 
-	public void onEditTemplate(ConsentTemplateDTO template) throws UnknownDomainException, InvalidVersionException
+	public void onEditTemplate(ConsentTemplateDTO template) throws UnknownDomainException, InvalidVersionException, InvalidParameterException
 	{
 		pageMode = PageMode.EDIT;
 		editTemplate = template;
@@ -167,7 +173,7 @@ public class TemplateController extends AbstractConsentController implements Ser
 	}
 
 	public void onDuplicateTemplate(ConsentTemplateDTO template, boolean duplicateModules)
-			throws UnknownDomainException, InvalidVersionException, DuplicateEntryException, UnknownPolicyException, RequirementsNotFullfilledException
+			throws UnknownDomainException, InvalidVersionException, DuplicateEntryException, UnknownPolicyException, RequirementsNotFullfilledException, InvalidParameterException
 	{
 		Set<AssignedModuleDTO> duplicatedModules = new HashSet<>();
 
@@ -195,7 +201,7 @@ public class TemplateController extends AbstractConsentController implements Ser
 				ModuleDTO moduleDTO = moduleController.onDuplicateModule(original.getModule());
 				try
 				{
-					service.addModule(moduleDTO, false);
+					manager.addModule(moduleDTO, false);
 				}
 				catch (InvalidVersionException e)
 				{
@@ -252,14 +258,17 @@ public class TemplateController extends AbstractConsentController implements Ser
 				// Finalise domain to be able to add template
 				if (!domainSelector.getSelectedDomain().getFinalised())
 				{
-					service.finaliseDomain(domainSelector.getSelectedDomainName());
+					manager.finaliseDomain(domainSelector.getSelectedDomainName());
 					domainSelector.loadDomains();
 					domainSelector.setSelectedDomain(domainSelector.getSelectedDomainName());
 				}
 
 				// Add template
-				editTemplate.getKey().setName(editTemplate.getLabel());
-				service.addConsentTemplate(editTemplate, false);
+				if (StringUtils.isEmpty(editTemplate.getKey().getName()))
+				{
+					editTemplate.getKey().setName(editTemplate.getLabel());
+				}
+				manager.addConsentTemplate(editTemplate, false);
 				logMessage(new MessageFormat(getBundle().getString("template.message.info.added")).format(args), Severity.INFO);
 				loadTemplates();
 				pageMode = PageMode.READ;
@@ -272,8 +281,8 @@ public class TemplateController extends AbstractConsentController implements Ser
 			{
 				logMessage(getBundle().getString("template.message.error.versionFormat"), Severity.WARN);
 			}
-			catch (UnknownDomainException | UnknownModuleException | FreeTextConverterStringException | InvalidPropertiesException
-					| RequirementsNotFullfilledException | InvalidParameterException e)
+			catch (UnknownDomainException | UnknownModuleException | FreeTextConverterStringException | InvalidPropertiesException |
+				   RequirementsNotFullfilledException | InvalidParameterException | UnknownConsentTemplateException e)
 			{
 				logMessage(e.getLocalizedMessage(), Severity.ERROR);
 			}
@@ -284,11 +293,11 @@ public class TemplateController extends AbstractConsentController implements Ser
 			{
 				if (editTemplate.getFinalised())
 				{
-					service.updateConsentTemplateInUse(editTemplate);
+					manager.updateConsentTemplateInUse(editTemplate);
 				}
 				else
 				{
-					service.updateConsentTemplate(editTemplate, false);
+					manager.updateConsentTemplate(editTemplate, false);
 				}
 				logMessage(new MessageFormat(getBundle().getString("template.message.info.updated")).format(args), Severity.INFO);
 				loadTemplates();
@@ -315,12 +324,12 @@ public class TemplateController extends AbstractConsentController implements Ser
 	{
 		try
 		{
-			service.finaliseTemplate(template.getKey(), true);
+			manager.finaliseTemplate(template.getKey(), true);
 			Object[] args = { template.getLabel(), template.getVersionLabelAndVersion() };
 			logMessage(new MessageFormat(getBundle().getString("template.message.info.finalised")).format(args), Severity.INFO);
 			loadTemplates();
 		}
-		catch (UnknownConsentTemplateException | InvalidVersionException | RequirementsNotFullfilledException | UnknownDomainException e)
+		catch (UnknownConsentTemplateException | InvalidVersionException | RequirementsNotFullfilledException | UnknownDomainException | InvalidParameterException e)
 		{
 			logMessage(e.getLocalizedMessage(), Severity.ERROR);
 		}
@@ -328,7 +337,7 @@ public class TemplateController extends AbstractConsentController implements Ser
 
 	public void onShowTree(ConsentTemplateDTO template)
 	{
-		templateTree = new TemplateTree(template);
+		templateTree = new TemplateTree(template, getSimpleDateFormat("date"));
 	}
 
 	public void onDeleteTemplate(ConsentTemplateDTO template)
@@ -337,7 +346,7 @@ public class TemplateController extends AbstractConsentController implements Ser
 
 		try
 		{
-			service.deleteConsentTemplate(template.getKey());
+			manager.deleteConsentTemplate(template.getKey());
 			logMessage(new MessageFormat(getBundle().getString("template.message.info.deleted")).format(args), Severity.INFO);
 			loadTemplates();
 		}
@@ -345,7 +354,7 @@ public class TemplateController extends AbstractConsentController implements Ser
 		{
 			logMessage(getBundle().getString("template.message.error.deleteInUse"), Severity.WARN);
 		}
-		catch (UnknownDomainException | UnknownConsentTemplateException | InvalidVersionException e)
+		catch (UnknownDomainException | UnknownConsentTemplateException | InvalidVersionException | InvalidParameterException e)
 		{
 			logMessage(e.getLocalizedMessage(), Severity.ERROR);
 		}
@@ -379,12 +388,12 @@ public class TemplateController extends AbstractConsentController implements Ser
 		return "/html/internal/printTree.xhtml?faces-redirect=true&print=true";
 	}
 
-	public void addNewestModule() throws UnknownDomainException, InvalidVersionException
+	public void addNewestModule() throws UnknownDomainException, InvalidVersionException, InvalidParameterException
 	{
 		if (!FacesContext.getCurrentInstance().isValidationFailed())
 		{
 			List<ModuleDTO> newModules = service.listModules(domainSelector.getSelectedDomainName(), false);
-			AssignedModuleDTO newAssignedModule = createAssignedModule(newModules.get(newModules.size() - 1));
+			AssignedModuleDTO newAssignedModule = createAssignedModule(newModules.stream().max(Comparator.comparing(ModuleDTO::getCreationDate)).orElse(null));
 			modules.getTarget().add(0, newAssignedModule);
 			sortUnassignedModules();
 
@@ -393,7 +402,7 @@ public class TemplateController extends AbstractConsentController implements Ser
 		}
 	}
 
-	public void refreshAvailableModules() throws UnknownDomainException, InvalidVersionException
+	public void refreshAvailableModules() throws UnknownDomainException, InvalidVersionException, InvalidParameterException
 	{
 		List<AssignedModuleDTO> sourceModules = new ArrayList<>();
 		// Get all available modules
@@ -401,8 +410,7 @@ public class TemplateController extends AbstractConsentController implements Ser
 
 		// Create an assigned module for every module that is not in the target list and add it to
 		// the source list
-		unassignedModules:
-		for (ModuleDTO module : unassignedModules)
+		unassignedModules: for (ModuleDTO module : unassignedModules)
 		{
 			for (AssignedModuleDTO assignedModuleDTO : modules.getTarget())
 			{
@@ -431,8 +439,9 @@ public class TemplateController extends AbstractConsentController implements Ser
 	 * @param template
 	 * @throws InvalidVersionException
 	 * @throws UnknownDomainException
+	 * @throws InvalidParameterException
 	 */
-	public void loadModulesAndFreeTexts(ConsentTemplateDTO template) throws UnknownDomainException, InvalidVersionException
+	public void loadModulesAndFreeTexts(ConsentTemplateDTO template) throws UnknownDomainException, InvalidVersionException, InvalidParameterException
 	{
 		List<AssignedModuleDTO> sourceModules = new ArrayList<>();
 		moduleExpirations = new HashMap<>();
@@ -570,6 +579,41 @@ public class TemplateController extends AbstractConsentController implements Ser
 		{
 			Collections.swap(freeTextDefs, index, index + 1);
 		}
+	}
+
+	public void onEditMapping()
+	{
+		try
+		{
+			templatesWithPolicies = service.getTemplatesWithPolicies(selectedTemplate.getAssignedModules()
+					.stream()
+					.flatMap(am -> am.getModule().getAssignedPolicies().stream().map(ap -> ap.getPolicy().getKey()))
+					.collect(Collectors.toList()));
+		}
+		catch (UnknownDomainException | InvalidVersionException | InvalidParameterException e)
+		{
+			logMessage(e.getLocalizedMessage(), Severity.ERROR);
+		}
+	}
+
+	public void onSaveMapping()
+	{
+		try
+		{
+			manager.updateConsentTemplateInUse(selectedTemplate);
+			Object[] args = { selectedTemplate.getLabelOrName(), selectedTemplate.getVersionLabelOrVersion() };
+			logMessage(new MessageFormat(getBundle().getString("template.message.info.mapping.updated")).format(args), Severity.INFO);
+		}
+		catch (UnknownDomainException | InvalidFreeTextException| InvalidParameterException | InvalidVersionException | UnknownConsentTemplateException | UnknownModuleException e)
+		{
+			logMessage(e.getLocalizedMessage(), Severity.ERROR);
+		}
+	}
+
+	public List<ConsentTemplateKeyDTO> getAvailableMappingOptions(String type)
+	{
+		List<ConsentTemplateKeyDTO> templateKeysForType = templates.stream().filter(t -> t.getType().equals(ConsentTemplateType.valueOf(type))).map(ConsentTemplateDTO::getKey).toList();
+		return templatesWithPolicies.stream().filter(templateKeysForType::contains).collect(Collectors.toList());
 	}
 
 	public void setActiveAccordionTabs(String tabs)
@@ -785,5 +829,35 @@ public class TemplateController extends AbstractConsentController implements Ser
 	public void setModuleController(ModuleController moduleController)
 	{
 		this.moduleController = moduleController;
+	}
+
+	public String getEditTemplateSanitizedTitle()
+	{
+		return text.sanitizeRelaxed(editTemplate.getTitle());
+	}
+
+	public void setEditTemplateSanitizedTitle(String title)
+	{
+		editTemplate.setTitle(title);
+	}
+
+	public String getEditTemplateSanitizedHeader()
+	{
+		return text.sanitizeRelaxed(editTemplate.getHeader());
+	}
+
+	public void setEditTemplateSanitizedHeader(String header)
+	{
+		editTemplate.setHeader(header);
+	}
+
+	public String getEditTemplateSanitizedFooter()
+	{
+		return text.sanitizeRelaxed(editTemplate.getFooter());
+	}
+
+	public void setEditTemplateSanitizedFooter(String footer)
+	{
+		editTemplate.setFooter(footer);
 	}
 }

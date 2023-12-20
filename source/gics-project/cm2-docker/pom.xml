@@ -3,505 +3,423 @@
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
-    <artifactId>cm2-docker</artifactId>
+    <artifactId>gics-shared-resources</artifactId>
     <packaging>jar</packaging>
     <parent>
         <artifactId>gics-project</artifactId>
         <groupId>org.emau.icmvc.ganimed.ttp</groupId>
-        <version>2.14.1</version>
+        <version>2023.1.3</version>
     </parent>
 
     <properties>
-        <maven.deploy.skip>true</maven.deploy.skip>
-        <docker.baseImage>mosaicgreifswald/wildfly:24.0.1.Final-20220224</docker.baseImage>
+        <_docker.baseImage>docker.icm.med.uni-greifswald.de/mosaicgreifswald/wildfly:latest</_docker.baseImage>
+        <docker.baseImage>mosaicgreifswald/wildfly:26</docker.baseImage>
         <docker.wildfly.deployments>/entrypoint-wildfly-deployments</docker.wildfly.deployments>
         <docker.wildfly.jboss>/entrypoint-wildfly-cli</docker.wildfly.jboss>
         <docker.wildfly.logs>/entrypoint-wildfly-logs</docker.wildfly.logs>
         <docker.wildfly.addins>/entrypoint-wildfly-addins</docker.wildfly.addins>
         <docker.wildfly.sqls>/entrypoint-wildfly-sqls</docker.wildfly.sqls>
-        <docker.image.name>ths-greifswald.de/gics:${project.version}</docker.image.name>
-        <docker.build.host>tcp://192.168.56.101:2375</docker.build.host>
+        <docker.mysql.image>mysql:8</docker.mysql.image>
+        <docker.mysql.sqls>/docker-entrypoint-initdb.d</docker.mysql.sqls>
+        <docker.image.name>ths-greifswald.de/${project.shortName}:${project.version}</docker.image.name>
     </properties>
+
+    <dependencies>
+        <dependency>
+            <groupId>org.emau.icmvc.ganimed.ttp</groupId>
+            <artifactId>cm2-ear</artifactId>
+            <type>ear</type>
+        </dependency>
+        <dependency>
+            <groupId>org.emau.icmvc.ganimed.ttp</groupId>
+            <artifactId>cm2-web</artifactId>
+            <type>war</type>
+        </dependency>
+    </dependencies>
 
     <profiles>
         <profile>
             <id>docker</id>
+            <dependencies>
+                <!-- external shared resources -->
+                <dependency>
+                    <groupId>org.emau.icmvc.ttp</groupId>
+                    <artifactId>noti-shared-resources</artifactId>
+                    <type>jar</type>
+                </dependency>
+                <dependency>
+                    <groupId>org.emau.icmvc.ttp</groupId>
+                    <artifactId>ths-notification-client-ear</artifactId>
+                    <type>ear</type>
+                </dependency>
+                <dependency>
+                    <groupId>org.emau.icmvc.ttp</groupId>
+                    <artifactId>ths-notification-service</artifactId>
+                    <type>war</type>
+                </dependency>
+                <dependency>
+                    <groupId>org.icmvc.ttp</groupId>
+                    <artifactId>gras-shared-resources</artifactId>
+                    <type>jar</type>
+                </dependency>
+            </dependencies>
             <properties>
                 <excludeTests>CheckDigit, Integration</excludeTests>
             </properties>
             <build>
                 <plugins>
+                    <!-- external tools (noti und gras) -->
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-dependency-plugin</artifactId>
+                        <version>3.3.0</version>
+                        <executions>
+                            <execution>
+                                <id>unpack-external-shared-resources</id>
+                                <phase>generate-sources</phase>
+                                <goals>
+                                    <goal>unpack</goal>
+                                </goals>
+                                <configuration>
+                                    <artifactItems>
+                                        <artifactItem>
+                                            <groupId>org.emau.icmvc.ttp</groupId>
+                                            <artifactId>noti-shared-resources</artifactId>
+                                            <overWrite>true</overWrite>
+                                            <outputDirectory>${project.build.directory}/_mixed-shared-resources</outputDirectory>
+                                        </artifactItem>
+                                        <artifactItem>
+                                            <groupId>org.icmvc.ttp</groupId>
+                                            <artifactId>gras-shared-resources</artifactId>
+                                            <overWrite>true</overWrite>
+                                            <outputDirectory>${project.build.directory}/_mixed-shared-resources</outputDirectory>
+                                        </artifactItem>
+                                    </artifactItems>
+                                </configuration>
+                            </execution>
+                            <execution>
+                                <id>copy-external-deployments</id>
+                                <phase>generate-sources</phase>
+                                <goals>
+                                    <goal>copy</goal>
+                                </goals>
+                                <configuration>
+                                    <artifactItems>
+                                        <!-- noti -->
+                                        <artifactItem>
+                                            <groupId>org.emau.icmvc.ttp</groupId>
+                                            <artifactId>ths-notification-client-ear</artifactId>
+                                            <type>ear</type>
+                                            <outputDirectory>${project.build.directory}/_mixed-shared-resources/META-INF/shared-resources/deployments</outputDirectory>
+                                        </artifactItem>
+                                        <artifactItem>
+                                            <groupId>org.emau.icmvc.ttp</groupId>
+                                            <artifactId>ths-notification-service</artifactId>
+                                            <type>war</type>
+                                            <outputDirectory>${project.build.directory}/_mixed-shared-resources/META-INF/shared-resources/deployments</outputDirectory>
+                                        </artifactItem>
+                                    </artifactItems>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+
                     <plugin>
                         <artifactId>maven-resources-plugin</artifactId>
                         <version>2.6</version>
                         <executions>
+                            <!-- dockerfile, only gics -->
                             <execution>
-                                <id>docker-copy-sources</id>
-                                <phase>prepare-package</phase>
+                                <id>copy-sources-for-dockerfile-gics</id>
+                                <phase>process-classes</phase>
                                 <goals>
                                     <goal>copy-resources</goal>
                                 </goals>
                                 <configuration>
-                                    <outputDirectory>${basedir}/target/docker/</outputDirectory>
+                                    <outputDirectory>${project.build.directory}/dockerfile</outputDirectory>
                                     <overwrite>true</overwrite>
                                     <resources>
                                         <resource>
-                                            <directory>${basedir}/src/docker</directory>
-                                            <includes>
-                                                <include>**/*</include>
-                                            </includes>
+                                            <directory>${project.basedir}/src/dockerfile</directory>
                                         </resource>
                                         <resource>
-                                            <directory>${basedir}/src/commons</directory>
-                                            <includes>
-                                                <include>**/*</include>
-                                            </includes>
+                                            <directory>${project.basedir}/src/commons</directory>
                                             <excludes>
-                                                <exclude>*.env</exclude>
+                                                <exclude>envs/*</exclude>
                                                 <exclude>addins/*</exclude>
+                                                <exclude>docs/**</exclude>
                                                 <exclude>sqls/*</exclude>
                                                 <exclude>logs/*</exclude>
-                                                <exclude>jboss/keycloak.json</exclude>
+                                                <exclude>jboss/*.json</exclude>
                                             </excludes>
                                         </resource>
                                         <resource>
                                             <directory>${project.basedir}/../cm2-ear/target/</directory>
-                                            <includes>
-                                                <include>*.ear</include>
-                                            </includes>
+                                            <include>*.ear</include>
                                             <targetPath>deployments</targetPath>
                                         </resource>
                                         <resource>
                                             <directory>${project.basedir}/../cm2-web/target/</directory>
-                                            <includes>
-                                                <include>*.war</include>
-                                            </includes>
+                                            <include>*.war</include>
                                             <targetPath>deployments</targetPath>
                                         </resource>
                                         <resource>
                                             <directory>${project.basedir}/../deploy</directory>
-                                            <includes>
-                                                <include>configure_wildfly_*.cli</include>
-                                            </includes>
                                             <targetPath>jboss</targetPath>
+                                            <include>*.cli</include>
                                         </resource>
                                         <resource>
-                                            <directory>${project.basedir}/../deploy</directory>
-                                            <includes>
-                                                <include>ReleaseNotes.md</include>
-                                            </includes>
+                                            <directory>${project.build.directory}/classes/META-INF/shared-resources</directory>
+                                            <excludes>
+                                                <exclude>envs/*</exclude>
+                                                <exclude>addins/*</exclude>
+                                                <exclude>demo/*</exclude>
+                                                <exclude>docs/**</exclude>
+                                                <exclude>*sqls/*</exclude>
+                                                <exclude>logs/*</exclude>
+                                                <exclude>jboss/*.json</exclude>
+                                            </excludes>
                                         </resource>
                                         <resource>
                                             <directory>${project.basedir}/../</directory>
+                                            <include>LICENSE.txt</include>
+                                        </resource>
+                                        <!-- noti -->
+                                        <resource>
+                                            <directory>${project.build.directory}/_mixed-shared-resources/META-INF/shared-resources</directory>
                                             <includes>
-                                                <include>LICENSE.txt</include>
+                                                <include>deployments/*</include>
+                                                <include>jboss/*</include>
                                             </includes>
                                         </resource>
                                     </resources>
                                 </configuration>
                             </execution>
-                        </executions>
-                    </plugin>
-                    <plugin>
-                        <groupId>com.google.code.maven-replacer-plugin</groupId>
-                        <artifactId>replacer</artifactId>
-                        <executions>
+                            <!-- dockerfile-loadtest (gics with jmeter) -->
                             <execution>
-                                <id>docker-gras-web-xml</id>
-                                <phase>package</phase>
-                                <goals>
-                                    <goal>replace</goal>
-                                </goals>
-                                <configuration>
-                                    <file>${project.basedir}/../cm2-web/src/main/webapp/WEB-INF/web.xml</file>
-                                    <outputFile>${basedir}/target/docker/jboss/${project.shortName}_gras_web.xml</outputFile>
-                                    <replacements>
-                                        <replacement>
-                                            <token>\$\{login.enable.start}</token>
-                                            <value>--&gt;</value>
-                                        </replacement>
-                                        <replacement>
-                                            <token>\$\{login.enable.end}</token>
-                                            <value>&lt;!--</value>
-                                        </replacement>
-                                        <replacement>
-                                            <token>\$\{gras-login.enable.start}</token>
-                                            <value>gras-auth --&gt;</value>
-                                        </replacement>
-                                        <replacement>
-                                            <token>\$\{gras-login.enable.end}</token>
-                                            <value>&lt;!--</value>
-                                        </replacement>
-                                    </replacements>
-                                </configuration>
-                            </execution>
-                            <execution>
-                                <id>docker-keycloak-web-xml</id>
-                                <phase>package</phase>
-                                <goals>
-                                    <goal>replace</goal>
-                                </goals>
-                                <configuration>
-                                    <file>${project.basedir}/../cm2-web/src/main/webapp/WEB-INF/web.xml</file>
-                                    <outputFile>${basedir}/target/docker/jboss/${project.shortName}_keycloak_web.xml</outputFile>
-                                    <replacements>
-                                        <replacement>
-                                            <token>\$\{login.enable.start}</token>
-                                            <value>--&gt;</value>
-                                        </replacement>
-                                        <replacement>
-                                            <token>\$\{login.enable.end}</token>
-                                            <value>&lt;!--</value>
-                                        </replacement>
-                                        <replacement>
-                                            <token>\$\{keycloak-login.enable.start}</token>
-                                            <value>keycloak-auth --&gt;</value>
-                                        </replacement>
-                                        <replacement>
-                                            <token>\$\{keycloak-login.enable.end}</token>
-                                            <value>&lt;!--</value>
-                                        </replacement>
-                                    </replacements>
-                                </configuration>
-                            </execution>
-                            <execution>
-                                <id>docker-jboss-web-xml</id>
-                                <phase>package</phase>
-                                <goals>
-                                    <goal>replace</goal>
-                                </goals>
-                                <configuration>
-                                    <file>${project.basedir}/../cm2-web/src/main/webapp/WEB-INF/jboss-web.xml</file>
-                                    <outputFile>${basedir}/target/docker/jboss/${project.shortName}_gras_jboss-web.xml</outputFile>
-                                    <replacements>
-                                        <replacement>
-                                            <token>\$\{login.enable.start}</token>
-                                            <value>--&gt;</value>
-                                        </replacement>
-                                        <replacement>
-                                            <token>\$\{login.enable.end}</token>
-                                            <value>&lt;!--</value>
-                                        </replacement>
-                                    </replacements>
-                                </configuration>
-                            </execution>
-                        </executions>
-                    </plugin>
-
-                    <plugin>
-                        <groupId>io.fabric8</groupId>
-                        <artifactId>docker-maven-plugin</artifactId>
-                        <version>0.36.0</version>
-                        <executions>
-                            <execution>
-                                <id>build-dockerfile</id>
-                                <phase>pre-integration-test</phase>
-                                <goals>
-                                    <goal>build</goal>
-                                </goals>
-                            </execution>
-                        </executions>
-                        <configuration>
-                            <dockerHost>${docker.build.host}</dockerHost>
-                            <skip>true</skip>
-                            <images>
-                                <image>
-                                    <!--suppress UnresolvedMavenProperty -->
-                                    <name>${docker.image.name}-${build.date}</name>
-                                    <alias>${project.shortName}-eclipse</alias>
-                                    <build>
-                                        <contextDir>${basedir}/target/docker</contextDir>
-                                        <dockerFile>Dockerfile</dockerFile>
-                                    </build>
-                                </image>
-                            </images>
-                        </configuration>
-                    </plugin>
-                </plugins>
-            </build>
-        </profile>
-
-        <profile>
-            <id>compose-wildfly</id>
-            <properties>
-                <excludeTests>CheckDigit, Integration</excludeTests>
-            </properties>
-            <build>
-                <plugins>
-                    <plugin>
-                        <artifactId>maven-resources-plugin</artifactId>
-                        <executions>
-                            <execution>
-                                <id>compose-copy-sources</id>
-                                <phase>prepare-package</phase>
+                                <id>copy-sources-for-dockerfile-loadtest</id>
+                                <phase>process-classes</phase>
                                 <goals>
                                     <goal>copy-resources</goal>
                                 </goals>
                                 <configuration>
-                                    <outputDirectory>${basedir}/target/compose-wildfly/</outputDirectory>
+                                    <outputDirectory>${project.build.directory}/dockerfile-loadtest/</outputDirectory>
                                     <overwrite>true</overwrite>
                                     <resources>
                                         <resource>
-                                            <directory>${basedir}/src/compose-wildfly</directory>
-                                            <includes>
-                                                <include>**/*</include>
-                                            </includes>
+                                            <directory>${project.basedir}/src/dockerfile-loadtest</directory>
                                         </resource>
                                         <resource>
-                                            <directory>${basedir}/src/commons</directory>
+                                            <directory>${project.basedir}/src/commons</directory>
+                                            <excludes>
+                                                <exclude>addins/*</exclude>
+                                                <exclude>docs/**</exclude>
+                                                <exclude>sqls/*.md</exclude>
+                                                <exclude>logs/*</exclude>
+                                                <exclude>jboss/oidc.json</exclude>
+                                            </excludes>
+                                        </resource>
+                                        <resource>
+                                            <directory>${project.basedir}/../deploy/</directory>
                                             <includes>
-                                                <include>**/*</include>
+                                                <include>*commons.cli</include>
+                                                <include>*gics.cli</include>
                                             </includes>
+                                            <targetPath>jboss</targetPath>
                                         </resource>
                                         <resource>
                                             <directory>${project.basedir}/../cm2-ear/target/</directory>
-                                            <includes>
-                                                <include>*.ear</include>
-                                            </includes>
+                                            <include>*.ear</include>
                                             <targetPath>deployments</targetPath>
                                         </resource>
                                         <resource>
                                             <directory>${project.basedir}/../cm2-web/target/</directory>
-                                            <includes>
-                                                <include>*.war</include>
-                                            </includes>
+                                            <include>*.war</include>
                                             <targetPath>deployments</targetPath>
                                         </resource>
                                         <resource>
-                                            <directory>${project.basedir}/../deploy</directory>
-                                            <includes>
-                                                <include>configure_wildfly_*.cli</include>
-                                            </includes>
-                                            <targetPath>jboss</targetPath>
+                                            <directory>${project.build.directory}/classes/META-INF/shared-resources</directory>
+                                            <include>sqls/create*gics*.sql</include>
                                         </resource>
                                         <resource>
-                                            <directory>${project.basedir}/../deploy</directory>
-                                            <includes>
-                                                <include>create_database_*.sql</include>
-                                                <include>init_database_gras_for_*.sql</include>
-                                            </includes>
-                                            <targetPath>sqls</targetPath>
-                                        </resource>
-                                        <resource>
-                                            <directory>${project.basedir}/../deploy</directory>
-                                            <includes>
-                                                <include>update_database_*.sql</include>
-                                            </includes>
-                                            <targetPath>update_sqls</targetPath>
-                                        </resource>
-                                        <resource>
-                                            <directory>${project.basedir}/../deploy</directory>
-                                            <includes>
-                                                <include>ReleaseNotes.md</include>
-                                            </includes>
-                                        </resource>
-                                        <resource>
-                                            <directory>${project.basedir}/../deploy/demo</directory>
-                                            <includes>
-                                                <include>*</include>
-                                            </includes>
-                                            <targetPath>examples</targetPath>
+                                            <directory>${project.basedir}/../deploy/test/</directory>
+                                            <include>gICS-Loadtest.jmx</include>
+                                            <targetPath>jmeter</targetPath>
                                         </resource>
                                         <resource>
                                             <directory>${project.basedir}/../</directory>
-                                            <includes>
-                                                <include>LICENSE.txt</include>
-                                            </includes>
+                                            <include>LICENSE.txt</include>
                                         </resource>
                                     </resources>
                                 </configuration>
                             </execution>
-                        </executions>
-                    </plugin>
-                    <plugin>
-                        <groupId>com.google.code.maven-replacer-plugin</groupId>
-                        <artifactId>replacer</artifactId>
-                        <executions>
+                            <!-- compose-wildfly (mysql, wildfly) -->
                             <execution>
-                                <id>compose-about.md</id>
-                                <phase>prepare-package</phase>
-                                <goals>
-                                    <goal>replace</goal>
-                                </goals>
-                                <configuration>
-                                    <file>${project.basedir}/../README.md</file>
-                                    <outputFile>${basedir}/target/compose-wildfly/ABOUT.md</outputFile>
-                                    <replacements/>
-                                </configuration>
-                            </execution>
-                            <execution>
-                                <id>compose-gras-web-xml</id>
-                                <phase>package</phase>
-                                <goals>
-                                    <goal>replace</goal>
-                                </goals>
-                                <configuration>
-                                    <file>${project.basedir}/../cm2-web/src/main/webapp/WEB-INF/web.xml</file>
-                                    <outputFile>${basedir}/target/compose-wildfly/jboss/${project.shortName}_gras_web.xml</outputFile>
-                                    <replacements>
-                                        <replacement>
-                                            <token>\$\{login.enable.start}</token>
-                                            <value>--&gt;</value>
-                                        </replacement>
-                                        <replacement>
-                                            <token>\$\{login.enable.end}</token>
-                                            <value>&lt;!--</value>
-                                        </replacement>
-                                        <replacement>
-                                            <token>\$\{gras-login.enable.start}</token>
-                                            <value>gras-auth --&gt;</value>
-                                        </replacement>
-                                        <replacement>
-                                            <token>\$\{gras-login.enable.end}</token>
-                                            <value>&lt;!--</value>
-                                        </replacement>
-                                    </replacements>
-                                </configuration>
-                            </execution>
-                            <execution>
-                                <id>compose-keycloak-web-xml</id>
-                                <phase>package</phase>
-                                <goals>
-                                    <goal>replace</goal>
-                                </goals>
-                                <configuration>
-                                    <file>${project.basedir}/../cm2-web/src/main/webapp/WEB-INF/web.xml</file>
-                                    <outputFile>${basedir}/target/compose-wildfly/jboss/${project.shortName}_keycloak_web.xml</outputFile>
-                                    <replacements>
-                                        <replacement>
-                                            <token>\$\{login.enable.start}</token>
-                                            <value>--&gt;</value>
-                                        </replacement>
-                                        <replacement>
-                                            <token>\$\{login.enable.end}</token>
-                                            <value>&lt;!--</value>
-                                        </replacement>
-                                        <replacement>
-                                            <token>\$\{keycloak-login.enable.start}</token>
-                                            <value>keycloak-auth --&gt;</value>
-                                        </replacement>
-                                        <replacement>
-                                            <token>\$\{keycloak-login.enable.end}</token>
-                                            <value>&lt;!--</value>
-                                        </replacement>
-                                    </replacements>
-                                </configuration>
-                            </execution>
-                            <execution>
-                                <id>compose-jboss-web-xml</id>
-                                <phase>package</phase>
-                                <goals>
-                                    <goal>replace</goal>
-                                </goals>
-                                <configuration>
-                                    <file>${project.basedir}/../cm2-web/src/main/webapp/WEB-INF/jboss-web.xml</file>
-                                    <outputFile>${basedir}/target/compose-wildfly/jboss/${project.shortName}_gras_jboss-web.xml</outputFile>
-                                    <replacements>
-                                        <replacement>
-                                            <token>\$\{login.enable.start}</token>
-                                            <value>--&gt;</value>
-                                        </replacement>
-                                        <replacement>
-                                            <token>\$\{login.enable.end}</token>
-                                            <value>&lt;!--</value>
-                                        </replacement>
-                                    </replacements>
-                                </configuration>
-                            </execution>
-                        </executions>
-                    </plugin>
-                </plugins>
-            </build>
-        </profile>
-
-        <profile>
-            <id>compose-image</id>
-            <properties>
-                <excludeTests>CheckDigit, Integration</excludeTests>
-            </properties>
-            <build>
-                <plugins>
-                    <plugin>
-                        <artifactId>maven-resources-plugin</artifactId>
-                        <executions>
-                            <execution>
-                                <id>compose2-copy-sources</id>
-                                <phase>prepare-package</phase>
+                                <id>copy-sources-for-compose-wildfly</id>
+                                <phase>process-classes</phase>
                                 <goals>
                                     <goal>copy-resources</goal>
                                 </goals>
                                 <configuration>
-                                    <outputDirectory>${basedir}/target/compose-image/</outputDirectory>
+                                    <outputDirectory>${project.build.directory}/compose-wildfly/</outputDirectory>
                                     <overwrite>true</overwrite>
                                     <resources>
                                         <resource>
-                                            <directory>${basedir}/src/compose-image</directory>
-                                            <includes>
-                                                <include>**/*</include>
-                                            </includes>
+                                            <directory>${project.basedir}/src/compose-wildfly</directory>
                                         </resource>
                                         <resource>
-                                            <directory>${basedir}/src/commons</directory>
+                                            <directory>${project.basedir}/src/commons</directory>
+                                        </resource>
+                                        <resource>
+                                            <directory>${project.basedir}/../cm2-ear/target/</directory>
+                                            <include>*.ear</include>
+                                            <targetPath>deployments</targetPath>
+                                        </resource>
+                                        <resource>
+                                            <directory>${project.basedir}/../cm2-web/target/</directory>
+                                            <include>*.war</include>
+                                            <targetPath>deployments</targetPath>
+                                        </resource>
+                                        <resource>
+                                            <directory>${project.parent.basedir}/deploy</directory>
+                                            <targetPath>jboss</targetPath>
+                                            <include>*.cli</include>
+                                        </resource>
+                                        <resource>
+                                            <directory>${project.build.directory}/classes/META-INF/shared-resources</directory>
+                                        </resource>
+                                        <resource>
+                                            <directory>${project.parent.basedir}/</directory>
+                                            <include>LICENSE.txt</include>
+                                        </resource>
+                                        <!-- noti -->
+                                        <resource>
+                                            <directory>${project.build.directory}/_mixed-shared-resources/META-INF/shared-resources</directory>
+                                            <excludes>
+                                                <exclude>*.env</exclude>
+                                                <exclude>envs\*</exclude>
+                                                <exclude>docs/Notification-Service/</exclude>
+                                            </excludes>
+                                        </resource>
+                                        <resource>
+                                            <directory>${project.build.directory}/_mixed-shared-resources/META-INF/shared-resources</directory>
+                                            <targetPath>envs</targetPath>
+                                            <include>*.env</include>
+                                        </resource>
+                                        <resource>
+                                            <directory>${project.build.directory}/_mixed-shared-resources/META-INF/shared-resources/envs</directory>
+                                            <targetPath>envs</targetPath>
+                                            <include>*.env</include>
+                                        </resource>
+                                    </resources>
+                                </configuration>
+                            </execution>
+                            <!-- compose-image (mysql, wildfly) -->
+                            <execution>
+                                <id>copy-sources-for-compose-image</id>
+                                <phase>process-classes</phase>
+                                <goals>
+                                    <goal>copy-resources</goal>
+                                </goals>
+                                <configuration>
+                                    <outputDirectory>${project.build.directory}/compose-image/</outputDirectory>
+                                    <overwrite>true</overwrite>
+                                    <resources>
+                                        <resource>
+                                            <directory>${project.basedir}/src/compose-image</directory>
+                                        </resource>
+                                        <resource>
+                                            <directory>${project.basedir}/src/commons</directory>
                                             <includes>
-                                                <include>*.env</include>
+                                                <include>envs/*</include>
                                                 <include>addins/*</include>
+                                                <include>docs/*</include>
                                                 <include>sqls/*</include>
                                                 <include>logs/*</include>
                                             </includes>
                                         </resource>
                                         <resource>
-                                            <directory>${project.basedir}/../deploy</directory>
-                                            <includes>
-                                                <include>create_database_*.sql</include>
-                                                <include>init_database_gras_for_*.sql</include>
-                                            </includes>
-                                            <targetPath>sqls</targetPath>
-                                        </resource>
-                                        <resource>
-                                            <directory>${project.basedir}/../deploy</directory>
-                                            <includes>
-                                                <include>update_database_*.sql</include>
-                                            </includes>
-                                            <targetPath>update_sqls</targetPath>
-                                        </resource>
-                                        <resource>
-                                            <directory>${project.basedir}/../deploy</directory>
-                                            <includes>
-                                                <include>ReleaseNotes.md</include>
-                                            </includes>
-                                        </resource>
-                                        <resource>
-                                            <directory>${project.basedir}/../deploy/demo</directory>
-                                            <includes>
-                                                <include>*</include>
-                                            </includes>
-                                            <targetPath>examples</targetPath>
+                                            <directory>${project.build.directory}/classes/META-INF/shared-resources</directory>
+                                            <exclude>jboss/*</exclude>
                                         </resource>
                                         <resource>
                                             <directory>${project.basedir}/../</directory>
-                                            <includes>
-                                                <include>LICENSE.txt</include>
-                                            </includes>
+                                            <include>LICENSE.txt</include>
+                                        </resource>
+                                        <!-- noti -->
+                                        <resource>
+                                            <directory>${project.build.directory}/_mixed-shared-resources/META-INF/shared-resources</directory>
+                                            <excludes>
+                                                <exclude>deployments\*</exclude>
+                                                <exclude>jboss\*</exclude>
+                                                <exclude>*.env</exclude>
+                                                <exclude>envs\*</exclude>
+                                                <exclude>docs/Notification-Service/</exclude>
+                                            </excludes>
+                                        </resource>
+                                        <resource>
+                                            <directory>${project.build.directory}/_mixed-shared-resources/META-INF/shared-resources</directory>
+                                            <targetPath>envs</targetPath>
+                                            <include>*.env</include>
+                                        </resource>
+                                        <resource>
+                                            <directory>${project.build.directory}/_mixed-shared-resources/META-INF/shared-resources/envs</directory>
+                                            <targetPath>envs</targetPath>
+                                            <include>*.env</include>
                                         </resource>
                                     </resources>
                                 </configuration>
                             </execution>
-                        </executions>
-                    </plugin>
-                    <plugin>
-                        <groupId>com.google.code.maven-replacer-plugin</groupId>
-                        <artifactId>replacer</artifactId>
-                        <executions>
+                            <!-- compose-loadtest (mysql, wildfly, jmeter) -->
                             <execution>
-                                <id>compose2-about.md</id>
-                                <phase>prepare-package</phase>
+                                <id>copy-sources-for-compose-loadtest</id>
+                                <phase>process-classes</phase>
                                 <goals>
-                                    <goal>replace</goal>
+                                    <goal>copy-resources</goal>
                                 </goals>
                                 <configuration>
-                                    <file>${project.basedir}/../README.md</file>
-                                    <outputFile>${basedir}/target/compose-image/ABOUT.md</outputFile>
-                                    <replacements/>
+                                    <outputDirectory>${project.build.directory}/compose-loadtest/</outputDirectory>
+                                    <overwrite>true</overwrite>
+                                    <resources>
+                                        <resource>
+                                            <directory>${project.basedir}/src/compose-loadtest</directory>
+                                        </resource>
+                                        <resource>
+                                            <directory>${project.build.directory}/classes/META-INF/shared-resources</directory>
+                                            <includes>
+                                                <include>envs/**</include>
+                                                <include>jboss/*.cli</include>
+                                                <include>sqls/create*gics*.sql</include>
+                                            </includes>
+                                        </resource>
+                                        <resource>
+                                            <directory>${project.basedir}/src/commons</directory>
+                                            <excludes>
+                                                <exclude>addins/**</exclude>
+                                                <exclude>docs/**</exclude>
+                                                <exclude>jboss/oidc.json</exclude>
+                                            </excludes>
+                                        </resource>
+                                        <resource>
+                                            <directory>${project.basedir}/../cm2-ear/target/</directory>
+                                            <include>*.ear</include>
+                                            <targetPath>deployments</targetPath>
+                                        </resource>
+                                        <resource>
+                                            <directory>${project.basedir}/../cm2-web/target/</directory>
+                                            <include>*.war</include>
+                                            <targetPath>deployments</targetPath>
+                                        </resource>
+                                        <resource>
+                                            <directory>${project.basedir}/../deploy/test/</directory>
+                                            <include>gICS-Loadtest.jmx</include>
+                                            <targetPath>jmeter</targetPath>
+                                        </resource>
+                                        <resource>
+                                            <directory>${project.basedir}/../</directory>
+                                            <include>LICENSE.txt</include>
+                                        </resource>
+                                    </resources>
                                 </configuration>
                             </execution>
                         </executions>
@@ -513,25 +431,6 @@
 
     <build>
         <plugins>
-            <plugin>
-                <artifactId>maven-install-plugin</artifactId>
-                <version>2.5.2</version>
-                <executions>
-                    <execution>
-                        <id>default-install</id>
-                        <phase>none</phase>
-                    </execution>
-                </executions>
-            </plugin>
-            <plugin>
-                <artifactId>maven-jar-plugin</artifactId>
-                <executions>
-                    <execution>
-                        <id>default-jar</id>
-                        <phase>none</phase>
-                    </execution>
-                </executions>
-            </plugin>
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>buildnumber-maven-plugin</artifactId>
@@ -573,34 +472,192 @@
                 </executions>
             </plugin>
             <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>build-helper-maven-plugin</artifactId>
+                <version>3.3.0</version>
+                <executions>
+                    <execution>
+                        <id>create-gics-shared-resources</id>
+                        <phase>generate-sources</phase>
+                        <goals>
+                            <goal>add-resource</goal>
+                        </goals>
+                        <configuration>
+                            <resources>
+                                <resource>
+                                    <directory>${project.parent.basedir}/deploy</directory>
+                                    <targetPath>META-INF/shared-resources/sqls</targetPath>
+                                    <includes>
+                                        <include>create_database_*.sql</include>
+                                        <include>init_database_*.sql</include>
+                                    </includes>
+                                </resource>
+                                <resource>
+                                    <directory>${project.parent.basedir}/deploy</directory>
+                                    <targetPath>META-INF/shared-resources/update_sqls</targetPath>
+                                    <include>update_database_*.sql</include>
+                                </resource>
+                                <resource>
+                                    <directory>${project.parent.basedir}/deploy</directory>
+                                    <targetPath>META-INF/shared-resources/jboss</targetPath>
+                                    <include>*${project.shortName}*.cli</include>
+                                </resource>
+                                <resource>
+                                    <directory>${project.parent.basedir}/deploy</directory>
+                                    <targetPath>META-INF/shared-resources/docs</targetPath>
+                                    <include>*.md</include>
+                                    <exclude>*ReleaseNotes.md</exclude>
+                                </resource>
+                                <resource>
+                                    <directory>${project.basedir}/src/commons/envs</directory>
+                                    <targetPath>META-INF/shared-resources/envs</targetPath>
+                                    <include>ttp_${project.shortName}.env</include>
+                                </resource>
+                                <resource>
+                                    <directory>${project.parent.basedir}/deploy/demo</directory>
+                                    <targetPath>META-INF/shared-resources/demo</targetPath>
+                                </resource>
+                            </resources>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
                 <groupId>com.google.code.maven-replacer-plugin</groupId>
                 <artifactId>replacer</artifactId>
                 <version>1.5.3</version>
                 <executions>
                     <execution>
-                        <id>compose-replace-all-placeholders</id>
-                        <phase>package</phase>
+                        <id>rename-about-md</id>
+                        <phase>generate-sources</phase>
+                        <goals>
+                            <goal>replace</goal>
+                        </goals>
+                        <configuration>
+                            <file>${project.parent.basedir}/README.md</file>
+                            <outputFile>${project.build.directory}/classes/META-INF/shared-resources/ABOUT_${project.parent.name}.md</outputFile>
+                            <replacements/>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>rename-releasenotes-md</id>
+                        <phase>generate-sources</phase>
+                        <goals>
+                            <goal>replace</goal>
+                        </goals>
+                        <configuration>
+                            <file>${project.parent.basedir}/deploy/ReleaseNotes.md</file>
+                            <outputFile>${project.build.directory}/classes/META-INF/shared-resources/ReleaseNotes_${project.parent.name}.md</outputFile>
+                            <replacements/>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>create-gras-web-xml</id>
+                        <phase>generate-sources</phase>
+                        <goals>
+                            <goal>replace</goal>
+                        </goals>
+                        <configuration>
+                            <file>${project.parent.basedir}/cm2-web/src/main/webapp/WEB-INF/web.xml</file>
+                            <outputFile>${project.build.directory}/classes/META-INF/shared-resources/jboss/${project.shortName}_gras_web.xml</outputFile>
+                            <replacements>
+                                <replacement>
+                                    <token>\$\{login.enable.start}</token>
+                                    <value>--&gt;</value>
+                                </replacement>
+                                <replacement>
+                                    <token>\$\{login.enable.end}</token>
+                                    <value>&lt;!--</value>
+                                </replacement>
+                                <replacement>
+                                    <token>\$\{gras-login.enable.start}</token>
+                                    <value>gras-auth --&gt;</value>
+                                </replacement>
+                                <replacement>
+                                    <token>\$\{gras-login.enable.end}</token>
+                                    <value>&lt;!--</value>
+                                </replacement>
+                            </replacements>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>create-oidc-web-xml</id>
+                        <phase>generate-sources</phase>
+                        <goals>
+                            <goal>replace</goal>
+                        </goals>
+                        <configuration>
+                            <file>${project.parent.basedir}/cm2-web/src/main/webapp/WEB-INF/web.xml</file>
+                            <outputFile>${project.build.directory}/classes/META-INF/shared-resources/jboss/${project.shortName}_oidc_web.xml</outputFile>
+                            <replacements>
+                                <replacement>
+                                    <token>\$\{login.enable.start}</token>
+                                    <value>--&gt;</value>
+                                </replacement>
+                                <replacement>
+                                    <token>\$\{login.enable.end}</token>
+                                    <value>&lt;!--</value>
+                                </replacement>
+                                <replacement>
+                                    <token>\$\{oidc-login.enable.start}</token>
+                                    <value>keycloak-auth --&gt;</value>
+                                </replacement>
+                                <replacement>
+                                    <token>\$\{oidc-login.enable.end}</token>
+                                    <value>&lt;!--</value>
+                                </replacement>
+                            </replacements>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>create-jboss-web-xml</id>
+                        <phase>generate-sources</phase>
+                        <goals>
+                            <goal>replace</goal>
+                        </goals>
+                        <configuration>
+                            <file>${project.parent.basedir}/cm2-web/src/main/webapp/WEB-INF/jboss-web.xml</file>
+                            <outputFile>${project.build.directory}/classes/META-INF/shared-resources/jboss/${project.shortName}_gras_jboss-web.xml</outputFile>
+                            <replacements>
+                                <replacement>
+                                    <token>\$\{login.enable.start}</token>
+                                    <value>--&gt;</value>
+                                </replacement>
+                                <replacement>
+                                    <token>\$\{login.enable.end}</token>
+                                    <value>&lt;!--</value>
+                                </replacement>
+                            </replacements>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>replace-all-placeholders</id>
+                        <phase>prepare-package</phase>
                         <goals>
                             <goal>replace</goal>
                         </goals>
                         <configuration>
                             <includes>
-                                <include>${basedir}/target/**/*</include>
-                                <include>${basedir}/target/*</include>
+                                <include>${project.build.directory}/**/*</include>
+                                <include>${project.build.directory}/*</include>
                             </includes>
                             <excludes>
-                                <exclude>${basedir}/target/**/*.ear</exclude>
-                                <exclude>${basedir}/target/**/*.war</exclude>
-                                <exclude>${basedir}/target/**/*.png</exclude>
-                                <exclude>${basedir}/target/**/*.sql</exclude>
+                                <exclude>**/*.ear</exclude>
+                                <exclude>**/*.war</exclude>
+                                <exclude>**/*.jar</exclude>
+                                <exclude>**/*.png</exclude>
+                                <exclude>**/*.jpg</exclude>
+                                <exclude>**/*.sql</exclude>
+                                <exclude>**/*.json</exclude>
                             </excludes>
                             <replacements>
+                                <!-- project -->
                                 <replacement>
                                     <token>(\$\{GICS_VERSION}|%GICS_VERSION%|\$\{project.version})</token>
                                     <value>${project.version}</value>
                                 </replacement>
                                 <replacement>
-                                    <token>\$\{project.name}</token>
+                                    <token>(\$\{project.name}|\$\{project.parent.name})</token>
                                     <value>${project.parent.name}</value>
                                 </replacement>
                                 <replacement>
@@ -611,6 +668,8 @@
                                     <token>\$\{project.upperName}</token>
                                     <value>${project.upperName}</value>
                                 </replacement>
+
+                                <!-- docker -->
                                 <replacement>
                                     <token>\$\{docker.baseImage}</token>
                                     <value>${docker.baseImage}</value>
@@ -636,9 +695,19 @@
                                     <value>${docker.wildfly.addins}</value>
                                 </replacement>
                                 <replacement>
-                                    <token>%WILDFLY_SQLS%</token>
+                                    <token>%MYSQL_INIT%</token>
                                     <value>${docker.wildfly.sqls}</value>
                                 </replacement>
+                                <replacement>
+                                    <token>\$\{docker.mysql.image}</token>
+                                    <value>${docker.mysql.image}</value>
+                                </replacement>
+                                <replacement>
+                                    <token>\$\{docker.mysql.sqls}</token>
+                                    <value>${docker.mysql.sqls}</value>
+                                </replacement>
+
+                                <!-- dates -->
                                 <replacement>
                                     <token>\$\{build.monthYear}</token>
                                     <!--suppress UnresolvedMavenProperty -->
@@ -653,6 +722,51 @@
                                     <token>\$\{build.date}</token>
                                     <!--suppress UnresolvedMavenProperty -->
                                     <value>${build.date}</value>
+                                </replacement>
+
+                                <!-- header and footer for md-files -->
+                                <replacement>
+                                    <token>\$\{ttp.gics.readme.header}</token>
+                                    <!--suppress UnresolvedMavenProperty -->
+                                    <value>![context](https://user-images.githubusercontent.com/12081369/49164555-a27e5180-f32f-11e8-8725-7b97e35134b5.png)
+
+Current Version: ${project.version} (${build.monthYear})
+Current Docker-Version of TTP-FHIR-Gateway: 2023.1.2 (October 2023), Details from [ReleaseNotes](https://www.ths-greifswald.de/ttpfhirgw/releasenotes/2023-1-2)
+                                    </value>
+                                </replacement>
+                                <replacement>
+                                    <token>\$\{ttp.gics.readme.footer}</token>
+                                    <!--suppress UnresolvedMavenProperty -->
+                                    <value># Additional Information #
+
+The gICS was developed by the University Medicine Greifswald and published in 2014 as part of the [MOSAIC-Project](https://ths-greifswald.de/mosaic "")  (funded by the DFG HO 1937/2-1). Selected
+functionalities of gICS were developed as part of the following research projects:
+
+- MAGIC (funded by the DFG HO 1937/5-1)
+- MIRACUM (funded by the German Federal Ministry of Education and Research 01ZZ1801M)
+- NUM-CODEX (funded by the German Federal Ministry of Education and Research 01KX2021)
+
+## Credits ##
+**Concept and implementation:** L. Geidel &lt;br/&gt;
+**Web-Client:** A. Blumentritt, M. Bialke, F.M.Moser &lt;br/&gt;
+**Docker:** R. Schuldt &lt;br/&gt;
+**TTP-FHIR Gateway für gICS:** M. Bialke, P. Penndorf, L. Geidel, S. Lang, F.M. Moser
+
+## License ##
+**License:** AGPLv3, https://www.gnu.org/licenses/agpl-3.0.en.html &lt;br/&gt;
+**Copyright:** 2014 - ${build.year} University Medicine Greifswald &lt;br/&gt;
+**Contact:** https://www.ths-greifswald.de/kontakt/
+
+## Publications ##
+- https://doi.org/10.1186/s12911-022-02081-4
+- https://rdcu.be/b5Yck
+- https://rdcu.be/6LJd
+- https://dx.doi.org/10.3414/ME14-01-0133
+- https://dx.doi.org/10.1186/s12967-015-0545-6
+
+# Supported languages #
+German, English
+                                    </value>
                                 </replacement>
                             </replacements>
                         </configuration>

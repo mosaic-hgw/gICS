@@ -4,9 +4,9 @@ package org.emau.icmvc.ganimed.ttp.cm2.dto;
  * ###license-information-start###
  * gICS - a Generic Informed Consent Service
  * __
- * Copyright (C) 2014 - 2022 Trusted Third Party of the University Medicine Greifswald -
+ * Copyright (C) 2014 - 2023 Trusted Third Party of the University Medicine Greifswald -
  * 							kontakt-ths@uni-greifswald.de
- * 
+ *
  * 							concept and implementation
  * 							l.geidel, c.hampf
  * 							web client
@@ -15,17 +15,18 @@ package org.emau.icmvc.ganimed.ttp.cm2.dto;
  * 							m.bialke
  * 							docker
  * 							r. schuldt
- * 
+ *
  * 							The gICS was developed by the University Medicine Greifswald and published
- *  							in 2014 as part of the research project "MOSAIC" (funded by the DFG HO 1937/2-1).
- *  
+ * 							in 2014 as part of the research project "MOSAIC" (funded by the DFG HO 1937/2-1).
+ *
  * 							Selected functionalities of gICS were developed as
  * 							part of the following research projects:
  * 							- MAGIC (funded by the DFG HO 1937/5-1)
  * 							- MIRACUM (funded by the German Federal Ministry of Education and Research 01ZZ1801M)
  * 							- NUM-CODEX (funded by the German Federal Ministry of Education and Research 01KX2021)
- * 
+ *
  * 							please cite our publications
+ * 							https://doi.org/10.1186/s12911-022-02081-4
  * 							https://doi.org/10.1186/s12967-020-02457-y
  * 							http://dx.doi.org/10.3414/ME14-01-0133
  * 							http://dx.doi.org/10.1186/s12967-015-0545-6
@@ -35,23 +36,26 @@ package org.emau.icmvc.ganimed.ttp.cm2.dto;
  * it under the terms of the GNU Affero General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  * ###license-information-end###
  */
 
+import java.io.Serial;
 import java.io.Serializable;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+
+import org.apache.commons.lang3.StringUtils;
 
 /**
  * ein modul ist eine zustimmbare unterteilung eines consents; sie fasst mehrere policies zusammen,
@@ -60,62 +64,62 @@ import java.util.Set;
  * @author geidell
  *
  */
-public class ModuleDTO extends FhirIdDTO implements Serializable
+public class ModuleDTO extends FhirIdDTO implements Serializable, DomainRelated
 {
-	private static final long serialVersionUID = -7248326806238505583L;
+	@Serial
+	private static final long serialVersionUID = -5350386498803973205L;
 	private ModuleKeyDTO key;
 	private String text;
 	private String title;
 	private String comment;
 	private String externProperties;
-	private Set<AssignedPolicyDTO> assignedPolicies = new HashSet<>();
+	private final Set<AssignedPolicyDTO> assignedPolicies = new HashSet<>();
 	private Date creationDate;
 	private Date updateDate;
 	private String label;
 	private String shortText;
-	private boolean finalised;
+	private boolean finalised = false;
 
 	public ModuleDTO()
 	{
 		super(null);
-		finalised = false;
 	}
 
 	public ModuleDTO(ModuleKeyDTO key)
 	{
 		super(null);
-		this.key = key;
+		setKey(key);
 	}
 
 	public ModuleDTO(ModuleKeyDTO key, String text, Set<AssignedPolicyDTO> assignedPolicies)
 	{
 		super(null);
-		this.key = key;
+		setKey(key);
 		this.text = text;
-		if (assignedPolicies != null)
-		{
-			this.assignedPolicies = assignedPolicies;
-		}
+		setAssignedPolicies(assignedPolicies);
 	}
 
 	public ModuleDTO(ModuleKeyDTO key, String text, String title, String comment, String externProperties, Set<AssignedPolicyDTO> assignedPolicies, String label, String shortText,
 			boolean finalised, Date creationDate, Date updateDate, String fhirID)
 	{
 		super(fhirID);
-		this.key = key;
+		setKey(key);
 		this.text = text;
 		this.title = title;
 		this.comment = comment;
 		this.externProperties = externProperties;
-		if (assignedPolicies != null)
-		{
-			this.assignedPolicies = assignedPolicies;
-		}
+		setAssignedPolicies(assignedPolicies);
 		this.label = label;
 		this.shortText = shortText;
 		this.finalised = finalised;
-		this.creationDate = creationDate;
-		this.updateDate = updateDate;
+		setCreationDate(creationDate);
+		setUpdateDate(updateDate);
+	}
+
+	public ModuleDTO(ModuleDTO dto)
+	{
+		this(dto.getKey(), dto.getText(), dto.getTitle(), dto.getComment(), dto.getExternProperties(), dto.getAssignedPolicies(), dto.getLabel(), dto.getShortText(),
+				dto.getFinalised(), dto.getCreationDate(), dto.getUpdateDate(), dto.getFhirID());
 	}
 
 	public ModuleKeyDTO getKey()
@@ -127,7 +131,11 @@ public class ModuleDTO extends FhirIdDTO implements Serializable
 	{
 		if (key != null)
 		{
-			this.key = key;
+			this.key = new ModuleKeyDTO(key);
+		}
+		else
+		{
+			this.key = null;
 		}
 	}
 
@@ -178,9 +186,16 @@ public class ModuleDTO extends FhirIdDTO implements Serializable
 
 	public void setAssignedPolicies(Set<AssignedPolicyDTO> assignedPolicies)
 	{
-		if (assignedPolicies != null)
+		if (this.assignedPolicies != assignedPolicies)
 		{
-			this.assignedPolicies = assignedPolicies;
+			this.assignedPolicies.clear();
+			if (assignedPolicies != null)
+			{
+				for (AssignedPolicyDTO assignedPolicy : assignedPolicies)
+				{
+					this.assignedPolicies.add(new AssignedPolicyDTO(assignedPolicy));
+				}
+			}
 		}
 	}
 
@@ -191,7 +206,14 @@ public class ModuleDTO extends FhirIdDTO implements Serializable
 
 	public void setCreationDate(Date creationDate)
 	{
-		this.creationDate = creationDate;
+		if (creationDate != null)
+		{
+			this.creationDate = new Date(creationDate.getTime());
+		}
+		else
+		{
+			this.creationDate = null;
+		}
 	}
 
 	public Date getUpdateDate()
@@ -201,7 +223,14 @@ public class ModuleDTO extends FhirIdDTO implements Serializable
 
 	public void setUpdateDate(Date updateDate)
 	{
-		this.updateDate = updateDate;
+		if (updateDate != null)
+		{
+			this.updateDate = new Date(updateDate.getTime());
+		}
+		else
+		{
+			this.updateDate = null;
+		}
 	}
 
 	public String getLabel()
@@ -212,6 +241,11 @@ public class ModuleDTO extends FhirIdDTO implements Serializable
 	public void setLabel(String label)
 	{
 		this.label = label;
+	}
+
+	public String getLabelOrName()
+	{
+		return StringUtils.isNotEmpty(label) ? label : key.getName();
 	}
 
 	public String getShortText()
@@ -232,6 +266,12 @@ public class ModuleDTO extends FhirIdDTO implements Serializable
 	public void setFinalised(boolean finalised)
 	{
 		this.finalised = finalised;
+	}
+
+	@Override
+	public String getDomainName()
+	{
+		return getKey().getDomainName();
 	}
 
 	@Override

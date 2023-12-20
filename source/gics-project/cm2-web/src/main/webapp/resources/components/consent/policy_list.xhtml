@@ -4,7 +4,7 @@
   ###license-information-start###
   gICS - a Generic Informed Consent Service
   __
-  Copyright (C) 2014 - 2022 Trusted Third Party of the University Medicine Greifswald -
+  Copyright (C) 2014 - 2023 Trusted Third Party of the University Medicine Greifswald -
   							kontakt-ths@uni-greifswald.de
   
   							concept and implementation
@@ -17,8 +17,8 @@
   							r. schuldt
   
   							The gICS was developed by the University Medicine Greifswald and published
-   							in 2014 as part of the research project "MOSAIC" (funded by the DFG HO 1937/2-1).
-   
+  							in 2014 as part of the research project "MOSAIC" (funded by the DFG HO 1937/2-1).
+  
   							Selected functionalities of gICS were developed as
   							part of the following research projects:
   							- MAGIC (funded by the DFG HO 1937/5-1)
@@ -26,6 +26,7 @@
   							- NUM-CODEX (funded by the German Federal Ministry of Education and Research 01KX2021)
   
   							please cite our publications
+  							https://doi.org/10.1186/s12911-022-02081-4
   							https://doi.org/10.1186/s12967-020-02457-y
   							http://dx.doi.org/10.3414/ME14-01-0133
   							http://dx.doi.org/10.1186/s12967-015-0545-6
@@ -49,27 +50,52 @@
 
 <!-- author: Arne Blumentritt -->
 
-<html xmlns="http://www.w3.org/1999/xhtml" xmlns:h="http://java.sun.com/jsf/html"
-	  xmlns:p="http://primefaces.org/ui" xmlns:composite="http://java.sun.com/jsf/composite">
+<html xmlns="http://www.w3.org/1999/xhtml"
+	  xmlns:composite="http://java.sun.com/jsf/composite"
+	  xmlns:f="http://java.sun.com/jsf/core"
+	  xmlns:h="http://java.sun.com/jsf/html"
+	  xmlns:p="http://primefaces.org/ui">
 
 <!-- INTERFACE -->
 <composite:interface>
-	<composite:attribute name="title" type="java.lang.String" required="true" />
-	<composite:attribute name="policies" type="java.util.List" required="true" />
 </composite:interface>
 
 <!-- IMPLEMENTATION -->
 <composite:implementation>
-	<p:dialog widgetVar="#{cc.attrs.id}" closeOnEscape="true" header="#{cc.attrs.title}">
-		<p:dataTable value="#{cc.attrs.policies}" var="_policy">
-			<p:column headerText="#{msg['policy.label']}" sortBy="#{_policy.label}" sortOrder="ASC">
-				<h:outputText value="#{_policy.label}" />
+	<h:form>
+		<p:dataTable value="#{signerController.currentSignedPolicies}" var="_policy" style="text-align: left" widgetVar="policies"
+					 currentPageReportTemplate="#{props.currentPageReport}"
+					 pageLinks="3" paginator="true" paginatorPosition="bottom" paginatorTemplate="#{props.paginatorTemplate}"
+					 rows="10">
+			<p:column headerText="#{msg['model.consent.legalConsentDate']}"
+					  style="min-width: 150px;">
+				<h:outputText value="#{signerController.consents.get(_policy.consentKey).consentDates.legalConsentDate}" converter="datetime" />
 			</p:column>
-			<p:column headerText="#{msg['policy.version']}">
-				<h:outputText value="#{_policy.key.version}" />
+			<p:column headerText="#{msg['model.consent.expirationDate']}"
+					  style="min-width: 150px;">
+				<h:outputText value="#{signerController.expires(signerController.consents.get(_policy.consentKey).consentDates.getDateForPolicy(_policy.policyKey))}" converter="datetime" />
+			</p:column>
+			<p:column headerText="#{msg['policy']}" sortBy="#{signerController.policies.get(_policy.policyKey).labelOrName}" sortOrder="ASC" width="50%">
+				<h:outputText value="#{signerController.policies.get(_policy.policyKey).labelOrName}" />
+				<h:outputText value=" #{_policy.policyKey.version}" />
+			</p:column>
+			<p:column headerText="#{msg['page.consents.policies.consent']}" width="50%">
+				<h:outputText value="#{signerController.templates.get(_policy.consentKey.consentTemplateKey).labelOrName}" />
+				<h:outputText value=" #{signerController.templates.get(_policy.consentKey.consentTemplateKey).versionLabelAndVersion}" />
+			</p:column>
+			<p:column filterBy="#{_policy.status.name()}" filterMatchMode="in"
+					  headerText="#{msg['page.consents.signer.status']}"
+					  style="min-width: 100px;" styleClass="no-header">
+				<f:facet name="filter">
+					<p:selectCheckboxMenu label="#{msg['page.consents.signer.status']}" onchange="PF('policies').filter()" showHeader="false">
+						<f:selectItems value="#{signerController.policyFilterOptions}" />
+					</p:selectCheckboxMenu>
+				</f:facet>
+				<h:outputText value="#{cmsg['model.consent.status.admin.'.concat(_policy.status.name())]}" style="margin: 1px 0"
+							  styleClass="tag tag_#{msg['model.policy.status.color.'.concat(_policy.status.consentStatusType.name())]}" />
 			</p:column>
 		</p:dataTable>
-	</p:dialog>
+	</h:form>
 </composite:implementation>
 
 </html>

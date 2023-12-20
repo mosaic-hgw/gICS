@@ -4,7 +4,7 @@ package org.emau.icmvc.ganimed.ttp.cm2.frontend.controller;
  * ###license-information-start###
  * gICS - a Generic Informed Consent Service
  * __
- * Copyright (C) 2014 - 2022 Trusted Third Party of the University Medicine Greifswald -
+ * Copyright (C) 2014 - 2023 Trusted Third Party of the University Medicine Greifswald -
  * 							kontakt-ths@uni-greifswald.de
  *
  * 							concept and implementation
@@ -17,7 +17,7 @@ package org.emau.icmvc.ganimed.ttp.cm2.frontend.controller;
  * 							r. schuldt
  *
  * 							The gICS was developed by the University Medicine Greifswald and published
- *  							in 2014 as part of the research project "MOSAIC" (funded by the DFG HO 1937/2-1).
+ * 							in 2014 as part of the research project "MOSAIC" (funded by the DFG HO 1937/2-1).
  *
  * 							Selected functionalities of gICS were developed as
  * 							part of the following research projects:
@@ -26,6 +26,7 @@ package org.emau.icmvc.ganimed.ttp.cm2.frontend.controller;
  * 							- NUM-CODEX (funded by the German Federal Ministry of Education and Research 01KX2021)
  *
  * 							please cite our publications
+ * 							https://doi.org/10.1186/s12911-022-02081-4
  * 							https://doi.org/10.1186/s12967-020-02457-y
  * 							http://dx.doi.org/10.3414/ME14-01-0133
  * 							http://dx.doi.org/10.1186/s12967-015-0545-6
@@ -60,6 +61,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Base64;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -68,6 +70,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 import javax.faces.bean.ManagedBean;
 import javax.faces.bean.ViewScoped;
@@ -75,6 +78,7 @@ import javax.faces.context.ExternalContext;
 import javax.faces.context.FacesContext;
 import javax.faces.model.SelectItem;
 import javax.faces.model.SelectItemGroup;
+import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpSession;
 
 import org.apache.commons.io.FilenameUtils;
@@ -112,6 +116,7 @@ import org.emau.icmvc.ganimed.ttp.cm2.exceptions.UnknownConsentException;
 import org.emau.icmvc.ganimed.ttp.cm2.exceptions.UnknownConsentTemplateException;
 import org.emau.icmvc.ganimed.ttp.cm2.exceptions.UnknownDomainException;
 import org.emau.icmvc.ganimed.ttp.cm2.exceptions.UnknownModuleException;
+import org.emau.icmvc.ganimed.ttp.cm2.exceptions.UnknownSignerIdException;
 import org.emau.icmvc.ganimed.ttp.cm2.exceptions.UnknownSignerIdTypeException;
 import org.emau.icmvc.ganimed.ttp.cm2.frontend.controller.common.AbstractConsentController;
 import org.emau.icmvc.ganimed.ttp.cm2.frontend.model.PrintPrefillEntry;
@@ -149,7 +154,7 @@ public class ConsentController extends AbstractConsentController implements Seri
 
 	// Create consent
 	private WebConsent editConsent;
-	private List<ConsentTemplateDTO> templates;
+	private List<ConsentTemplateDTO> templates = new ArrayList<>();
 	private SignerIdDTO newSignerId = new SignerIdDTO();
 
 	// Scan
@@ -266,7 +271,7 @@ public class ConsentController extends AbstractConsentController implements Seri
 				consentPageMode = ConsentPageMode.PRINT;
 			}
 			catch (UnknownDomainException | InvalidVersionException | InconsistentStatusException | UnknownConsentTemplateException | UnknownSignerIdTypeException
-					| UnknownConsentException e)
+					| UnknownConsentException | InvalidParameterException e)
 			{
 				logMessage(e.getLocalizedMessage(), Severity.ERROR);
 			}
@@ -292,12 +297,12 @@ public class ConsentController extends AbstractConsentController implements Seri
 		// Load list of consents
 		loadConsents();
 
-		// Replace searchSignerId String with a signerIdDTO object
+		// Replace searchSignerId created by only the string value with a real signerIdDTO object (incl. creationDate)
 		try
 		{
 			if (searchSignerId != null)
 			{
-				List<ConsentLightDTO> consents = service.getAllConsentsForSignerIds(domainSelector.getSelectedDomainName(), new HashSet<>(Collections.singletonList(searchSignerId)), true);
+				List<ConsentLightDTO> consents = service.getAllConsentsForSignerIds(domainSelector.getSelectedDomainName(), new HashSet<>(Collections.singletonList(searchSignerId)), false);
 
 				if (!consents.isEmpty())
 				{
@@ -312,7 +317,7 @@ public class ConsentController extends AbstractConsentController implements Seri
 				}
 			}
 		}
-		catch (UnknownDomainException | InvalidVersionException | UnknownSignerIdTypeException | InconsistentStatusException e)
+		catch (UnknownDomainException | InvalidVersionException | UnknownSignerIdTypeException | InconsistentStatusException | InvalidParameterException e)
 		{
 			logMessage(e.getLocalizedMessage(), Severity.ERROR);
 		}
@@ -365,7 +370,10 @@ public class ConsentController extends AbstractConsentController implements Seri
 
 		if (!editConsent.getTemplate().getFinalised())
 		{
-			Object[] args = { getBundle().getString("template.type.small." + editConsent.getTemplateType().toString()) };
+			HttpServletRequest request = (HttpServletRequest) FacesContext.getCurrentInstance().getExternalContext().getRequest();
+
+			Object[] args = { getBundle().getString("template.type.small." + editConsent.getTemplateType().toString()), getRequestPath(
+					(HttpServletRequest) FacesContext.getCurrentInstance().getExternalContext().getRequest()) + "/html/internal/admin/templates.xhtml" };
 			logMessage(new MessageFormat(getBundle().getString("consent.message.warn.notFinal"))
 					.format(args), Severity.WARN);
 		}
@@ -378,8 +386,7 @@ public class ConsentController extends AbstractConsentController implements Seri
 	{
 		PrimeFaces.current().resetInputs("main");
 		consentPageMode = searchSignerId == null ? ConsentPageMode.LIST : ConsentPageMode.SEARCH;
-		templateType = searchSignerId == null ? templateType : null;
-
+		templateType = null;
 	}
 
 	/**
@@ -393,7 +400,7 @@ public class ConsentController extends AbstractConsentController implements Seri
 		{
 			loadTemplates();
 		}
-		catch (UnknownDomainException | InvalidVersionException e)
+		catch (UnknownDomainException | InvalidVersionException | InvalidParameterException | UnknownSignerIdException | InconsistentStatusException | UnknownSignerIdTypeException e)
 		{
 			logMessage(e.getLocalizedMessage(), Severity.ERROR);
 		}
@@ -410,7 +417,7 @@ public class ConsentController extends AbstractConsentController implements Seri
 		{
 			loadTemplates();
 		}
-		catch (UnknownDomainException | InvalidVersionException e)
+		catch (UnknownDomainException | InvalidVersionException | InvalidParameterException | UnknownSignerIdException | InconsistentStatusException | UnknownSignerIdTypeException e)
 		{
 			logMessage(e.getLocalizedMessage(), Severity.ERROR);
 		}
@@ -824,18 +831,20 @@ public class ConsentController extends AbstractConsentController implements Seri
 				service.addConsent(editConsent.toDTO());
 			}
 
-			consentPageMode = ConsentPageMode.LIST;
-			loadConsents();
-			selectedConsent = editConsent;
 			ConsentTemplateDTO template = Objects.requireNonNull(getTemplate(editConsent.getKey().getConsentTemplateKey()));
 			Object[] args = { template.getLabel(), template.getVersionLabelAndVersion(),
 					editConsent.getKey().getConsentTemplateKey().getDomainName() };
 			logMessage(new MessageFormat(getBundle().getString("consent.message.info.added." + templateType.toString()))
 					.format(args), Severity.INFO);
+			
+			consentPageMode = searchSignerId == null ? ConsentPageMode.LIST : ConsentPageMode.SEARCH;
+			templateType = null;
+			loadConsents();
+			selectedConsent = editConsent;
 		}
 		catch (MissingRequiredObjectException | InvalidFreeTextException | MandatoryFieldsException | UnknownDomainException | UnknownSignerIdTypeException | DuplicateEntryException
 				| UnknownModuleException | UnknownConsentTemplateException
-				| InvalidVersionException | InternalException | RequirementsNotFullfilledException | InvalidParameterException e)
+				| InvalidVersionException | RequirementsNotFullfilledException | InvalidParameterException e)
 		{
 			if (e.getLocalizedMessage().contains("if at least one mandatory module have a consent status of"))
 			{
@@ -1023,7 +1032,7 @@ public class ConsentController extends AbstractConsentController implements Seri
 			return "/html/internal/consents.xhtml?faces-redirect=true&templateType=" + template.getType().name()
 					+ "&print=true";
 		}
-		catch (UnknownDomainException | UnknownConsentTemplateException | InvalidVersionException e)
+		catch (UnknownDomainException | UnknownConsentTemplateException | InvalidVersionException | InvalidParameterException e)
 		{
 			logMessage(e.getLocalizedMessage(), Severity.ERROR);
 		}
@@ -1131,17 +1140,31 @@ public class ConsentController extends AbstractConsentController implements Seri
 	 *
 	 * @throws UnknownDomainException
 	 * @throws InvalidVersionException
+	 * @throws InvalidParameterException
 	 */
-	private void loadTemplates() throws UnknownDomainException, InvalidVersionException
+	private void loadTemplates() throws UnknownDomainException, InconsistentStatusException, InvalidVersionException, InvalidParameterException, UnknownSignerIdException, UnknownSignerIdTypeException
 	{
-		templates = new ArrayList<>();
-
-		for (ConsentTemplateDTO template : service.listConsentTemplates(domainSelector.getSelectedDomainName(), false))
+		templates.clear();
+		if (editConsent != null && !editConsent.getKey().getSignerIds().isEmpty())
 		{
-			if (template.getType().equals(templateType))
-			{
-				templates.add(template);
-			}
+			templates = service.getMappedTemplatesForSignerId(domainSelector.getSelectedDomainName(), templateType, editConsent.getKey().getOrderedSignerIds().get(0), true).stream().map(t -> {
+				try
+				{
+					return service.getConsentTemplate(t);
+				}
+				catch (UnknownDomainException | UnknownConsentTemplateException | InvalidVersionException | InvalidParameterException e)
+				{
+					logger.error(e.getLocalizedMessage());
+					return null;
+				}
+			}).collect(Collectors.toList());
+		}
+		if (templates.isEmpty())
+		{
+			templates = service.listConsentTemplates(domainSelector.getSelectedDomainName(), false).stream()
+					.filter(t -> t.getType().equals(templateType))
+					.sorted(Comparator.comparing(t -> t.getLabelOrName().toLowerCase()))
+					.collect(Collectors.toList());
 		}
 	}
 
@@ -1157,8 +1180,7 @@ public class ConsentController extends AbstractConsentController implements Seri
 		{
 			return service.getConsentTemplate(key);
 		}
-		catch (UnknownConsentTemplateException | InvalidVersionException
-				| UnknownDomainException e)
+		catch (UnknownConsentTemplateException | InvalidVersionException | UnknownDomainException | InvalidParameterException e)
 		{
 			logMessage(e.getLocalizedMessage(), Severity.ERROR);
 			return null;

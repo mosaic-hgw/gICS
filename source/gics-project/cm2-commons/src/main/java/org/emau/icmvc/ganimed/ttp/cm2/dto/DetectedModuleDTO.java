@@ -4,9 +4,9 @@ package org.emau.icmvc.ganimed.ttp.cm2.dto;
  * ###license-information-start###
  * gICS - a Generic Informed Consent Service
  * __
- * Copyright (C) 2014 - 2022 Trusted Third Party of the University Medicine Greifswald -
+ * Copyright (C) 2014 - 2023 Trusted Third Party of the University Medicine Greifswald -
  * 							kontakt-ths@uni-greifswald.de
- * 
+ *
  * 							concept and implementation
  * 							l.geidel, c.hampf
  * 							web client
@@ -15,17 +15,18 @@ package org.emau.icmvc.ganimed.ttp.cm2.dto;
  * 							m.bialke
  * 							docker
  * 							r. schuldt
- * 
+ *
  * 							The gICS was developed by the University Medicine Greifswald and published
- *  							in 2014 as part of the research project "MOSAIC" (funded by the DFG HO 1937/2-1).
- *  
+ * 							in 2014 as part of the research project "MOSAIC" (funded by the DFG HO 1937/2-1).
+ *
  * 							Selected functionalities of gICS were developed as
  * 							part of the following research projects:
  * 							- MAGIC (funded by the DFG HO 1937/5-1)
  * 							- MIRACUM (funded by the German Federal Ministry of Education and Research 01ZZ1801M)
  * 							- NUM-CODEX (funded by the German Federal Ministry of Education and Research 01KX2021)
- * 
+ *
  * 							please cite our publications
+ * 							https://doi.org/10.1186/s12911-022-02081-4
  * 							https://doi.org/10.1186/s12967-020-02457-y
  * 							http://dx.doi.org/10.3414/ME14-01-0133
  * 							http://dx.doi.org/10.1186/s12967-015-0545-6
@@ -35,18 +36,19 @@ package org.emau.icmvc.ganimed.ttp.cm2.dto;
  * it under the terms of the GNU Affero General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  * ###license-information-end###
  */
 
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.List;
 
 import org.emau.icmvc.ganimed.ttp.cm2.dto.enums.ConsentStatus;
@@ -59,10 +61,7 @@ import org.emau.icmvc.ganimed.ttp.cm2.dto.enums.ConsentStatus;
  */
 public class DetectedModuleDTO implements Serializable
 {
-	/**
-	 *
-	 */
-	private static final long serialVersionUID = 5400161929732657555L;
+	private static final long serialVersionUID = 9098296439476425872L;
 
 	private ModuleKeyDTO key;
 
@@ -70,7 +69,7 @@ public class DetectedModuleDTO implements Serializable
 	private PARSING_RESULT_CONFIDENCE confidence;
 
 	// a list if more than one consentstatus was marked on the parsed consent
-	private List<ConsentStatus> consentStatus;
+	private final List<ConsentStatus> consentStatus = new ArrayList<>();
 
 	public DetectedModuleDTO()
 	{
@@ -79,9 +78,14 @@ public class DetectedModuleDTO implements Serializable
 
 	public DetectedModuleDTO(ModuleKeyDTO moduleKey, List<ConsentStatus> consentStates, PARSING_RESULT_CONFIDENCE confidence)
 	{
-		key = moduleKey;
+		setKey(moduleKey);
 		setConsentStatus(consentStates);
 		this.confidence = confidence;
+	}
+
+	public DetectedModuleDTO(DetectedModuleDTO dto)
+	{
+		this(dto.getKey(), dto.getConsentStatus(), dto.getParseResult());
 	}
 
 	@Override
@@ -89,13 +93,11 @@ public class DetectedModuleDTO implements Serializable
 	{
 		final int prime = 31;
 		int result = 1;
-		result = prime * result + ((confidence == null) ? 0 : confidence.hashCode());
-		result = prime * result + ((consentStatus == null) ? 0 : consentStatus.hashCode());
-		result = prime * result + ((key == null) ? 0 : key.hashCode());
+		result = prime * result + (confidence == null ? 0 : confidence.hashCode());
+		result = prime * result + (consentStatus == null ? 0 : consentStatus.hashCode());
+		result = prime * result + (key == null ? 0 : key.hashCode());
 		return result;
 	}
-
-
 
 	@Override
 	public String toString()
@@ -177,7 +179,14 @@ public class DetectedModuleDTO implements Serializable
 
 	public void setConsentStatus(List<ConsentStatus> consentStatus)
 	{
-		this.consentStatus = consentStatus;
+		if (this.consentStatus != consentStatus)
+		{
+			this.consentStatus.clear();
+			if (consentStatus != null)
+			{
+				this.consentStatus.addAll(consentStatus);
+			}
+		}
 	}
 
 	public ModuleKeyDTO getKey()
@@ -187,7 +196,14 @@ public class DetectedModuleDTO implements Serializable
 
 	public void setKey(ModuleKeyDTO key)
 	{
-		this.key = key;
+		if (key != null)
+		{
+			this.key = new ModuleKeyDTO(key);
+		}
+		else
+		{
+			this.key = null;
+		}
 	}
 
 	public enum PARSING_RESULT_CONFIDENCE
@@ -195,5 +211,3 @@ public class DetectedModuleDTO implements Serializable
 		OK, REVISE_TOO_MANY, REVISE_EMPTY
 	}
 }
-
-

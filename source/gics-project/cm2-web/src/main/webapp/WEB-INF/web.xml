@@ -3,7 +3,7 @@
   ###license-information-start###
   gICS - a Generic Informed Consent Service
   __
-  Copyright (C) 2014 - 2022 Trusted Third Party of the University Medicine Greifswald -
+  Copyright (C) 2014 - 2023 Trusted Third Party of the University Medicine Greifswald -
   							kontakt-ths@uni-greifswald.de
   
   							concept and implementation
@@ -16,8 +16,8 @@
   							r. schuldt
   
   							The gICS was developed by the University Medicine Greifswald and published
-   							in 2014 as part of the research project "MOSAIC" (funded by the DFG HO 1937/2-1).
-   
+  							in 2014 as part of the research project "MOSAIC" (funded by the DFG HO 1937/2-1).
+  
   							Selected functionalities of gICS were developed as
   							part of the following research projects:
   							- MAGIC (funded by the DFG HO 1937/5-1)
@@ -25,6 +25,7 @@
   							- NUM-CODEX (funded by the German Federal Ministry of Education and Research 01KX2021)
   
   							please cite our publications
+  							https://doi.org/10.1186/s12911-022-02081-4
   							https://doi.org/10.1186/s12967-020-02457-y
   							http://dx.doi.org/10.3414/ME14-01-0133
   							http://dx.doi.org/10.1186/s12967-015-0545-6
@@ -62,7 +63,7 @@
 	</context-param>
 	<context-param>
 		<param-name>primefaces.UPLOADER</param-name>
-		<param-value>commons</param-value>
+		<param-value>native</param-value>
 	</context-param>
 	<context-param>
 		<param-name>primefaces.FONT_AWESOME</param-name>
@@ -72,39 +73,31 @@
 		<param-name>javax.faces.DATETIMECONVERTER_DEFAULT_TIMEZONE_IS_SYSTEM_TIMEZONE</param-name>
 		<param-value>true</param-value>
 	</context-param>
-	<filter>
-		<filter-name>PrimeFaces FileUpload Filter</filter-name>
-		<filter-class>org.primefaces.webapp.filter.FileUploadFilter</filter-class>
-	</filter>
-	<filter-mapping>
-		<filter-name>PrimeFaces FileUpload Filter</filter-name>
-		<servlet-name>Faces Servlet</servlet-name>
-	</filter-mapping>
 
 	<!-- Error pages -->
 	<error-page>
 		<error-code>401</error-code>
-		<location>/html/public/error.xhtml?code=401</location>
+		<location>/html/internal/error.xhtml?code=401</location>
 	</error-page>
 	<error-page>
 		<error-code>403</error-code>
-		<location>/html/public/error.xhtml?code=403</location>
+		<location>/html/internal/error.xhtml?code=403</location>
 	</error-page>
 	<error-page>
 		<error-code>404</error-code>
-		<location>/html/public/error.xhtml?code=404</location>
+		<location>/html/internal/error.xhtml?code=404</location>
 	</error-page>
 	<error-page>
 		<exception-type>javax.faces.application.ViewExpiredException</exception-type>
-		<location>/html/public/error.xhtml?code=410</location>
+		<location>/html/internal/error.xhtml?code=410</location>
 	</error-page>
 	<error-page>
 		<error-code>500</error-code>
-		<location>/html/public/error.xhtml?code=500</location>
+		<location>/html/internal/error.xhtml?code=500</location>
 	</error-page>
 	<error-page>
 		<exception-type>java.lang.Exception</exception-type>
-		<location>/html/public/error.xhtml?code=500</location>
+		<location>/html/internal/error.xhtml?code=500</location>
 	</error-page>
 
 	<!-- JSF -->
@@ -152,12 +145,11 @@
 		<role-name>role.gics.user</role-name>
 	</security-role>
 
-	<!-- ${keycloak-login.enable.start}
+	<!-- ${oidc-login.enable.start}
 	<login-config>
-		<auth-method>KEYCLOAK</auth-method>
-		<realm-name>ignored</realm-name>
+		<auth-method>OIDC</auth-method>
 	</login-config>
-	${keycloak-login.enable.end} -->
+	${oidc-login.enable.end} -->
 
 	<!-- ${gras-login.enable.start}
 	<login-config>

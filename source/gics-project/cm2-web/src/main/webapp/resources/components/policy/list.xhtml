@@ -4,7 +4,7 @@
   ###license-information-start###
   gICS - a Generic Informed Consent Service
   __
-  Copyright (C) 2014 - 2022 Trusted Third Party of the University Medicine Greifswald -
+  Copyright (C) 2014 - 2023 Trusted Third Party of the University Medicine Greifswald -
   							kontakt-ths@uni-greifswald.de
   
   							concept and implementation
@@ -17,8 +17,8 @@
   							r. schuldt
   
   							The gICS was developed by the University Medicine Greifswald and published
-   							in 2014 as part of the research project "MOSAIC" (funded by the DFG HO 1937/2-1).
-   
+  							in 2014 as part of the research project "MOSAIC" (funded by the DFG HO 1937/2-1).
+  
   							Selected functionalities of gICS were developed as
   							part of the following research projects:
   							- MAGIC (funded by the DFG HO 1937/5-1)
@@ -26,6 +26,7 @@
   							- NUM-CODEX (funded by the German Federal Ministry of Education and Research 01KX2021)
   
   							please cite our publications
+  							https://doi.org/10.1186/s12911-022-02081-4
   							https://doi.org/10.1186/s12967-020-02457-y
   							http://dx.doi.org/10.3414/ME14-01-0133
   							http://dx.doi.org/10.1186/s12967-015-0545-6
@@ -88,10 +89,10 @@
 						  headerText="#{msg['policy.label']}" sortBy="#{_policy.label}" width="100%">
 					<h:outputText value="#{_policy.label} " />
 					<h:outputText id="comment-icon" rendered="#{not empty _policy.comment}" styleClass="mdi mdi-comment-text-outline tooltip-icon comment" />
-					<p:tooltip for="comment-icon" rendered="#{not empty _policy.comment}" value="#{_policy.comment}" escape="false" />
+					<p:tooltip for="comment-icon" rendered="#{not empty _policy.comment}" value="#{_policy.comment}" />
 				</p:column>
 				<p:column filterBy="#{_policy.key.version}" filterMatchMode="contains" filterStyle="display: none"
-						  headerText="#{msg['policy.version']}" sortBy="#{_policy.key.version}">
+						  headerText="#{msg['policy.version']}" sortBy="#{templateController.convertPolicyVersion(_policy.key.version)}">
 					<h:outputText value="#{_policy.key.version}" />
 				</p:column>
 				<p:column filterBy="#{_policy.creationDate}" filterMatchMode="contains" filterStyle="display: none"

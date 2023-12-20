@@ -1,27 +1,29 @@
 version: '3.7'
 services:
   mysql:
-    image: mysql:8.0.28
+    image: ${docker.mysql.image}
     container_name: ${project.shortName}-mysql
 #    ports:
 #      - "3306:3306"
     env_file:
-      - mysql.env
+      - ./envs/mysql.env
     volumes:
       - ./sqls:/docker-entrypoint-initdb.d
 #      - ./data/mysql:/var/lib/mysql
-    command: --max_allowed_packet=10M
+    command: --max_allowed_packet=20M --default-time-zone=Europe/Berlin
   wildfly:
     image: ${docker.image.name}-${build.date}
     container_name: ${project.shortName}-wildfly
     ports:
+#      - "8787:8787"
       - "8080:8080"
       - "9990:9990"
     env_file:
-      - ${project.shortName}.env
-      - noti.env
-      - ttp-fhir.env
-      - wildfly.env
+      - ./envs/ttp_commons.env
+      - ./envs/ttp_fhir.env
+      - ./envs/ttp_${project.shortName}.env
+      - ./envs/ttp_gras.env
+      - ./envs/ttp_noti.env
     depends_on:
       - mysql
     volumes:

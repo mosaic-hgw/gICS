@@ -4,7 +4,7 @@ package org.emau.icmvc.ganimed.ttp.cm2.version;
  * ###license-information-start###
  * gICS - a Generic Informed Consent Service
  * __
- * Copyright (C) 2014 - 2022 Trusted Third Party of the University Medicine Greifswald -
+ * Copyright (C) 2014 - 2023 Trusted Third Party of the University Medicine Greifswald -
  * 							kontakt-ths@uni-greifswald.de
  * 
  * 							concept and implementation
@@ -17,8 +17,8 @@ package org.emau.icmvc.ganimed.ttp.cm2.version;
  * 							r. schuldt
  * 
  * 							The gICS was developed by the University Medicine Greifswald and published
- *  							in 2014 as part of the research project "MOSAIC" (funded by the DFG HO 1937/2-1).
- *  
+ * 							in 2014 as part of the research project "MOSAIC" (funded by the DFG HO 1937/2-1).
+ * 
  * 							Selected functionalities of gICS were developed as
  * 							part of the following research projects:
  * 							- MAGIC (funded by the DFG HO 1937/5-1)
@@ -26,6 +26,7 @@ package org.emau.icmvc.ganimed.ttp.cm2.version;
  * 							- NUM-CODEX (funded by the German Federal Ministry of Education and Research 01KX2021)
  * 
  * 							please cite our publications
+ * 							https://doi.org/10.1186/s12911-022-02081-4
  * 							https://doi.org/10.1186/s12967-020-02457-y
  * 							http://dx.doi.org/10.3414/ME14-01-0133
  * 							http://dx.doi.org/10.1186/s12967-015-0545-6
@@ -50,10 +51,10 @@ package org.emau.icmvc.ganimed.ttp.cm2.version;
 import org.emau.icmvc.ganimed.ttp.cm2.exceptions.InvalidVersionException;
 
 /**
- * format: "x.y.z"; 0 <= x <= 999; 0 <= y <= 999; 0 <= z <= 999<br>
+ * format: "x.y.z"; 0 <= x <= 2146; 0 <= y <= 999; 0 <= z <= 999<br>
  * also valid:<br>
- * "x.y"; 0 <= x <= 999; 0 <= y <= 999<br>
- * "x"; 0 <= x <= 999<br>
+ * "x.y"; 0 <= x <= 2146; 0 <= y <= 999<br>
+ * "x"; 0 <= x <= 2146<br>
  * attention: a.0b = a.b
  * 
  * @author geidell
@@ -61,14 +62,14 @@ import org.emau.icmvc.ganimed.ttp.cm2.exceptions.InvalidVersionException;
  */
 public class MajorMinorMaintenanceVersionConverter extends VersionConverter
 {
-	private static final String DELIMITER = ".";
+	private static final String MSG = "invalid version format '%s' - it should be x.y.z were x is between 0 and 2146 and y, z are between 0 and 999";
 
 	@Override
 	public String intToString(int version) throws InvalidVersionException
 	{
-		if (version < 0 || version > 999999999)
+		if (version < 0 || version > 2146999999) // largest integer: 2147483647 we restrict to 2146999999 to simplify checks
 		{
-			throw new InvalidVersionException("version must be between 0 and 999.999.999 - current value is " + version);
+			throw new InvalidVersionException("version must be between 0 and 2146999999 - current value is " + version);
 		}
 		return version / 1000000 + DELIMITER + (version / 1000) % 1000 + DELIMITER + version % 1000;
 	}
@@ -78,47 +79,44 @@ public class MajorMinorMaintenanceVersionConverter extends VersionConverter
 	{
 		if (version == null)
 		{
-			throw new InvalidVersionException("invalid version format '" + version + "' - it should be x.y.z were x, y, z are between 0 and 999");
+			throw new InvalidVersionException(String.format(MSG, version));
 		}
 		String[] parts = version.split("\\.");
-		if (parts.length != 3)
+		if (parts.length != numberOfParts())
 		{
-			throw new InvalidVersionException("invalid version format '" + version + "' - it should be x.y.z were x, y, z are between 0 and 999");
+			throw new InvalidVersionException(String.format(MSG, version));
 		}
 		int result;
 		try
 		{
 			result = Integer.valueOf(parts[0]) * 1000000;
-			if (result < 0 || result > 999000000)
+			if (result < 0 || result > 2146000000)
 			{
-				throw new InvalidVersionException(
-						"invalid version format '" + version + "' - it should be x.y.z were x, y, z are between 0 and 999, x is invalid");
+				throw new InvalidVersionException(String.format(MSG, version));
 			}
-			if (parts.length > 1)
+			int y = Integer.valueOf(parts[1]) * 1000;
+			if (y < 0 || y > 999000)
 			{
-				int y = Integer.valueOf(parts[1]) * 1000;
-				if (y < 0 || y > 999000)
-				{
-					throw new InvalidVersionException(
-							"invalid version format '" + version + "' - it should be x.y.z were x, y, z are between 0 and 999, y is invalid");
-				}
-				result += y;
+				throw new InvalidVersionException(String.format(MSG, version));
 			}
-			if (parts.length == 3)
+			result += y;
+			int z = Integer.valueOf(parts[2]);
+			if (z < 0 || z > 999)
 			{
-				int z = Integer.valueOf(parts[2]);
-				if (z < 0 || z > 999)
-				{
-					throw new InvalidVersionException(
-							"invalid version format '" + version + "' - it should be x.y.z were x, y, z are between 0 and 999, z is invalid");
-				}
-				result += z;
+				throw new InvalidVersionException(String.format(MSG, version));
 			}
+			result += z;
 		}
 		catch (NumberFormatException e)
 		{
-			throw new InvalidVersionException("invalid version format '" + version + "' - it should be x.y.z were x, y, z are between 0 and 999");
+			throw new InvalidVersionException(String.format(MSG, version));
 		}
 		return result;
+	}
+
+	@Override
+	public int numberOfParts()
+	{
+		return 3;
 	}
 }

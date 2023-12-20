@@ -2,7 +2,7 @@
   ###license-information-start###
   gICS - a Generic Informed Consent Service
   __
-  Copyright (C) 2014 - 2022 Trusted Third Party of the University Medicine Greifswald -
+  Copyright (C) 2014 - 2023 Trusted Third Party of the University Medicine Greifswald -
   							kontakt-ths@uni-greifswald.de
   
   							concept and implementation
@@ -15,8 +15,8 @@
   							r. schuldt
   
   							The gICS was developed by the University Medicine Greifswald and published
-   							in 2014 as part of the research project "MOSAIC" (funded by the DFG HO 1937/2-1).
-   
+  							in 2014 as part of the research project "MOSAIC" (funded by the DFG HO 1937/2-1).
+  
   							Selected functionalities of gICS were developed as
   							part of the following research projects:
   							- MAGIC (funded by the DFG HO 1937/5-1)
@@ -24,6 +24,7 @@
   							- NUM-CODEX (funded by the German Federal Ministry of Education and Research 01KX2021)
   
   							please cite our publications
+  							https://doi.org/10.1186/s12911-022-02081-4
   							https://doi.org/10.1186/s12967-020-02457-y
   							http://dx.doi.org/10.3414/ME14-01-0133
   							http://dx.doi.org/10.1186/s12967-015-0545-6
@@ -59,7 +60,7 @@
 
 	<ui:define name="title">
 		<h:outputText value="#{msg['template.print.title']}: " />
-		<h:outputFormat escape="false" rendered="#{not empty consentPrintController.template}" value="#{msg['template.print.template']}">
+		<h:outputFormat rendered="#{not empty consentPrintController.template}" value="#{msg['template.print.template']}">
 			<f:param value="#{consentPrintController.template.label}" />
 			<f:param value="#{consentPrintController.template.versionLabelAndVersion}" />
 		</h:outputFormat>
@@ -90,7 +91,7 @@
 			</p:panel>
 			<p:panel style="margin-top: 15px;">
 				<h4>
-					<h:outputFormat value="#{msg['template.print.signerIds']}" escape="false">
+					<h:outputFormat value="#{msg['template.print.signerIds']}">
 						<f:param value="#{consentPrintController.printPrefillEntries.size()}" update="@form" />
 					</h:outputFormat>
 				</h4>
@@ -188,7 +189,7 @@
 									  style="width: 360px;"
 									  value="#{consentPrintController.editPrefillEntry.signerDate}"
 									  widgetVar="patient_signDate">
-							<p:ajax process="@this" update="@this" partialSubmit="true" />
+							<p:ajax event="dateSelect" process="@this" update="@this" partialSubmit="true" />
 						</p:datePicker>
 						<p:watermark for="patient_signDate" value="#{cmsg['ui.date.pattern.date']}" />
 						<!-- Sign Date Today Button -->
@@ -204,7 +205,7 @@
 					<h:outputText value="#{msg['consent.signature.physician']}" style="font-weight: bold" />
 					<h:panelGroup layout="block" />
 
-					<p:outputLabel value="#{msg['consent.details.physician.signatureDate']})" />
+					<p:outputLabel value="#{msg['consent.details.physician.signatureDate']}" />
 					<h:panelGroup class="ui-inputgroup" layout="block">
 						<p:datePicker id="physician_signDate"
 									  mask="#{cmsg['ui.date.mask.date']}"
@@ -212,7 +213,7 @@
 									  style="width: 360px;"
 									  value="#{consentPrintController.editPrefillEntry.physicianDate}"
 									  widgetVar="physician_signDate">
-							<p:ajax process="@this" update="@this" partialSubmit="true" />
+							<p:ajax event="dateSelect" process="@this" update="@this" partialSubmit="true" />
 						</p:datePicker>
 						<p:watermark for="physician_signDate" value="#{cmsg['ui.date.pattern.date']}" />
 						<!-- Sign Date Today Button -->
@@ -221,7 +222,7 @@
 										 onclick="PF('physician_signDate').setDate(new Date()); PF('physician_signDate').hide(); return false;" />
 					</h:panelGroup>
 
-					<p:outputLabel value="#{msg['consent.details.physician.signaturePlace']})" />
+					<p:outputLabel value="#{msg['consent.details.physician.signaturePlace']}" />
 					<p:inputText
 							value="#{consentPrintController.editPrefillEntry.physicianPlace}" />
 				</p:panelGrid>

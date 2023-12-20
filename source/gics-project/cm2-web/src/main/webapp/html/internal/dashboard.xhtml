@@ -2,7 +2,7 @@
   ###license-information-start###
   gICS - a Generic Informed Consent Service
   __
-  Copyright (C) 2014 - 2022 Trusted Third Party of the University Medicine Greifswald -
+  Copyright (C) 2014 - 2023 Trusted Third Party of the University Medicine Greifswald -
   							kontakt-ths@uni-greifswald.de
   
   							concept and implementation
@@ -15,8 +15,8 @@
   							r. schuldt
   
   							The gICS was developed by the University Medicine Greifswald and published
-   							in 2014 as part of the research project "MOSAIC" (funded by the DFG HO 1937/2-1).
-   
+  							in 2014 as part of the research project "MOSAIC" (funded by the DFG HO 1937/2-1).
+  
   							Selected functionalities of gICS were developed as
   							part of the following research projects:
   							- MAGIC (funded by the DFG HO 1937/5-1)
@@ -24,6 +24,7 @@
   							- NUM-CODEX (funded by the German Federal Ministry of Education and Research 01KX2021)
   
   							please cite our publications
+  							https://doi.org/10.1186/s12911-022-02081-4
   							https://doi.org/10.1186/s12967-020-02457-y
   							http://dx.doi.org/10.3414/ME14-01-0133
   							http://dx.doi.org/10.1186/s12967-015-0545-6
@@ -79,27 +80,27 @@
 			</p:panel>
 
 			<ui:fragment rendered="#{dashboardController.selectedDomain != null and dashboardController.init}">
-				<div class="p-grid">
-					<div class="p-col-12 section-heading">
+				<div class="grid">
+					<div class="col-12 section-heading">
 						<h:outputText value="#{msg['page.dashboard.allDomains']} (#{domainController.domains.size()})" />
 					</div>
 
 					<!-- All domains -->
-					<div class="p-col-12 p-md-8">
+					<div class="col-12 md:col-8">
 						<p:panel>
-							<div class="overview p-d-flex p-flex-wrap">
+							<div class="overview flex flex-wrap">
 								<p:repeat value="#{dashboardController.getLatestStatsAllDomainsLabels(false).entrySet()}" var="_stat" varStatus="_i">
 									<div class="box">
 										<div>
-											<h:outputText styleClass="title p-d-block p-text-center" value="#{dashboardController.latestStats.mappedStatValue.get(_stat.key)}" />
-											<h:outputText styleClass="details p-d-block p-text-center" value="#{_stat.value}" />
+											<h:outputText styleClass="title block text-center" value="#{dashboardController.latestStats.mappedStatValue.get(_stat.key)}" />
+											<h:outputText styleClass="details block text-center" value="#{_stat.value}" />
 										</div>
 										<p:divider layout="vertical" />
 									</div>
 								</p:repeat>
 								<div class="box">
 									<div>
-										<p:commandButton ajax="false" icon="mdi mdi-download" styleClass="secondary title p-d-block p-text-center" value="#{cmsg['page.dashboard.export.current']}">
+										<p:commandButton ajax="false" icon="mdi mdi-download" styleClass="secondary title block text-center" value="#{cmsg['page.dashboard.export.current']}">
 											<p:fileDownload
 													value="#{dashboardController.latestStatsAllDomains}" />
 										</p:commandButton>
@@ -108,7 +109,7 @@
 								</div>
 								<div class="box">
 									<div>
-										<p:commandButton ajax="false" icon="mdi mdi-download" styleClass="secondary title p-d-block p-text-center" value="#{cmsg['page.dashboard.export.history']}">
+										<p:commandButton ajax="false" icon="mdi mdi-download" styleClass="secondary title block text-center" value="#{cmsg['page.dashboard.export.history']}">
 											<p:fileDownload
 													value="#{dashboardController.historyStatsAllDomains}" />
 										</p:commandButton>
@@ -119,27 +120,27 @@
 					</div>
 
 					<!-- Meta -->
-					<div class="p-col-12 p-md-4">
+					<div class="col-12 md:col-4">
 						<p:panel>
-							<div class="overview p-d-flex p-flex-wrap">
+							<div class="overview flex flex-wrap">
 								<div class="box">
 									<div>
-										<h:outputText styleClass="title p-d-block p-text-center" value="#{webUtil.showTimeInAutoFormat(dashboardController.latestStatsCalculationTime)}" />
-										<h:outputText styleClass="details p-d-block p-text-center" value="#{cmsg['page.dashboard.meta.calculation']}" />
+										<h:outputText styleClass="title block text-center" value="#{webUtil.showTimeInAutoFormat(dashboardController.latestStatsCalculationTime)}" />
+										<h:outputText styleClass="details block text-center" value="#{cmsg['page.dashboard.meta.calculation']}" />
 									</div>
 									<p:divider layout="vertical" />
 								</div>
 								<div class="box">
 									<div>
-										<h:outputText styleClass="toptitle p-d-block p-text-center" value="#{dashboardController.latestStatsDate}" />
-										<h:outputText styleClass="title p-d-block p-text-center" value="#{dashboardController.latestStatsTime}" />
-										<h:outputText styleClass="details p-d-block p-text-center" value="#{cmsg['page.dashboard.meta.latestDateTime']}" />
+										<h:outputText styleClass="toptitle block text-center" value="#{dashboardController.latestStatsDate}" />
+										<h:outputText styleClass="title block text-center" value="#{dashboardController.latestStatsTime}" />
+										<h:outputText styleClass="details block text-center" value="#{cmsg['page.dashboard.meta.latestDateTime']}" />
 									</div>
 									<p:divider layout="vertical" />
 								</div>
 								<div class="box">
 									<div>
-										<p:commandButton actionListener="#{dashboardController.updateStats}" icon="mdi mdi-refresh" styleClass="secondary title p-d-block p-text-center" update="@form"
+										<p:commandButton actionListener="#{dashboardController.updateStats}" icon="mdi mdi-refresh" styleClass="secondary title block text-center" update="@form"
 														 value="#{cmsg['ui.button.refresh']}" onclick="PF('loading').show();" oncomplete="PF('loading').hide();" />
 									</div>
 								</div>
@@ -147,26 +148,26 @@
 						</p:panel>
 					</div>
 
-					<div class="p-col-12 section-heading">
+					<div class="col-12 section-heading">
 						<h:outputText value="#{msg['domain']} #{dashboardController.selectedDomain.label}" />
 					</div>
 
 					<!-- Current domain -->
-					<div class="p-col-12">
+					<div class="col-12">
 						<p:panel>
-							<div class="overview p-d-flex p-flex-wrap">
+							<div class="overview flex flex-wrap">
 								<p:repeat value="#{dashboardController.getLatestStatsActiveDomainLabels(false).entrySet()}" var="_stat" varStatus="_i">
 									<div class="box">
 										<div>
-											<h:outputText styleClass="title p-d-block p-text-center" value="#{dashboardController.latestStats.mappedStatValue.get(_stat.key)}" />
-											<h:outputText styleClass="details p-d-block p-text-center" value="#{_stat.value}" />
+											<h:outputText styleClass="title block text-center" value="#{dashboardController.latestStats.mappedStatValue.get(_stat.key)}" />
+											<h:outputText styleClass="details block text-center" value="#{_stat.value}" />
 										</div>
 										<p:divider layout="vertical" />
 									</div>
 								</p:repeat>
 								<div class="box">
 									<div>
-										<p:commandButton ajax="false" icon="mdi mdi-download" styleClass="secondary title p-d-block p-text-center" value="#{cmsg['page.dashboard.export.current']}">
+										<p:commandButton ajax="false" icon="mdi mdi-download" styleClass="secondary title block text-center" value="#{cmsg['page.dashboard.export.current']}">
 											<p:fileDownload
 													value="#{dashboardController.latestStatsActiveDomain}" />
 										</p:commandButton>
@@ -175,7 +176,7 @@
 								</div>
 								<div class="box">
 									<div>
-										<p:commandButton ajax="false" icon="mdi mdi-download" styleClass="secondary title p-d-block p-text-center" value="#{cmsg['page.dashboard.export.history']}">
+										<p:commandButton ajax="false" icon="mdi mdi-download" styleClass="secondary title block text-center" value="#{cmsg['page.dashboard.export.history']}">
 											<p:fileDownload
 													value="#{dashboardController.historyStatsActiveDomain}" />
 										</p:commandButton>
@@ -186,8 +187,8 @@
 					</div>
 
 					<!-- Documents -->
-					<div class="p-col-12 p-xl-6">
-						<p:panel styleClass="flex-full-height">
+					<div class="col-12 xl:col-6">
+						<p:panel styleClass="h-full">
 							<h4>
 								#{msg['page.dashboard.documents.types']}
 							</h4>
@@ -202,8 +203,8 @@
 					</div>
 
 					<!-- QC -->
-					<div class="p-col-12 p-xl-6">
-						<p:panel styleClass="flex-full-height">
+					<div class="col-12 xl:col-6">
+						<p:panel styleClass="h-full">
 							<h4>
 								#{msg['page.dashboard.qc']}
 							</h4>
@@ -218,8 +219,8 @@
 					</div>
 
 					<!-- Documents History -->
-					<div class="p-col-12 p-xl-6">
-						<p:panel styleClass="flex-full-height">
+					<div class="col-12 xl:col-6">
+						<p:panel styleClass="h-full">
 							<h4>
 								#{msg['page.dashboard.documents.history']}
 							</h4>
@@ -233,8 +234,8 @@
 					</div>
 
 					<!-- QC History -->
-					<div class="p-col-12 p-xl-6">
-						<p:panel styleClass="flex-full-height">
+					<div class="col-12 xl:col-6">
+						<p:panel styleClass="h-full">
 							<h4>
 								#{msg['page.dashboard.qc.history']}
 							</h4>
@@ -247,9 +248,55 @@
 						</p:panel>
 					</div>
 
+					<!-- Documents Bar Chart -->
+					<div class="col-12 xl:col-6">
+						<p:panel styleClass="h-full" id="documentsBarChart">
+							<h4 style="float: left">
+								#{msg['page.dashboard.documents.increase']}
+							</h4>
+							<p:selectOneButton style="float: right" value="#{dashboardController.documentsBarScale}">
+								<f:selectItems itemLabel="#{cmsg['ui.chart.barScale.'.concat(_scale.name())]}"
+											   value="#{dashboardController.availableBarScales}" var="_scale" />
+								<p:ajax update="documentsBarChart" />
+							</p:selectOneButton>
+							<p:barChart model="#{dashboardController.documentsMonthChart}" rendered="#{dashboardController.documentsBarScale == 'MONTHS_12'}"
+										style="width: 100%; height: 300px;" />
+							<p:barChart model="#{dashboardController.documentsYearChart}" rendered="#{dashboardController.documentsBarScale == 'YEARS'}"
+										style="width: 100%; height: 300px;" />
+							<div style="height: 40px;"></div>
+							<p:commandButton ajax="false" icon="mdi mdi-download" styleClass="secondary bottom">
+								<p:fileDownload
+										value="#{dashboardController.getBarChartAsCsv(dashboardController.documentsBarScale == 'MONTHS_12' ? dashboardController.documentsMonthChart : dashboardController.documentsYearChart, dashboardController.selectedDomain.name.concat(' documents increase'), dashboardController.tool)}" />
+							</p:commandButton>
+						</p:panel>
+					</div>
+
+					<!-- QC Bar Chart -->
+					<div class="col-12 xl:col-6">
+						<p:panel styleClass="h-full" id="qcBarChart">
+							<h4 style="float: left">
+								#{msg['page.dashboard.qc.increase']}
+							</h4>
+							<p:selectOneButton style="float: right" value="#{dashboardController.qcBarScale}">
+								<f:selectItems itemLabel="#{cmsg['ui.chart.barScale.'.concat(_scale.name())]}"
+											   value="#{dashboardController.availableBarScales}" var="_scale" />
+								<p:ajax update="qcBarChart" />
+							</p:selectOneButton>
+							<p:barChart model="#{dashboardController.qcMonthChart}" rendered="#{dashboardController.qcBarScale == 'MONTHS_12'}"
+										style="width: 100%; height: 300px;" />
+							<p:barChart model="#{dashboardController.qcYearChart}" rendered="#{dashboardController.qcBarScale == 'YEARS'}"
+										style="width: 100%; height: 300px;" />
+							<div style="height: 40px;"></div>
+							<p:commandButton ajax="false" icon="mdi mdi-download" styleClass="secondary bottom">
+								<p:fileDownload
+										value="#{dashboardController.getBarChartAsCsv(dashboardController.qcBarScale == 'MONTHS_12' ? dashboardController.qcMonthChart : dashboardController.qcYearChart, dashboardController.selectedDomain.name.concat(' qc change'), dashboardController.tool)}" />
+							</p:commandButton>
+						</p:panel>
+					</div>
+
 					<!-- Templates -->
-					<div class="p-col-12 p-lg-6 p-xl-4">
-						<p:panel styleClass="flex-full-height">
+					<div class="col-12 lg:col-6 xl:col-4">
+						<p:panel styleClass="h-full">
 							<h4>
 								#{msg['page.dashboard.templates']}
 							</h4>
@@ -277,8 +324,8 @@
 
 					<!-- Policies -->
 					<ui:fragment rendered="#{dashboardController.selectedDomain.getProperty('STATISTIC_POLICY_DETAILS') == 'true'}">
-						<div class="p-col-12 p-lg-6 p-xl-4">
-							<p:panel styleClass="flex-full-height">
+						<div class="col-12 lg:col-6 xl:col-4">
+							<p:panel styleClass="h-full">
 								<h4>
 									#{msg['page.dashboard.policies']}
 								</h4>
@@ -332,8 +379,8 @@
 					</ui:fragment>
 
 					<!-- Documents details -->
-					<div class="p-col-12 p-xl-4">
-						<p:panel styleClass="flex-full-height">
+					<div class="col-12 xl:col-4">
+						<p:panel styleClass="h-full">
 							<h4>
 								#{msg['page.dashboard.documents.details']}
 							</h4>

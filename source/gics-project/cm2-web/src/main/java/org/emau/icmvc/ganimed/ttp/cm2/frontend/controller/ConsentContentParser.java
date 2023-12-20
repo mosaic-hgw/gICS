@@ -4,9 +4,9 @@ package org.emau.icmvc.ganimed.ttp.cm2.frontend.controller;
  * ###license-information-start###
  * gICS - a Generic Informed Consent Service
  * __
- * Copyright (C) 2014 - 2022 Trusted Third Party of the University Medicine Greifswald -
+ * Copyright (C) 2014 - 2023 Trusted Third Party of the University Medicine Greifswald -
  * 							kontakt-ths@uni-greifswald.de
- * 
+ *
  * 							concept and implementation
  * 							l.geidel, c.hampf
  * 							web client
@@ -15,17 +15,18 @@ package org.emau.icmvc.ganimed.ttp.cm2.frontend.controller;
  * 							m.bialke
  * 							docker
  * 							r. schuldt
- * 
+ *
  * 							The gICS was developed by the University Medicine Greifswald and published
- *  							in 2014 as part of the research project "MOSAIC" (funded by the DFG HO 1937/2-1).
- *  
+ * 							in 2014 as part of the research project "MOSAIC" (funded by the DFG HO 1937/2-1).
+ *
  * 							Selected functionalities of gICS were developed as
  * 							part of the following research projects:
  * 							- MAGIC (funded by the DFG HO 1937/5-1)
  * 							- MIRACUM (funded by the German Federal Ministry of Education and Research 01ZZ1801M)
  * 							- NUM-CODEX (funded by the German Federal Ministry of Education and Research 01KX2021)
- * 
+ *
  * 							please cite our publications
+ * 							https://doi.org/10.1186/s12911-022-02081-4
  * 							https://doi.org/10.1186/s12967-020-02457-y
  * 							http://dx.doi.org/10.3414/ME14-01-0133
  * 							http://dx.doi.org/10.1186/s12967-015-0545-6
@@ -35,12 +36,12 @@ package org.emau.icmvc.ganimed.ttp.cm2.frontend.controller;
  * it under the terms of the GNU Affero General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  * ###license-information-end###
@@ -66,14 +67,6 @@ import java.util.Set;
 
 import javax.imageio.ImageIO;
 
-import com.google.zxing.BinaryBitmap;
-import com.google.zxing.DecodeHintType;
-import com.google.zxing.LuminanceSource;
-import com.google.zxing.NotFoundException;
-import com.google.zxing.Result;
-import com.google.zxing.client.j2se.BufferedImageLuminanceSource;
-import com.google.zxing.common.HybridBinarizer;
-import com.google.zxing.multi.qrcode.QRCodeMultiReader;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.rendering.PDFRenderer;
 import org.emau.icmvc.ganimed.ttp.cm2.GICSService;
@@ -86,6 +79,7 @@ import org.emau.icmvc.ganimed.ttp.cm2.dto.DetectedModuleDTO.PARSING_RESULT_CONFI
 import org.emau.icmvc.ganimed.ttp.cm2.dto.ModuleKeyDTO;
 import org.emau.icmvc.ganimed.ttp.cm2.dto.SignerIdDTO;
 import org.emau.icmvc.ganimed.ttp.cm2.dto.enums.ConsentStatus;
+import org.emau.icmvc.ganimed.ttp.cm2.exceptions.InvalidParameterException;
 import org.emau.icmvc.ganimed.ttp.cm2.exceptions.InvalidVersionException;
 import org.emau.icmvc.ganimed.ttp.cm2.exceptions.UnknownConsentTemplateException;
 import org.emau.icmvc.ganimed.ttp.cm2.exceptions.UnknownDomainException;
@@ -101,6 +95,15 @@ import org.opencv.core.Size;
 import org.opencv.imgcodecs.Imgcodecs;
 import org.opencv.imgproc.Imgproc;
 import org.slf4j.LoggerFactory;
+
+import com.google.zxing.BinaryBitmap;
+import com.google.zxing.DecodeHintType;
+import com.google.zxing.LuminanceSource;
+import com.google.zxing.NotFoundException;
+import com.google.zxing.Result;
+import com.google.zxing.client.j2se.BufferedImageLuminanceSource;
+import com.google.zxing.common.HybridBinarizer;
+import com.google.zxing.multi.qrcode.QRCodeMultiReader;
 
 /**
  * parser for pdf documents to detect template key, potential signerids as well as marked consent
@@ -160,7 +163,7 @@ public class ConsentContentParser extends AbstractGICSBean
 			}
 			catch (ExceptionInInitializerError | NoClassDefFoundError e)
 			{
-				LoggerFactory.getLogger(ConsentContentParser.class).warn("OpenCV could be initialized. Consent parsing will be disabled");
+				LoggerFactory.getLogger(ConsentContentParser.class).warn("OpenCV could not be initialized. Consent parsing will be disabled");
 			}
 		}
 		return ConsentContentParser.parserInstance;
@@ -200,7 +203,7 @@ public class ConsentContentParser extends AbstractGICSBean
 	 * set value for progressbar
 	 *
 	 * @param value
-	 * 		progressvalue
+	 *            progressvalue
 	 */
 	private void updateProgess(double value)
 	{
@@ -214,9 +217,9 @@ public class ConsentContentParser extends AbstractGICSBean
 	 * @param pdfFileName
 	 *            absolute filename of pdf file
 	 * @param cleanup
-	 * 			 flag to perform clean up
+	 *            flag to perform clean up
 	 * @param service
-	 * 	 		link to gics service
+	 *            link to gics service
 	 * @return result of pdf parsing
 	 */
 	public ConsentParseResultDTO decodePDF(String pdfFileName, boolean cleanup, GICSService service)
@@ -391,9 +394,6 @@ public class ConsentContentParser extends AbstractGICSBean
 						}
 					}
 
-
-
-
 				}
 				updateProgess(70 + 100 * ((float) loadIndex / (float) moduleQrCodes.entrySet().size() * 0.30));
 			}
@@ -409,7 +409,8 @@ public class ConsentContentParser extends AbstractGICSBean
 	 * @param matrix
 	 *            mat to be converted
 	 * @return converted buffered image
-	 * @throws IOException in case of error
+	 * @throws IOException
+	 *             in case of error
 	 */
 	private BufferedImage mat2BufferedImage(Mat matrix) throws IOException
 	{
@@ -557,26 +558,26 @@ public class ConsentContentParser extends AbstractGICSBean
 	 * process qr code content and split contained string to templatekey and additional data
 	 *
 	 * @param qrCodeContent
-	 * 		detected content to be parsed
+	 *            detected content to be parsed
 	 */
 	private void processTemplateQrCodeContent(String qrCodeContent)
 	{
 		/*
 		 * grundsaetzlicher Aufbau des Codes, separator #
 		 *
-		 *  template=TEMPLATEKEY
+		 * template=TEMPLATEKEY
 		 * # separator
-		 *  patientDate=PATIENTSIGNINGDATE
+		 * patientDate=PATIENTSIGNINGDATE
 		 * # separator
-		 *  patientPlace=PATIENTSIGNINGPLACE
+		 * patientPlace=PATIENTSIGNINGPLACE
 		 * # separator
-		 *  physicianDate=PHYSICIANSIGNINGDATE
+		 * physicianDate=PHYSICIANSIGNINGDATE
 		 * # separator
-		 * 	physicianPlace=PHYSICIANSIGNINGPLACE
+		 * physicianPlace=PHYSICIANSIGNINGPLACE
 		 * # separator
 		 * gefolgt von 0-n Wiederholungen von
 		 * # separator
-		 * 	SIGNERIDTYPE=SIGNERIDVALUE
+		 * SIGNERIDTYPE=SIGNERIDVALUE
 		 */
 
 		SimpleDateFormat df = new SimpleDateFormat("yyyy-MM-dd");
@@ -646,7 +647,7 @@ public class ConsentContentParser extends AbstractGICSBean
 	{
 		String[] splitContent = qrCodeContent.split("#");
 
-		//convert splitstring to simplified map
+		// convert splitstring to simplified map
 		Map<String, String> parsedQrContent = new HashMap<>();
 
 		for (String keyValueString : splitContent)
@@ -670,7 +671,8 @@ public class ConsentContentParser extends AbstractGICSBean
 	/**
 	 * optimize contrast and brightness, try to detect qr codes
 	 *
-	 * @param imageMat imageMat to be optimized
+	 * @param imageMat
+	 *            imageMat to be optimized
 	 * @param contrast
 	 *            in percent (+/-)
 	 * @param brightness
@@ -893,7 +895,8 @@ public class ConsentContentParser extends AbstractGICSBean
 	/**
 	 * extract SingleCircles from File
 	 *
-	 * @param src source mat
+	 * @param src
+	 *            source mat
 	 * @return List of CircleMats
 	 */
 	private HashMap<Mat, Integer> extractSingleCircles(Mat src)
@@ -944,7 +947,8 @@ public class ConsentContentParser extends AbstractGICSBean
 	/**
 	 * calculate ration of black and white pixels
 	 *
-	 * @param extractedCircleMat to be processed mat
+	 * @param extractedCircleMat
+	 *            to be processed mat
 	 *
 	 * @return marked status
 	 */
@@ -981,11 +985,17 @@ public class ConsentContentParser extends AbstractGICSBean
 
 	/**
 	 * optimize mat
-	 * @param toBeOptimizedMat mat
-	 * @param contrastPercent contrast value
-	 * @param brightnessPercent brightness value
-	 * @param writeSampleFilesToFolder flag write samples to folder
-	 * @param folder output folder
+	 *
+	 * @param toBeOptimizedMat
+	 *            mat
+	 * @param contrastPercent
+	 *            contrast value
+	 * @param brightnessPercent
+	 *            brightness value
+	 * @param writeSampleFilesToFolder
+	 *            flag write samples to folder
+	 * @param folder
+	 *            output folder
 	 * @return optimized mat
 	 */
 	private Mat optimizeContrastBrightness(Mat toBeOptimizedMat, int contrastPercent, int brightnessPercent, boolean writeSampleFilesToFolder, String folder)
@@ -1039,7 +1049,7 @@ public class ConsentContentParser extends AbstractGICSBean
 			{
 				template = gicsHelper.getConsentTemplate(referenceTemplate);
 			}
-			catch (UnknownDomainException | UnknownConsentTemplateException | InvalidVersionException e)
+			catch (UnknownDomainException | UnknownConsentTemplateException | InvalidVersionException | InvalidParameterException e)
 			{
 				logger.error("Detected unknown Template Key in QR Code. " + e.getMessage());
 			}

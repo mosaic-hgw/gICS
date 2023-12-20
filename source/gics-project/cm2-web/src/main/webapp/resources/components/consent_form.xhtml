@@ -4,7 +4,7 @@
   ###license-information-start###
   gICS - a Generic Informed Consent Service
   __
-  Copyright (C) 2014 - 2022 Trusted Third Party of the University Medicine Greifswald -
+  Copyright (C) 2014 - 2023 Trusted Third Party of the University Medicine Greifswald -
   							kontakt-ths@uni-greifswald.de
   
   							concept and implementation
@@ -17,8 +17,8 @@
   							r. schuldt
   
   							The gICS was developed by the University Medicine Greifswald and published
-   							in 2014 as part of the research project "MOSAIC" (funded by the DFG HO 1937/2-1).
-   
+  							in 2014 as part of the research project "MOSAIC" (funded by the DFG HO 1937/2-1).
+  
   							Selected functionalities of gICS were developed as
   							part of the following research projects:
   							- MAGIC (funded by the DFG HO 1937/5-1)
@@ -26,6 +26,7 @@
   							- NUM-CODEX (funded by the German Federal Ministry of Education and Research 01KX2021)
   
   							please cite our publications
+  							https://doi.org/10.1186/s12911-022-02081-4
   							https://doi.org/10.1186/s12967-020-02457-y
   							http://dx.doi.org/10.3414/ME14-01-0133
   							http://dx.doi.org/10.1186/s12967-015-0545-6
@@ -67,17 +68,17 @@
 			<!-- qrcode generation for templatekey-->
 			<p:barcode rendered="#{cc.attrs.consent.printOptionQrCode}" styleClass="consentQRCode" value="#{cc.attrs.consentController.getQrCode(cc.attrs.consent)}" type="qr" style="display:none;" />
 		</div>
-		<h:outputText value="#{cc.attrs.consent.template.title} " styleClass="consentTitle ql-editor" escape="false" />
-		<h:outputText value="#{msg['template.version']} #{cc.attrs.consent.template.versionLabelOrVersion}" styleClass="consentVersion" escape="false" />
+		<h:outputText value="#{text.sanitizeRelaxed(cc.attrs.consent.template.title)} " styleClass="consentTitle ql-editor" escape="false" />
+		<h:outputText value="#{msg['template.version']} #{text.sanitizeSimple(cc.attrs.consent.template.versionLabelOrVersion)}" styleClass="consentVersion" escape="false" />
 		<br />
 		<br />
-		<h:outputText value="#{cc.attrs.consent.template.header}" escape="false" styleClass="ql-editor" />
+		<h:outputText value="#{text.sanitizeRelaxed(cc.attrs.consent.template.header)}" escape="false" styleClass="ql-editor" />
 		<p:separator />
 
 		<ui:repeat value="#{cc.attrs.consent.modules.entrySet().toArray()}" var="_module">
 			<div class="module">
-				<h:outputText value="#{_module.key.module.title}" escape="false" />
-				<h:outputText value="#{_module.key.module.text}" escape="false" styleClass="ql-editor" />
+				<h:outputText value="#{text.sanitizeRelaxed(_module.key.module.title)}" escape="false" styleClass="ql-editor" />
+				<h:outputText value="#{text.sanitizeRelaxed(_module.key.module.text)}" escape="false" styleClass="ql-editor" />
 				<p:selectOneRadio value="#{_module.value.consentState}" required="#{not empty _module.key.displayCheckboxes}"
 								  requiredMessage="#{msg['consent.message.error.noModulStatusSelected']} #{cc.attrs.consentController.moduleMissing(_module.key.module)}"
 								  styleClass="moduleStates" disabled="#{cc.attrs.consentController.consentPageMode == 'PRINT'}"
@@ -85,7 +86,7 @@
 					<f:selectItems value="#{cc.attrs.consent.orderForType(_module.key.displayCheckboxes)}" var="_state"
 								   itemLabel="#{cmsg['model.consent.status.user.'.concat(cc.attrs.consent.templateType.name()).concat('.').concat(_state)]}" />
 				</p:selectOneRadio>
-				<p:barcode styleClass="moduleQRCode" value="#{_module.key.module.key.name}" type="qr" style="display:none;" escape="false"
+				<p:barcode styleClass="moduleQRCode" value="#{_module.key.module.key.name}" type="qr" style="display:none;"
 						   rendered="#{not empty _module.key.displayCheckboxes and cc.attrs.consent.printOptionQrCode}" />
 				<div style="clear: both;"></div>
 				<p:separator />
@@ -121,7 +122,7 @@
 			</h:dataTable>
 		</p:panel>
 		<br />
-		<h:outputText value="#{cc.attrs.consent.template.footer}" escape="false" styleClass="ql-editor" />
+		<h:outputText value="#{text.sanitizeRelaxed(cc.attrs.consent.template.footer)}" escape="false" styleClass="ql-editor" />
 	</p:panel>
 	<div class="noNewPage">
 		<p:panel style="margin-top: 15px;">

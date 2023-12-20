@@ -4,9 +4,9 @@ package org.emau.icmvc.ganimed.ttp.cm2;
  * ###license-information-start###
  * gICS - a Generic Informed Consent Service
  * __
- * Copyright (C) 2014 - 2022 Trusted Third Party of the University Medicine Greifswald -
+ * Copyright (C) 2014 - 2023 Trusted Third Party of the University Medicine Greifswald -
  * 							kontakt-ths@uni-greifswald.de
- * 
+ *
  * 							concept and implementation
  * 							l.geidel, c.hampf
  * 							web client
@@ -15,17 +15,18 @@ package org.emau.icmvc.ganimed.ttp.cm2;
  * 							m.bialke
  * 							docker
  * 							r. schuldt
- * 
+ *
  * 							The gICS was developed by the University Medicine Greifswald and published
- *  							in 2014 as part of the research project "MOSAIC" (funded by the DFG HO 1937/2-1).
- *  
+ * 							in 2014 as part of the research project "MOSAIC" (funded by the DFG HO 1937/2-1).
+ *
  * 							Selected functionalities of gICS were developed as
  * 							part of the following research projects:
  * 							- MAGIC (funded by the DFG HO 1937/5-1)
  * 							- MIRACUM (funded by the German Federal Ministry of Education and Research 01ZZ1801M)
  * 							- NUM-CODEX (funded by the German Federal Ministry of Education and Research 01KX2021)
- * 
+ *
  * 							please cite our publications
+ * 							https://doi.org/10.1186/s12911-022-02081-4
  * 							https://doi.org/10.1186/s12967-020-02457-y
  * 							http://dx.doi.org/10.3414/ME14-01-0133
  * 							http://dx.doi.org/10.1186/s12967-015-0545-6
@@ -35,19 +36,19 @@ package org.emau.icmvc.ganimed.ttp.cm2;
  * it under the terms of the GNU Affero General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  * ###license-information-end###
  */
 
-import java.text.SimpleDateFormat;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import javax.jws.WebParam;
@@ -57,7 +58,6 @@ import javax.xml.bind.annotation.XmlElementWrapper;
 
 import org.emau.icmvc.ganimed.ttp.cm2.config.CheckConsentConfig;
 import org.emau.icmvc.ganimed.ttp.cm2.config.PaginationConfig;
-import org.emau.icmvc.ganimed.ttp.cm2.dto.AssignedPolicyDTO;
 import org.emau.icmvc.ganimed.ttp.cm2.dto.ConsentDTO;
 import org.emau.icmvc.ganimed.ttp.cm2.dto.ConsentDateValuesDTO;
 import org.emau.icmvc.ganimed.ttp.cm2.dto.ConsentKeyDTO;
@@ -77,18 +77,15 @@ import org.emau.icmvc.ganimed.ttp.cm2.dto.SignedPolicyDTO;
 import org.emau.icmvc.ganimed.ttp.cm2.dto.SignerIdDTO;
 import org.emau.icmvc.ganimed.ttp.cm2.dto.SignerIdTypeDTO;
 import org.emau.icmvc.ganimed.ttp.cm2.dto.enums.ConsentStatusType;
-import org.emau.icmvc.ganimed.ttp.cm2.dto.enums.FreeTextType;
+import org.emau.icmvc.ganimed.ttp.cm2.dto.enums.ConsentTemplateType;
 import org.emau.icmvc.ganimed.ttp.cm2.exceptions.DuplicateEntryException;
-import org.emau.icmvc.ganimed.ttp.cm2.exceptions.FreeTextConverterStringException;
 import org.emau.icmvc.ganimed.ttp.cm2.exceptions.InconsistentStatusException;
 import org.emau.icmvc.ganimed.ttp.cm2.exceptions.InternalException;
 import org.emau.icmvc.ganimed.ttp.cm2.exceptions.InvalidFreeTextException;
 import org.emau.icmvc.ganimed.ttp.cm2.exceptions.InvalidParameterException;
-import org.emau.icmvc.ganimed.ttp.cm2.exceptions.InvalidPropertiesException;
 import org.emau.icmvc.ganimed.ttp.cm2.exceptions.InvalidVersionException;
 import org.emau.icmvc.ganimed.ttp.cm2.exceptions.MandatoryFieldsException;
 import org.emau.icmvc.ganimed.ttp.cm2.exceptions.MissingRequiredObjectException;
-import org.emau.icmvc.ganimed.ttp.cm2.exceptions.ObjectInUseException;
 import org.emau.icmvc.ganimed.ttp.cm2.exceptions.RequirementsNotFullfilledException;
 import org.emau.icmvc.ganimed.ttp.cm2.exceptions.UnknownAliasException;
 import org.emau.icmvc.ganimed.ttp.cm2.exceptions.UnknownConsentException;
@@ -100,9 +97,8 @@ import org.emau.icmvc.ganimed.ttp.cm2.exceptions.UnknownModuleException;
 import org.emau.icmvc.ganimed.ttp.cm2.exceptions.UnknownPolicyException;
 import org.emau.icmvc.ganimed.ttp.cm2.exceptions.UnknownSignerIdException;
 import org.emau.icmvc.ganimed.ttp.cm2.exceptions.UnknownSignerIdTypeException;
-import org.emau.icmvc.ganimed.ttp.cm2.exceptions.VersionConverterClassException;
 
-@WebService(name = "gicsService")
+@WebService
 public interface GICSService
 {
 	/**
@@ -113,6 +109,7 @@ public interface GICSService
 	 * @throws UnknownDomainException
 	 * @throws UnknownModuleException
 	 * @throws UnknownConsentTemplateException
+	 * @throws InvalidParameterException
 	 * @throws InvalidVersionException
 	 * @throws MissingRequiredObjectException
 	 *             when there's no given value for a mandatory free text field
@@ -122,14 +119,11 @@ public interface GICSService
 	 * @throws UnknownSignerIdTypeException
 	 * @throws DuplicateEntryException
 	 * @throws RequirementsNotFullfilledException
-	 * @throws InvalidParameterException
 	 */
 	void addConsent(
 			@XmlElement(required = true) @WebParam(name = "consent") ConsentDTO consentDTO)
-			throws UnknownDomainException, UnknownModuleException, UnknownConsentTemplateException,
-			InvalidVersionException, MissingRequiredObjectException, InvalidFreeTextException,
-			MandatoryFieldsException, UnknownSignerIdTypeException, DuplicateEntryException,
-			InternalException, RequirementsNotFullfilledException, InvalidParameterException;
+			throws UnknownDomainException, UnknownModuleException, UnknownConsentTemplateException, InvalidParameterException, InvalidVersionException, MissingRequiredObjectException,
+			InvalidFreeTextException, MandatoryFieldsException, UnknownSignerIdTypeException, DuplicateEntryException, RequirementsNotFullfilledException;
 
 	/**
 	 * checks whether there's a signed consent for the given patient and policy in the given
@@ -143,13 +137,14 @@ public interface GICSService
 	 * @return
 	 * @throws UnknownDomainException
 	 * @throws UnknownPolicyException
+	 * @throws InvalidParameterException
 	 * @throws InvalidVersionException
 	 * @throws UnknownSignerIdTypeException
 	 */
 	boolean isConsented(@XmlElement(required = true) @WebParam(name = "signerIds") Set<SignerIdDTO> signerIdDTOs,
 			@XmlElement(required = true) @WebParam(name = "policyKey") PolicyKeyDTO policyKeyDTO,
 			@XmlElement(required = true) @WebParam(name = "config") CheckConsentConfig config) throws UnknownDomainException, UnknownPolicyException,
-			InvalidVersionException, UnknownSignerIdTypeException;
+			InvalidParameterException, InvalidVersionException, UnknownSignerIdTypeException;
 
 	/**
 	 * checks whether there's a signed consent for the given patient and policy in the given version
@@ -166,6 +161,7 @@ public interface GICSService
 	 *            see {@link CheckConsentConfig}
 	 * @return
 	 * @throws UnknownDomainException
+	 * @throws InvalidParameterException
 	 * @throws InvalidVersionException
 	 * @throws UnknownSignerIdTypeException
 	 */
@@ -175,7 +171,7 @@ public interface GICSService
 			@XmlElement(required = true) @WebParam(name = "versionFrom") String versionFrom,
 			@XmlElement(required = true) @WebParam(name = "versionTo") String versionTo,
 			@XmlElement(required = true) @WebParam(name = "config") CheckConsentConfig config)
-			throws UnknownDomainException, InvalidVersionException, UnknownSignerIdTypeException;
+			throws UnknownDomainException, InvalidParameterException, InvalidVersionException, UnknownSignerIdTypeException;
 
 	/**
 	 * checks whether there's a signed consent for the given patient and policy in the given version
@@ -192,6 +188,7 @@ public interface GICSService
 	 *            see {@link CheckConsentConfig}
 	 * @return
 	 * @throws UnknownDomainException
+	 * @throws InvalidParameterException
 	 * @throws InvalidVersionException
 	 * @throws UnknownSignerIdTypeException
 	 */
@@ -201,7 +198,7 @@ public interface GICSService
 			@XmlElement(required = true) @WebParam(name = "versionFrom") String versionFrom,
 			@XmlElement(required = true) @WebParam(name = "versionTo") String versionTo,
 			@XmlElement(required = true) @WebParam(name = "config") CheckConsentConfig config)
-			throws UnknownDomainException, InvalidVersionException, UnknownSignerIdTypeException;
+			throws UnknownDomainException, InvalidParameterException, InvalidVersionException, UnknownSignerIdTypeException;
 
 	/**
 	 * checks whether there's a signed consent for the given patient and policy in the given version
@@ -218,6 +215,7 @@ public interface GICSService
 	 *            see {@link CheckConsentConfig}
 	 * @return
 	 * @throws UnknownDomainException
+	 * @throws InvalidParameterException
 	 * @throws InvalidVersionException
 	 * @throws UnknownSignerIdTypeException
 	 */
@@ -227,7 +225,7 @@ public interface GICSService
 			@XmlElement(required = true) @WebParam(name = "versionFrom") String versionFrom,
 			@XmlElement(required = true) @WebParam(name = "versionTo") String versionTo,
 			@XmlElement(required = true) @WebParam(name = "config") CheckConsentConfig config)
-			throws UnknownDomainException, InvalidVersionException, UnknownSignerIdTypeException;
+			throws UnknownDomainException, InvalidParameterException, InvalidVersionException, UnknownSignerIdTypeException;
 
 	/**
 	 * checks whether there's a signed consent for the given patient and policy in the given version
@@ -244,6 +242,7 @@ public interface GICSService
 	 *            see {@link CheckConsentConfig}
 	 * @return
 	 * @throws UnknownDomainException
+	 * @throws InvalidParameterException
 	 * @throws InvalidVersionException
 	 * @throws UnknownSignerIdTypeException
 	 */
@@ -253,7 +252,7 @@ public interface GICSService
 			@XmlElement(required = true) @WebParam(name = "versionFrom") String versionFrom,
 			@XmlElement(required = true) @WebParam(name = "versionTo") String versionTo,
 			@XmlElement(required = true) @WebParam(name = "config") CheckConsentConfig config)
-			throws UnknownDomainException, InvalidVersionException, UnknownSignerIdTypeException;
+			throws UnknownDomainException, InvalidParameterException, InvalidVersionException, UnknownSignerIdTypeException;
 
 	/**
 	 * checks whether there's a signed consent for the given patient and policy in the given
@@ -267,13 +266,14 @@ public interface GICSService
 	 * @return see {@link ConsentStatusType}
 	 * @throws UnknownDomainException
 	 * @throws UnknownPolicyException
+	 * @throws InvalidParameterException
 	 * @throws InvalidVersionException
 	 * @throws UnknownSignerIdTypeException
 	 */
 	ConsentStatusType getConsentStatusType(@XmlElement(required = true) @WebParam(name = "signerIds") Set<SignerIdDTO> signerIdDTOs,
 			@XmlElement(required = true) @WebParam(name = "policyKey") PolicyKeyDTO policyKeyDTO,
 			@XmlElement(required = true) @WebParam(name = "config") CheckConsentConfig config) throws UnknownDomainException, UnknownPolicyException,
-			InvalidVersionException, UnknownSignerIdTypeException;
+			InvalidParameterException, InvalidVersionException, UnknownSignerIdTypeException;
 
 	/**
 	 * checks whether there's a signed consent for the given patient and policy in the given version
@@ -290,6 +290,7 @@ public interface GICSService
 	 *            see {@link CheckConsentConfig}
 	 * @return see {@link ConsentStatusType}
 	 * @throws UnknownDomainException
+	 * @throws InvalidParameterException
 	 * @throws InvalidVersionException
 	 * @throws UnknownSignerIdTypeException
 	 */
@@ -300,7 +301,7 @@ public interface GICSService
 			@XmlElement(required = true) @WebParam(name = "versionFrom") String versionFrom,
 			@XmlElement(required = true) @WebParam(name = "versionTo") String versionTo,
 			@XmlElement(required = true) @WebParam(name = "config") CheckConsentConfig config)
-			throws UnknownDomainException, InvalidVersionException, UnknownSignerIdTypeException;
+			throws UnknownDomainException, InvalidParameterException, InvalidVersionException, UnknownSignerIdTypeException;
 
 	/**
 	 * checks whether there's a signed consent for the given patient and policy in the given version
@@ -317,6 +318,7 @@ public interface GICSService
 	 *            see {@link CheckConsentConfig}
 	 * @return see {@link ConsentStatusType}
 	 * @throws UnknownDomainException
+	 * @throws InvalidParameterException
 	 * @throws InvalidVersionException
 	 * @throws UnknownSignerIdTypeException
 	 */
@@ -327,7 +329,7 @@ public interface GICSService
 			@XmlElement(required = true) @WebParam(name = "versionFrom") String versionFrom,
 			@XmlElement(required = true) @WebParam(name = "versionTo") String versionTo,
 			@XmlElement(required = true) @WebParam(name = "config") CheckConsentConfig config)
-			throws UnknownDomainException, InvalidVersionException, UnknownSignerIdTypeException;
+			throws UnknownDomainException, InvalidParameterException, InvalidVersionException, UnknownSignerIdTypeException;
 
 	/**
 	 * checks whether there's a signed consent for the given patient and policy in the given version
@@ -344,6 +346,7 @@ public interface GICSService
 	 *            see {@link CheckConsentConfig}
 	 * @return see {@link ConsentStatusType}
 	 * @throws UnknownDomainException
+	 * @throws InvalidParameterException
 	 * @throws InvalidVersionException
 	 * @throws UnknownSignerIdTypeException
 	 */
@@ -354,7 +357,7 @@ public interface GICSService
 			@XmlElement(required = true) @WebParam(name = "versionFrom") String versionFrom,
 			@XmlElement(required = true) @WebParam(name = "versionTo") String versionTo,
 			@XmlElement(required = true) @WebParam(name = "config") CheckConsentConfig config)
-			throws UnknownDomainException, InvalidVersionException, UnknownSignerIdTypeException;
+			throws UnknownDomainException, InvalidParameterException, InvalidVersionException, UnknownSignerIdTypeException;
 
 	/**
 	 * checks whether there's a signed consent for the given patient and policy in the given version
@@ -371,6 +374,7 @@ public interface GICSService
 	 *            see {@link CheckConsentConfig}
 	 * @return see {@link ConsentStatusType}
 	 * @throws UnknownDomainException
+	 * @throws InvalidParameterException
 	 * @throws InvalidVersionException
 	 * @throws UnknownSignerIdTypeException
 	 */
@@ -381,7 +385,7 @@ public interface GICSService
 			@XmlElement(required = true) @WebParam(name = "versionFrom") String versionFrom,
 			@XmlElement(required = true) @WebParam(name = "versionTo") String versionTo,
 			@XmlElement(required = true) @WebParam(name = "config") CheckConsentConfig config)
-			throws UnknownDomainException, InvalidVersionException, UnknownSignerIdTypeException;
+			throws UnknownDomainException, InvalidParameterException, InvalidVersionException, UnknownSignerIdTypeException;
 
 	/**
 	 * lists all consent templates of the given domain
@@ -390,13 +394,14 @@ public interface GICSService
 	 * @param onlyFinal
 	 * @return
 	 * @throws UnknownDomainException
+	 * @throws InvalidParameterException
 	 * @throws InvalidVersionException
 	 */
 	@XmlElementWrapper(nillable = true, name = "return")
 	@XmlElement(name = "consentTemplates")
 	List<ConsentTemplateDTO> listConsentTemplates(@XmlElement(required = true) @WebParam(name = "domainName") String domainName,
 			@XmlElement(required = true) @WebParam(name = "onlyFinal") boolean onlyFinal)
-			throws UnknownDomainException, InvalidVersionException;
+			throws UnknownDomainException, InvalidParameterException, InvalidVersionException;
 
 	/**
 	 * lists the most recent version of all consent templates of the given domain
@@ -404,46 +409,13 @@ public interface GICSService
 	 * @param domainName
 	 * @return
 	 * @throws UnknownDomainException
+	 * @throws InvalidParameterException
 	 * @throws InvalidVersionException
 	 */
 	@XmlElementWrapper(nillable = true, name = "return")
 	@XmlElement(name = "currentConsentTemplates")
 	List<ConsentTemplateDTO> listCurrentConsentTemplates(@XmlElement(required = true) @WebParam(name = "domainName") String domainName)
-			throws UnknownDomainException, InvalidVersionException;
-
-	/**
-	 * stores the given consent template<br>
-	 * the policies within the modulDTOs are ignored and therefore doesn't need to be set
-	 *
-	 * @param consentTemplateDTO
-	 * @throws UnknownDomainException
-	 * @throws UnknownModuleException
-	 * @throws DuplicateEntryException
-	 * @throws InvalidVersionException
-	 * @throws FreeTextConverterStringException
-	 *             is thrown when the given converter string (in case of {@link FreeTextType}.Date)
-	 *             is not a valid string for {@link SimpleDateFormat}
-	 * @throws InvalidPropertiesException
-	 * @throws RequirementsNotFullfilledException
-	 * @throws InvalidParameterException
-	 */
-	void addConsentTemplate(@XmlElement(required = true) @WebParam(name = "consentTemplate") ConsentTemplateDTO consentTemplateDTO,
-			@XmlElement(required = true) @WebParam(name = "finaliseRelatedEntities") boolean finaliseRelatedEntities)
-			throws UnknownDomainException, UnknownModuleException, DuplicateEntryException, InvalidVersionException,
-			FreeTextConverterStringException, InvalidPropertiesException, RequirementsNotFullfilledException, InvalidParameterException;
-
-	/**
-	 * deletes the given consent template (only if it's not in use, i.e. there's no consent
-	 * belonging to that consent template)
-	 *
-	 * @param keyDTO
-	 * @throws UnknownDomainException
-	 * @throws UnknownConsentTemplateException
-	 * @throws ObjectInUseException
-	 * @throws InvalidVersionException
-	 */
-	void deleteConsentTemplate(@XmlElement(required = true) @WebParam(name = "consentTemplateKey") ConsentTemplateKeyDTO keyDTO)
-			throws UnknownDomainException, UnknownConsentTemplateException, ObjectInUseException, InvalidVersionException;
+			throws UnknownDomainException, InvalidParameterException, InvalidVersionException;
 
 	/**
 	 * lists all modules of the given domain
@@ -452,40 +424,14 @@ public interface GICSService
 	 * @param onlyFinal
 	 * @return
 	 * @throws UnknownDomainException
+	 * @throws InvalidParameterException
 	 * @throws InvalidVersionException
 	 */
 	@XmlElementWrapper(nillable = true, name = "return")
 	@XmlElement(name = "modules")
 	List<ModuleDTO> listModules(@XmlElement(required = true) @WebParam(name = "domainName") String domainName,
 			@XmlElement(required = true) @WebParam(name = "onlyFinal") boolean onlyFinal)
-			throws UnknownDomainException, InvalidVersionException;
-
-	/**
-	 * stores the given module
-	 *
-	 * @param moduleDTO
-	 * @throws UnknownDomainException
-	 * @throws UnknownPolicyException
-	 * @throws DuplicateEntryException
-	 * @throws InvalidVersionException
-	 * @throws RequirementsNotFullfilledException
-	 */
-	void addModule(@XmlElement(required = true) @WebParam(name = "module") ModuleDTO moduleDTO,
-			@XmlElement(required = true) @WebParam(name = "finaliseRelatedEntities") boolean finaliseRelatedEntities)
-			throws UnknownDomainException, UnknownPolicyException, DuplicateEntryException, InvalidVersionException, RequirementsNotFullfilledException;
-
-	/**
-	 * deletes the given module (only if it's not in use, i.e. there's no consent template linked to
-	 * that module)
-	 *
-	 * @param keyDTO
-	 * @throws UnknownDomainException
-	 * @throws UnknownPolicyException
-	 * @throws ObjectInUseException
-	 * @throws InvalidVersionException
-	 */
-	void deleteModule(@XmlElement(required = true) @WebParam(name = "moduleKey") ModuleKeyDTO keyDTO)
-			throws UnknownDomainException, UnknownModuleException, ObjectInUseException, InvalidVersionException;
+			throws UnknownDomainException, InvalidParameterException, InvalidVersionException;
 
 	/**
 	 * returns all attributes of the requested module
@@ -494,10 +440,11 @@ public interface GICSService
 	 * @return
 	 * @throws UnknownDomainException
 	 * @throws UnknownModuleException
+	 * @throws InvalidParameterException
 	 * @throws InvalidVersionException
 	 */
 	ModuleDTO getModule(@XmlElement(required = true) @WebParam(name = "moduleKey") ModuleKeyDTO keyDTO)
-			throws UnknownDomainException, UnknownModuleException, InvalidVersionException;
+			throws UnknownDomainException, UnknownModuleException, InvalidParameterException, InvalidVersionException;
 
 	/**
 	 * lists all policies of the given domain
@@ -506,38 +453,14 @@ public interface GICSService
 	 * @param onlyFinal
 	 * @return
 	 * @throws UnknownDomainException
+	 * @throws InvalidParameterException
 	 * @throws InvalidVersionException
 	 */
 	@XmlElementWrapper(nillable = true, name = "return")
 	@XmlElement(name = "policies")
 	List<PolicyDTO> listPolicies(@XmlElement(required = true) @WebParam(name = "domainName") String domainName,
 			@XmlElement(required = true) @WebParam(name = "onlyFinal") boolean onlyFinal)
-			throws UnknownDomainException, InvalidVersionException;
-
-	/**
-	 * stores the given policy
-	 *
-	 * @param policyDTO
-	 * @throws UnknownDomainException
-	 * @throws DuplicateEntryException
-	 * @throws InvalidVersionException
-	 * @throws RequirementsNotFullfilledException
-	 */
-	void addPolicy(@XmlElement(required = true) @WebParam(name = "policy") PolicyDTO policyDTO) throws UnknownDomainException,
-			DuplicateEntryException, InvalidVersionException, RequirementsNotFullfilledException;
-
-	/**
-	 * deletes the given policy (only if it's not in use, i.e. there's no module linked to that
-	 * policy)
-	 *
-	 * @param keyDTO
-	 * @throws UnknownDomainException
-	 * @throws UnknownPolicyException
-	 * @throws ObjectInUseException
-	 * @throws InvalidVersionException
-	 */
-	void deletePolicy(@XmlElement(required = true) @WebParam(name = "policyKey") PolicyKeyDTO keyDTO)
-			throws UnknownDomainException, UnknownPolicyException, ObjectInUseException, InvalidVersionException;
+			throws UnknownDomainException, InvalidParameterException, InvalidVersionException;
 
 	/**
 	 * returns all attributes of the requested policy
@@ -546,10 +469,11 @@ public interface GICSService
 	 * @return
 	 * @throws UnknownDomainException
 	 * @throws UnknownPolicyException
+	 * @throws InvalidParameterException
 	 * @throws InvalidVersionException
 	 */
 	PolicyDTO getPolicy(@XmlElement(required = true) @WebParam(name = "policyKey") PolicyKeyDTO keyDTO)
-			throws UnknownDomainException, UnknownPolicyException, InvalidVersionException;
+			throws UnknownDomainException, UnknownPolicyException, InvalidParameterException, InvalidVersionException;
 
 	/**
 	 * returns all attributes of the requested consent template
@@ -558,10 +482,11 @@ public interface GICSService
 	 * @return
 	 * @throws UnknownDomainException
 	 * @throws UnknownConsentTemplateException
+	 * @throws InvalidParameterException
 	 * @throws InvalidVersionException
 	 */
 	ConsentTemplateDTO getConsentTemplate(@XmlElement(required = true) @WebParam(name = "consentTemplateKey") ConsentTemplateKeyDTO keyDTO)
-			throws UnknownDomainException, UnknownConsentTemplateException, InvalidVersionException;
+			throws UnknownDomainException, UnknownConsentTemplateException, InvalidParameterException, InvalidVersionException;
 
 	/**
 	 * returns all attributes of the current (highest version) consent template with the given name
@@ -571,12 +496,13 @@ public interface GICSService
 	 * @return
 	 * @throws UnknownDomainException
 	 * @throws UnknownConsentTemplateException
+	 * @throws InvalidParameterException
 	 * @throws InvalidVersionException
 	 */
 	ConsentTemplateDTO getCurrentConsentTemplate(
 			@XmlElement(required = true) @WebParam(name = "consentTemplateName") String consentTemplateName,
 			@XmlElement(required = true) @WebParam(name = "domainName") String domainName)
-			throws UnknownDomainException, UnknownConsentTemplateException, InvalidVersionException;
+			throws UnknownDomainException, UnknownConsentTemplateException, InvalidParameterException, InvalidVersionException;
 
 	/**
 	 * returns all signed policies which are signed by any person with at least one of the given ids
@@ -588,6 +514,7 @@ public interface GICSService
 	 *            check aliases for related signerIds
 	 * @return
 	 * @throws UnknownDomainException
+	 * @throws InvalidParameterException
 	 * @throws InvalidVersionException
 	 * @throws UnknownSignerIdTypeException
 	 */
@@ -596,7 +523,7 @@ public interface GICSService
 	List<SignedPolicyDTO> getPolicyStatesForSignerIds(@XmlElement(required = true) @WebParam(name = "domainName") String domainName,
 			@XmlElement(required = true) @WebParam(name = "signerIds") Set<SignerIdDTO> signerIdDTOs,
 			@XmlElement(required = true) @WebParam(name = "useAliases") boolean useAliases)
-			throws UnknownDomainException, InvalidVersionException, UnknownSignerIdTypeException;
+			throws UnknownDomainException, InvalidParameterException, InvalidVersionException, UnknownSignerIdTypeException;
 
 	/**
 	 * returns all signed policies for the given policy which are signed by any person with at least
@@ -609,6 +536,7 @@ public interface GICSService
 	 *            check aliases for related signerIds
 	 * @return
 	 * @throws UnknownDomainException
+	 * @throws InvalidParameterException
 	 * @throws InvalidVersionException
 	 * @throws UnknownSignerIdTypeException
 	 */
@@ -618,7 +546,7 @@ public interface GICSService
 			@XmlElement(required = true) @WebParam(name = "policyKey") PolicyKeyDTO policyKeyDTO,
 			@XmlElement(required = true) @WebParam(name = "signerIds") Set<SignerIdDTO> signerIdDTOs,
 			@XmlElement(required = true) @WebParam(name = "useAliases") boolean useAliases)
-			throws UnknownDomainException, InvalidVersionException, UnknownSignerIdTypeException;
+			throws UnknownDomainException, InvalidParameterException, InvalidVersionException, UnknownSignerIdTypeException;
 
 	/**
 	 * returns all signed policies for the given policy name (thus ignoring the version number of
@@ -632,6 +560,7 @@ public interface GICSService
 	 *            check aliases for related signerIds
 	 * @return
 	 * @throws UnknownDomainException
+	 * @throws InvalidParameterException
 	 * @throws InvalidVersionException
 	 * @throws UnknownSignerIdTypeException
 	 */
@@ -641,7 +570,7 @@ public interface GICSService
 			@XmlElement(required = true) @WebParam(name = "policyName") String policyName,
 			@XmlElement(required = true) @WebParam(name = "signerIds") Set<SignerIdDTO> signerIdDTOs,
 			@XmlElement(required = true) @WebParam(name = "useAliases") boolean useAliases)
-			throws UnknownDomainException, InvalidVersionException, UnknownSignerIdTypeException;
+			throws UnknownDomainException, InvalidParameterException, InvalidVersionException, UnknownSignerIdTypeException;
 
 	/**
 	 * returns the current signed policies which are signed by any person with the given ids (depends on {@link CheckConsentConfig#getIdMatchingType()})
@@ -653,6 +582,7 @@ public interface GICSService
 	 *            see {@link CheckConsentConfig}<br>
 	 *            {@link CheckConsentConfig#getIgnoreVersionNumber()} is ignored
 	 * @return
+	 * @throws InvalidParameterException
 	 * @throws UnknownDomainException
 	 * @throws UnknownSignerIdException
 	 * @throws UnknownSignerIdTypeException
@@ -662,7 +592,7 @@ public interface GICSService
 	List<SignedPolicyDTO> getCurrentPolicyStatesForSignerIds(@XmlElement(required = true) @WebParam(name = "domainName") String domainName,
 			@XmlElement(required = true) @WebParam(name = "signerIds") Set<SignerIdDTO> signerIdDTOs,
 			@XmlElement(required = true) @WebParam(name = "config") CheckConsentConfig config)
-			throws UnknownDomainException, UnknownSignerIdException, UnknownSignerIdTypeException;
+			throws InvalidParameterException, UnknownDomainException, UnknownSignerIdException, UnknownSignerIdTypeException;
 
 	/**
 	 * lists all consents for the person with the given id
@@ -674,6 +604,7 @@ public interface GICSService
 	 *            check aliases for related signerIds
 	 * @return
 	 * @throws UnknownDomainException
+	 * @throws InvalidParameterException
 	 * @throws InvalidVersionException
 	 * @throws UnknownSignerIdTypeException
 	 * @throws InconsistentStatusException
@@ -683,7 +614,7 @@ public interface GICSService
 	List<ConsentLightDTO> getAllConsentsForSignerIds(@XmlElement(required = true) @WebParam(name = "domainName") String domainName,
 			@XmlElement(required = true) @WebParam(name = "signerIds") Set<SignerIdDTO> signerIdDTOs,
 			@XmlElement(required = true) @WebParam(name = "useAliases") boolean useAliases)
-			throws UnknownDomainException, InvalidVersionException, UnknownSignerIdTypeException, InconsistentStatusException;
+			throws UnknownDomainException, InvalidParameterException, InvalidVersionException, UnknownSignerIdTypeException, InconsistentStatusException;
 
 	/**
 	 * returns the current consent for the given signerIds<br>
@@ -700,6 +631,7 @@ public interface GICSService
 	 * @return
 	 * @throws UnknownDomainException
 	 * @throws UnknownConsentTemplateException
+	 * @throws InvalidParameterException
 	 * @throws InvalidVersionException
 	 * @throws UnknownSignerIdTypeException
 	 * @throws InconsistentStatusException
@@ -709,7 +641,7 @@ public interface GICSService
 			@XmlElement(required = true) @WebParam(name = "signerIds") Set<SignerIdDTO> signerIdDTOs,
 			@XmlElement(required = true) @WebParam(name = "ignoreVersionNumber") boolean ignoreVersionNumber,
 			@XmlElement(required = true) @WebParam(name = "useAliases") boolean useAliases)
-			throws UnknownDomainException, UnknownConsentTemplateException, InvalidVersionException, UnknownSignerIdTypeException, InconsistentStatusException;
+			throws UnknownDomainException, UnknownConsentTemplateException, InvalidParameterException, InvalidVersionException, UnknownSignerIdTypeException, InconsistentStatusException;
 
 	/**
 	 * lists all consents for the given consent template
@@ -717,6 +649,7 @@ public interface GICSService
 	 * @param ctKeyDTO
 	 * @return
 	 * @throws UnknownDomainException
+	 * @throws InvalidParameterException
 	 * @throws InvalidVersionException
 	 * @throws InconsistentStatusException
 	 */
@@ -724,7 +657,7 @@ public interface GICSService
 	@XmlElement(name = "consents")
 	List<ConsentLightDTO> getAllConsentsForConsentTemplate(
 			@XmlElement(required = true) @WebParam(name = "consentTemplateKey") ConsentTemplateKeyDTO ctKeyDTO) throws UnknownDomainException,
-			UnknownConsentTemplateException, InvalidVersionException, InconsistentStatusException;
+			UnknownConsentTemplateException, InvalidParameterException, InvalidVersionException, InconsistentStatusException;
 
 	/**
 	 * lists all consents for the given domain
@@ -783,13 +716,14 @@ public interface GICSService
 	 * @param domainName
 	 * @return
 	 * @throws UnknownDomainException
+	 * @throws InvalidParameterException
 	 * @throws InvalidVersionException
 	 * @throws InconsistentStatusException
 	 */
 	@XmlElementWrapper(nillable = true, name = "return")
 	@XmlElement(name = "consents")
 	List<ConsentLightDTO> getAllConsentsForDomainWithoutScan(@XmlElement(required = true) @WebParam(name = "domainName") String domainName)
-			throws UnknownDomainException, InvalidVersionException, InconsistentStatusException;
+			throws UnknownDomainException, InvalidParameterException, InvalidVersionException, InconsistentStatusException;
 
 	/**
 	 * get the complete dto for the given key - thought to be used in addition to the list functions
@@ -797,6 +731,7 @@ public interface GICSService
 	 * @param keyDTO
 	 * @return
 	 * @throws UnknownDomainException
+	 * @throws InvalidParameterException
 	 * @throws InvalidVersionException
 	 * @throws InconsistentStatusException
 	 * @throws UnknownConsentTemplateException
@@ -804,32 +739,25 @@ public interface GICSService
 	 * @throws UnknownSignerIdTypeException
 	 */
 	ConsentDTO getConsent(@XmlElement(required = true) @WebParam(name = "consentKey") ConsentKeyDTO keyDTO)
-			throws UnknownDomainException, InvalidVersionException, InconsistentStatusException, UnknownConsentTemplateException, UnknownSignerIdTypeException, UnknownConsentException;
+			throws UnknownDomainException, InvalidParameterException, InvalidVersionException, InconsistentStatusException, UnknownConsentTemplateException, UnknownSignerIdTypeException,
+			UnknownConsentException;
 
 	/**
-	 * creates a new domain
+	 * get the light dto for the given key
 	 *
-	 * @param domainDTO
-	 *            see {@link DomainDTO}
-	 * @throws DuplicateEntryException
-	 *             if a domain with that name already exists
-	 * @throws VersionConverterClassException
-	 */
-	void addDomain(@XmlElement(required = true) @WebParam(name = "domain") DomainDTO domainDTO)
-			throws DuplicateEntryException, VersionConverterClassException;
-
-	/**
-	 * deletes the given domain
-	 *
-	 * @param domainName
-	 *            identifier
-	 * @throws ObjectInUseException
-	 *             if there's at least one pseudonym within that domain
+	 * @param keyDTO
+	 * @return
 	 * @throws UnknownDomainException
-	 *             if the given domain is not found
+	 * @throws InvalidParameterException
+	 * @throws InvalidVersionException
+	 * @throws InconsistentStatusException
+	 * @throws UnknownConsentTemplateException
+	 * @throws UnknownConsentException
+	 * @throws UnknownSignerIdTypeException
 	 */
-	void deleteDomain(@XmlElement(required = true) @WebParam(name = "domainName") String domainName)
-			throws ObjectInUseException, UnknownDomainException;
+	ConsentLightDTO getConsentLight(@XmlElement(required = true) @WebParam(name = "consentKey") ConsentKeyDTO keyDTO)
+			throws UnknownDomainException, InvalidParameterException, InvalidVersionException, InconsistentStatusException, UnknownConsentTemplateException, UnknownSignerIdTypeException,
+			UnknownConsentException;
 
 	/**
 	 * returns all information for the given domain
@@ -837,10 +765,11 @@ public interface GICSService
 	 * @param domainName
 	 *            identifier
 	 * @return see {@link DomainDTO}
+	 * @throws InvalidParameterException
 	 * @throws UnknownDomainException
 	 *             if the given domain is not found
 	 */
-	DomainDTO getDomain(@XmlElement(required = true) @WebParam(name = "domainName") String domainName) throws UnknownDomainException;
+	DomainDTO getDomain(@XmlElement(required = true) @WebParam(name = "domainName") String domainName) throws InvalidParameterException, UnknownDomainException;
 
 	/**
 	 * @return list of all domains within the database; see {@link DomainDTO}
@@ -850,203 +779,25 @@ public interface GICSService
 	List<DomainDTO> listDomains();
 
 	/**
-	 * updates the given domain
-	 *
-	 * @param domainDTO
-	 * @throws ObjectInUseException
-	 * @throws UnknownDomainException
-	 */
-	void updateDomain(@XmlElement(required = true) @WebParam(name = "domain") DomainDTO domainDTO)
-			throws ObjectInUseException, UnknownDomainException;
-
-	/**
-	 * updates the given domain with the given values
-	 *
-	 * @param domainName
-	 * @param label
-	 * @param logo
-	 * @param externProperties
-	 * @param comment
-	 * @throws UnknownDomainException
-	 */
-	void updateDomainInUse(@XmlElement(required = true) @WebParam(name = "domainName") String domainName,
-			@XmlElement(required = true) @WebParam(name = "label") String label, @XmlElement(required = true) @WebParam(name = "logo") String logo,
-			@XmlElement(required = true) @WebParam(name = "externProperties") String externProperties,
-			@XmlElement(required = true) @WebParam(name = "comment") String comment) throws UnknownDomainException;
-
-	/**
-	 * updates the given policy
-	 *
-	 * @param policyDTO
-	 * @throws InvalidVersionException
-	 * @throws ObjectInUseException
-	 * @throws UnknownDomainException
-	 * @throws UnknownPolicyException
-	 */
-	void updatePolicy(@XmlElement(required = true) @WebParam(name = "domainName") PolicyDTO policyDTO)
-			throws InvalidVersionException, ObjectInUseException, UnknownDomainException, UnknownPolicyException;
-
-	/**
-	 * updates the given policy with the given values
-	 *
-	 * @param policyKeyDTO
-	 * @param label
-	 * @param externProperties
-	 * @param comment
-	 * @throws InvalidVersionException
-	 * @throws UnknownDomainException
-	 * @throws UnknownPolicyException
-	 */
-	void updatePolicyInUse(@XmlElement(required = true) @WebParam(name = "policyKey") PolicyKeyDTO policyKeyDTO,
-			@XmlElement(required = true) @WebParam(name = "label") String label,
-			@XmlElement(required = true) @WebParam(name = "externProperties") String externProperties,
-			@XmlElement(required = true) @WebParam(name = "comment") String comment)
-			throws InvalidVersionException, UnknownDomainException, UnknownPolicyException;
-
-	/**
-	 * updates the given module
-	 *
-	 * @param moduleDTO
-	 * @throws DuplicateEntryException
-	 * @throws InvalidParameterException
-	 * @throws InvalidVersionException
-	 * @throws ObjectInUseException
-	 * @throws RequirementsNotFullfilledException
-	 * @throws UnknownDomainException
-	 * @throws UnknownModuleException
-	 * @throws UnknownPolicyException
-	 */
-	void updateModule(@XmlElement(required = true) @WebParam(name = "module") ModuleDTO moduleDTO,
-			@XmlElement(required = true) @WebParam(name = "finaliseRelatedEntities") boolean finaliseRelatedEntities)
-			throws DuplicateEntryException, InvalidParameterException, InvalidVersionException, ObjectInUseException, RequirementsNotFullfilledException, UnknownDomainException,
-			UnknownModuleException, UnknownPolicyException;
-
-	/**
-	 * updates the given module with the given values
-	 *
-	 * @param moduleKeyDTO
-	 * @param label
-	 * @param comment
-	 * @param shortText
-	 * @param externProperties
-	 * @param assignedPolicyDTOs
-	 *            only externProperties and comments of this objects are updated
-	 * @throws InvalidParameterException
-	 * @throws InvalidVersionException
-	 * @throws UnknownDomainException
-	 * @throws UnknownModuleException
-	 */
-	void updateModuleInUse(@XmlElement(required = true) @WebParam(name = "moduleKey") ModuleKeyDTO moduleKeyDTO,
-			@XmlElement(required = true) @WebParam(name = "label") String label,
-			@XmlElement(required = true) @WebParam(name = "shortText") String shortText,
-			@XmlElement(required = true) @WebParam(name = "externProperties") String externProperties,
-			@XmlElement(required = true) @WebParam(name = "comment") String comment,
-			@XmlElement(required = true) @WebParam(name = "assignedPolicies") Set<AssignedPolicyDTO> assignedPolicyDTOs)
-			throws InvalidParameterException, InvalidVersionException, UnknownDomainException, UnknownModuleException;
-
-	/**
-	 * updates the given consent template
-	 *
-	 * @param consentTemplateDTO
-	 * @throws DuplicateEntryException
-	 * @throws FreeTextConverterStringException
-	 * @throws InvalidFreeTextException
-	 * @throws InvalidPropertiesException
-	 * @throws InvalidVersionException
-	 * @throws ObjectInUseException
-	 * @throws RequirementsNotFullfilledException
-	 * @throws UnknownConsentTemplateException
-	 * @throws UnknownDomainException
-	 * @throws UnknownModuleException
-	 * @throws InvalidParameterException
-	 */
-	void updateConsentTemplate(@XmlElement(required = true) @WebParam(name = "consentTemplate") ConsentTemplateDTO consentTemplateDTO,
-			@XmlElement(required = true) @WebParam(name = "finaliseRelatedEntities") boolean finaliseRelatedEntities) throws DuplicateEntryException,
-			FreeTextConverterStringException, InvalidFreeTextException, InvalidPropertiesException, InvalidVersionException, ObjectInUseException,
-			RequirementsNotFullfilledException, UnknownConsentTemplateException, UnknownDomainException, UnknownModuleException, InvalidParameterException;
-
-	/**
-	 * updates label, title, comment, externProperties, scanBase64, scanFileType,
-	 * assignedModule.comment, assignedModule.externProperties, freeTextDef.comment
-	 *
-	 * @param consentTemplateDTO
-	 * @throws InvalidFreeTextException
-	 * @throws InvalidVersionException
-	 * @throws UnknownConsentTemplateException
-	 * @throws UnknownDomainException
-	 * @throws UnknownModuleException
-	 * @throws InvalidParameterException
-	 */
-	void updateConsentTemplateInUse(@XmlElement(required = true) @WebParam(name = "consentTemplate") ConsentTemplateDTO consentTemplateDTO)
-			throws InvalidFreeTextException, InvalidVersionException, UnknownConsentTemplateException, UnknownDomainException, UnknownModuleException, InvalidParameterException;
-
-	/**
 	 * Updates the given consent.
 	 *
 	 * @param consentKeyDTO
 	 * @param externProperties
 	 * @param comment
 	 * @param scan
+	 * @throws InvalidParameterException
 	 * @throws InvalidVersionException
 	 * @throws UnknownDomainException
 	 * @throws UnknownConsentTemplateException
 	 * @throws UnknownSignerIdTypeException
 	 * @throws UnknownConsentException
-	 * @throws InvalidParameterException
 	 */
 	void updateConsentInUse(@XmlElement(required = true) @WebParam(name = "consentKey") ConsentKeyDTO consentKeyDTO,
 			@XmlElement(required = true) @WebParam(name = "externProperties") String externProperties,
 			@XmlElement(required = true) @WebParam(name = "comment") String comment,
 			@XmlElement(required = true) @WebParam(name = "scan") ConsentScanDTO scan)
-			throws InvalidVersionException, UnknownDomainException, UnknownConsentTemplateException,
-			UnknownSignerIdTypeException, UnknownConsentException, InvalidParameterException;
-
-	/**
-	 * finalises the given domain
-	 *
-	 * @param domainName
-	 * @throws UnknownDomainException
-	 */
-	void finaliseDomain(@XmlElement(required = true) @WebParam(name = "domainName") String domainName) throws UnknownDomainException;
-
-	/**
-	 * finalises the given policy
-	 *
-	 * @param policyKeyDTO
-	 * @throws InvalidVersionException
-	 * @throws UnknownDomainException
-	 * @throws UnknownPolicyException
-	 */
-	void finalisePolicy(@XmlElement(required = true) @WebParam(name = "policyKey") PolicyKeyDTO policyKeyDTO)
-			throws InvalidVersionException, UnknownDomainException, UnknownPolicyException;
-
-	/**
-	 * finalises the given module
-	 *
-	 * @param moduleKeyDTO
-	 * @param finaliseRelatedEntities
-	 * @throws InvalidVersionException
-	 * @throws RequirementsNotFullfilledException
-	 * @throws UnknownDomainException
-	 * @throws UnknownModuleException
-	 */
-	void finaliseModule(@XmlElement(required = true) @WebParam(name = "moduleKey") ModuleKeyDTO moduleKeyDTO,
-			@XmlElement(required = true) @WebParam(name = "finaliseRelatedEntities") boolean finaliseRelatedEntities)
-			throws InvalidVersionException, RequirementsNotFullfilledException, UnknownDomainException, UnknownModuleException;
-
-	/**
-	 * finalises the given consent template
-	 *
-	 * @param consentTemplateKeyDTO
-	 * @param finaliseRelatedEntities
-	 * @throws InvalidVersionException
-	 * @throws RequirementsNotFullfilledException
-	 * @throws UnknownConsentTemplateException
-	 * @throws UnknownDomainException
-	 */
-	void finaliseTemplate(@XmlElement(required = true) @WebParam(name = "consentTemplateKey") ConsentTemplateKeyDTO consentTemplateKeyDTO,
-			@XmlElement(required = true) @WebParam(name = "finaliseRelatedEntities") boolean finaliseRelatedEntities)
-			throws InvalidVersionException, RequirementsNotFullfilledException, UnknownConsentTemplateException, UnknownDomainException;
+			throws InvalidParameterException, InvalidVersionException, UnknownDomainException, UnknownConsentTemplateException,
+			UnknownSignerIdTypeException, UnknownConsentException;
 
 	/**
 	 * add the given scan to the given consent
@@ -1060,15 +811,15 @@ public interface GICSService
 	 * @throws UnknownConsentException
 	 * @throws DuplicateEntryException
 	 *             if there's already a scan attached to that consent
+	 * @throws InvalidParameterException
 	 * @throws InvalidVersionException
 	 * @throws UnknownSignerIdTypeException
-	 * @throws InvalidParameterException
 	 */
 	void addScanToConsent(@XmlElement(required = true) @WebParam(name = "consentKey") ConsentKeyDTO consentKeyDTO,
 			@XmlElement(required = true) @WebParam(name = "scanBase64") String scanBase64,
 			@XmlElement(required = true) @WebParam(name = "fileType") String fileType,
 			@XmlElement(required = true) @WebParam(name = "fileName") String fileName) throws UnknownDomainException, UnknownConsentTemplateException,
-			UnknownConsentException, DuplicateEntryException, InvalidVersionException, UnknownSignerIdTypeException, InvalidParameterException;
+			UnknownConsentException, DuplicateEntryException, InvalidParameterException, InvalidVersionException, UnknownSignerIdTypeException;
 
 	/**
 	 * Remove a scan from the given consent
@@ -1079,28 +830,13 @@ public interface GICSService
 	 * @throws UnknownConsentTemplateException
 	 * @throws UnknownConsentException
 	 * @throws DuplicateEntryException
+	 * @throws InvalidParameterException
 	 * @throws InvalidVersionException
 	 * @throws UnknownSignerIdTypeException
-	 * @throws InvalidParameterException
 	 */
 	void removeScanFromConsent(@XmlElement(required = true) @WebParam(name = "consentKey") ConsentKeyDTO consentKeyDTO,
 			@XmlElement(required = true) @WebParam(name = "fhirId") String fhirId) throws UnknownDomainException, UnknownConsentTemplateException,
-			UnknownConsentException, DuplicateEntryException, InvalidVersionException, UnknownSignerIdTypeException, InvalidParameterException;
-
-	/**
-	 * add a signer id type with the given name to the given domain
-	 *
-	 * @param domainName
-	 * @param signerIdTypeName
-	 *            identifier
-	 * @throws UnknownDomainException
-	 *             if the given domain is not found
-	 * @throws DuplicateEntryException
-	 *             if the signerIdType already exists
-	 */
-	void addSignerIdType(@XmlElement(required = true) @WebParam(name = "domainName") String domainName,
-			@XmlElement(required = true) @WebParam(name = "signerIdTypeName") String signerIdTypeName)
-			throws UnknownDomainException, DuplicateEntryException;
+			UnknownConsentException, DuplicateEntryException, InvalidParameterException, InvalidVersionException, UnknownSignerIdTypeException;
 
 	/**
 	 * returns all information for the given signerIdType
@@ -1110,6 +846,7 @@ public interface GICSService
 	 * @param signerIdTypeName
 	 *            identifier
 	 * @return see {@link SignerIdTypeDTO}
+	 * @throws InvalidParameterException
 	 * @throws UnknownDomainException
 	 *             if the given domain is not found
 	 * @throws UnknownSignerIdTypeException
@@ -1117,26 +854,7 @@ public interface GICSService
 	 */
 	SignerIdTypeDTO getSignerIdType(@XmlElement(required = true) @WebParam(name = "domainName") String domainName,
 			@XmlElement(required = true) @WebParam(name = "signerIdTypeName") String signerIdTypeName)
-			throws UnknownDomainException, UnknownSignerIdTypeException;
-
-	/**
-	 * updates the given signerIdType with the given values
-	 *
-	 * @param domainName
-	 *            domain to which the signerIdType belongs to
-	 * @param signerIdTypeName
-	 *            identifier
-	 * @param label
-	 * @param comment
-	 * @throws UnknownDomainException
-	 *             if the given domain is not found
-	 * @throws UnknownSignerIdTypeException
-	 *             if the given signerIdType is not found
-	 */
-	void updateSignerIdType(@XmlElement(required = true) @WebParam(name = "domainName") String domainName,
-			@XmlElement(required = true) @WebParam(name = "signerIdTypeName") String signerIdTypeName,
-			@XmlElement(required = true) @WebParam(name = "label") String label,
-			@XmlElement(required = true) @WebParam(name = "comment") String comment) throws UnknownDomainException, UnknownSignerIdTypeException;
+			throws InvalidParameterException, UnknownDomainException, UnknownSignerIdTypeException;
 
 	/**
 	 * list all signerIDTypes for the given domain
@@ -1144,28 +862,14 @@ public interface GICSService
 	 * @param domainName
 	 *            domain to which the signerIdTypes belongs to
 	 * @return list of all domains within the database; see {@link SignerIdTypeDTO}
+	 * @throws InvalidParameterException
 	 * @throws UnknownDomainException
 	 *             if the given domain is not found
 	 */
 	@XmlElementWrapper(nillable = true, name = "return")
-	@XmlElement(name = "sinerIdTypes")
+	@XmlElement(name = "signerIdTypes")
 	List<SignerIdTypeDTO> listSignerIdTypes(@XmlElement(required = true) @WebParam(name = "domainName") String domainName)
-			throws UnknownDomainException;
-
-	/**
-	 * removes the given signer id type from the given domain
-	 *
-	 * @param domainName
-	 *            domain to which the signerIdType belongs to
-	 * @param signerIdTypeName
-	 *            identifier
-	 * @throws UnknownDomainException
-	 * @throws UnknownSignerIdTypeException
-	 * @throws ObjectInUseException
-	 */
-	void deleteSignerIdType(@XmlElement(required = true) @WebParam(name = "domainName") String domainName,
-			@XmlElement(required = true) @WebParam(name = "signerIdTypeName") String signerIdTypeName)
-			throws UnknownDomainException, UnknownSignerIdTypeException, ObjectInUseException;
+			throws InvalidParameterException, UnknownDomainException;
 
 	/**
 	 * returns all id for the given signer id type and domain
@@ -1175,6 +879,7 @@ public interface GICSService
 	 * @param signerIdTypeName
 	 *            identifier of the signerIdType
 	 * @return
+	 * @throws InvalidParameterException
 	 * @throws UnknownDomainException
 	 * @throws UnknownSignerIdTypeException
 	 */
@@ -1182,7 +887,7 @@ public interface GICSService
 	@XmlElement(name = "signerIds")
 	List<String> getAllIdsForSignerIdType(@XmlElement(required = true) @WebParam(name = "domainName") String domainName,
 			@XmlElement(required = true) @WebParam(name = "signerIdTypeName") String signerIdTypeName)
-			throws UnknownDomainException, UnknownSignerIdTypeException;
+			throws InvalidParameterException, UnknownDomainException, UnknownSignerIdTypeException;
 
 	/**
 	 * list all consented ids for the given policy and signerIdType
@@ -1194,14 +899,16 @@ public interface GICSService
 	 * @throws UnknownDomainException
 	 * @throws UnknownSignerIdTypeException
 	 * @throws UnknownPolicyException
+	 * @throws InvalidParameterException
 	 * @throws InvalidVersionException
+	 * @throws InconsistentStatusException
 	 */
 	@XmlElementWrapper(nillable = true, name = "return")
 	@XmlElement(name = "consentIds")
 	List<String> getAllConsentedIdsFor(@XmlElement(required = true) @WebParam(name = "signerIdTypeName") String signerIdTypeName,
 			@XmlElement(required = true) @WebParam(name = "policyKey") PolicyKeyDTO policyKeyDTO,
 			@XmlElement(required = true) @WebParam(name = "config") CheckConsentConfig config)
-			throws UnknownDomainException, UnknownSignerIdTypeException, UnknownPolicyException, InvalidVersionException, InconsistentStatusException;
+			throws UnknownDomainException, UnknownSignerIdTypeException, UnknownPolicyException, InvalidParameterException, InvalidVersionException, InconsistentStatusException;
 
 	/**
 	 * validates the given consentDTO<br>
@@ -1214,6 +921,7 @@ public interface GICSService
 	 *
 	 * @param consentDTO
 	 * @param allowRevoke
+	 * @throws InvalidParameterException
 	 * @throws InvalidVersionException
 	 * @throws MissingRequiredObjectException
 	 * @throws MandatoryFieldsException
@@ -1223,7 +931,8 @@ public interface GICSService
 	 */
 	void validateConsent(@XmlElement(required = true) @WebParam(name = "consent") ConsentDTO consentDTO,
 			@XmlElement(required = true) @WebParam(name = "allowRevoke") boolean allowRevoke)
-			throws InvalidVersionException, MissingRequiredObjectException, MandatoryFieldsException, UnknownModuleException, UnknownConsentTemplateException, UnknownDomainException;
+			throws InvalidParameterException, InvalidVersionException, MissingRequiredObjectException, MandatoryFieldsException, UnknownModuleException, UnknownConsentTemplateException,
+			UnknownDomainException;
 
 	/**
 	 * Stores a "refused" consent.
@@ -1232,36 +941,36 @@ public interface GICSService
 	 *
 	 * @param ctKeyDTO
 	 * @param signerIdDTOs
+	 * @throws InternalException
+	 * @throws InvalidParameterException
 	 * @throws InvalidVersionException
 	 * @throws UnknownSignerIdTypeException
 	 * @throws UnknownConsentTemplateException
 	 * @throws UnknownDomainException
-	 * @throws InternalException
-	 * @throws InvalidParameterException
 	 */
 	void refuseConsent(
 			@XmlElement(required = true) @WebParam(name = "consentTemplateKey") ConsentTemplateKeyDTO ctKeyDTO,
 			@XmlElement(required = true) @WebParam(name = "signerIds") Set<SignerIdDTO> signerIdDTOs)
-			throws InvalidVersionException, UnknownSignerIdTypeException, UnknownConsentTemplateException,
-			UnknownDomainException, InternalException, InvalidParameterException;
+			throws InternalException, InvalidParameterException, InvalidVersionException, UnknownSignerIdTypeException, UnknownConsentTemplateException, UnknownDomainException;
 
 	/**
 	 * adds the given signerId to the given consent
 	 *
 	 * @param consentKeyDTO
 	 * @param signerIdDTO
+	 * @throws InternalException
+	 * @throws InvalidParameterException
 	 * @throws InvalidVersionException
 	 * @throws UnknownConsentException
 	 * @throws UnknownSignerIdTypeException
 	 * @throws UnknownConsentTemplateException
 	 * @throws UnknownDomainException
-	 * @throws InternalException
-	 * @throws InvalidParameterException
 	 */
 	void addSignerIdToConsent(@XmlElement(required = true) @WebParam(name = "consentKey") ConsentKeyDTO consentKeyDTO,
 			@XmlElement(required = true) @WebParam(name = "signerId") SignerIdDTO signerIdDTO)
-			throws InvalidVersionException, UnknownConsentException, UnknownSignerIdTypeException, UnknownConsentTemplateException, IllegalArgumentException, UnknownDomainException, InternalException,
-			InvalidParameterException;
+			throws InternalException,
+			InvalidParameterException, InvalidVersionException, UnknownConsentException, UnknownSignerIdTypeException, UnknownConsentTemplateException, IllegalArgumentException,
+			UnknownDomainException;
 
 	/**
 	 * adds newSignerId (e.g. case number) to one or more virtual persons (which are using the given
@@ -1272,21 +981,22 @@ public interface GICSService
 	 * @param newSignerIdDTO
 	 *            new signerID to be added to identified virtual persons
 	 * @throws UnknownSignerIdTypeException
+	 * @throws InvalidParameterException
 	 * @throws IllegalArgumentException
 	 * @throws InternalException
 	 * @throws UnknownDomainException
-	 * @throws InvalidParameterException
 	 */
 	void addSignerIdToSignerId(@XmlElement(required = true) @WebParam(name = "domainName") String domainName,
 			@XmlElement(required = true) @WebParam(name = "existentSignerId") SignerIdDTO existentSignerIdDTO,
 			@XmlElement(required = true) @WebParam(name = "newSignerId") SignerIdDTO newSignerIdDTO)
-			throws UnknownSignerIdTypeException, IllegalArgumentException, InternalException, UnknownDomainException, InvalidParameterException;
+			throws UnknownSignerIdTypeException, InvalidParameterException, IllegalArgumentException, InternalException, UnknownDomainException;
 
 	/**
 	 * returns the important dates for the given consent<br>
 	 *
 	 * @param consentKeyDTO
 	 * @return
+	 * @throws InvalidParameterException
 	 * @throws InvalidVersionException
 	 * @throws UnknownConsentException
 	 * @throws UnknownSignerIdTypeException
@@ -1294,7 +1004,7 @@ public interface GICSService
 	 * @throws UnknownDomainException
 	 */
 	ConsentDateValuesDTO getConsentDates(@XmlElement(required = true) @WebParam(name = "consentKey") ConsentKeyDTO consentKeyDTO)
-			throws InvalidVersionException, UnknownConsentException, UnknownSignerIdTypeException, UnknownConsentTemplateException, UnknownDomainException;
+			throws InvalidParameterException, InvalidVersionException, UnknownConsentException, UnknownSignerIdTypeException, UnknownConsentTemplateException, UnknownDomainException;
 
 	/**
 	 * creates an alias between two signer ids; used for merges
@@ -1340,9 +1050,43 @@ public interface GICSService
 	 * @throws UnknownSignerIdTypeException
 	 */
 	@XmlElementWrapper(nillable = true, name = "return")
-	@XmlElement(name = "signerIds")
+	@XmlElement(name = "aliases")
 	List<SignerIdDTO> getAliasesForSignerId(@XmlElement(required = true) @WebParam(name = "domainName") String domainName,
 			@XmlElement(required = true) @WebParam(name = "originalSignerId") SignerIdDTO originalSignerId)
+			throws InvalidParameterException, UnknownDomainException, UnknownSignerIdException, UnknownSignerIdTypeException;
+
+	/**
+	 * returns a map with all signer ids which are connected via an alias to the given signer ids
+	 *
+	 * @param domainName
+	 * @param originalSignerIds
+	 * @return
+	 * @throws InvalidParameterException
+	 * @throws UnknownDomainException
+	 * @throws UnknownSignerIdException
+	 * @throws UnknownSignerIdTypeException
+	 */
+	@XmlElementWrapper(nillable = true, name = "return")
+	@XmlElement(name = "aliases")
+	Map<SignerIdDTO, SignerIdDTO[]> getAliasesForSignerIds(@XmlElement(required = true) @WebParam(name = "domainName") String domainName,
+			@XmlElement(required = true) @WebParam(name = "originalSignerIds") List<SignerIdDTO> originalSignerIds)
+			throws InvalidParameterException, UnknownDomainException, UnknownSignerIdException, UnknownSignerIdTypeException;
+
+	/**
+	 * returns a list with all signer ids that have the given id as an alias
+	 *
+	 * @param domainName
+	 * @param aliasSignerId
+	 * @return
+	 * @throws InvalidParameterException
+	 * @throws UnknownDomainException
+	 * @throws UnknownSignerIdException
+	 * @throws UnknownSignerIdTypeException
+	 */
+	@XmlElementWrapper(nillable = true, name = "return")
+	@XmlElement(name = "signerIds")
+	List<SignerIdDTO> getSignerIdsForAlias(@XmlElement(required = true) @WebParam(name = "domainName") String domainName,
+			@XmlElement(required = true) @WebParam(name = "aliasSignerId") SignerIdDTO aliasSignerId)
 			throws InvalidParameterException, UnknownDomainException, UnknownSignerIdException, UnknownSignerIdTypeException;
 
 	/**
@@ -1356,7 +1100,6 @@ public interface GICSService
 	 * @throws UnknownSignerIdTypeException
 	 * @throws UnknownConsentTemplateException
 	 * @throws UnknownDomainException
-	 * @throws InvalidParameterException
 	 */
 	void setQCForConsent(@XmlElement(required = true) @WebParam(name = "consentKey") ConsentKeyDTO consentKeyDTO,
 			@XmlElement(required = true) @WebParam(name = "qc") QCDTO qc)
@@ -1367,6 +1110,7 @@ public interface GICSService
 	 *
 	 * @param consentKeyDTO
 	 * @return
+	 * @throws InvalidParameterException
 	 * @throws InvalidVersionException
 	 * @throws UnknownConsentException
 	 * @throws UnknownSignerIdTypeException
@@ -1376,19 +1120,58 @@ public interface GICSService
 	@XmlElementWrapper(nillable = true, name = "return")
 	@XmlElement(name = "qcHistories")
 	List<QCHistoryDTO> getQCHistoryForConsent(@XmlElement(required = true) @WebParam(name = "consentKey") ConsentKeyDTO consentKeyDTO)
-			throws InvalidVersionException, UnknownConsentException, UnknownSignerIdTypeException, UnknownConsentTemplateException, UnknownDomainException;
+			throws InvalidParameterException, InvalidVersionException, UnknownConsentException, UnknownSignerIdTypeException, UnknownConsentTemplateException, UnknownDomainException;
 
 	/**
-	 * searches the object with the given fhirID
+	 * Returns all consent templates which relate to at least one of the specified policies.
+	 * (Template zurückgeben, wenn min. 1 der übergebenen Policies vorkommt) --> zum Vorfiltern der Auswahllisten)
 	 *
-	 * @param clazz
-	 * @param fhirID
-	 * @return
-	 * @throws UnknownFhirIdObjectException
-	 *             if that object is not known (DAO.getObjectByFhirID)
-	 * @throws UnknownIDException
-	 *             if that object is not found
+	 * @param policyKeyDTOs the keys of the policies to find related consent templates for
+	 * @return consent templates relating to the specified policies
+	 * @throws UnknownDomainException if the related domain is unknown
+	 * @throws InvalidVersionException if any of the consent templates version is invalid
+	 * @throws InvalidParameterException if parameters are invalid
 	 */
-	<T extends FhirIdDTO> T getObjectByFhirID(@XmlElement(required = true) @WebParam(name = "clazz") Class<T> clazz, @XmlElement(required = true) @WebParam(name = "fhirID") String fhirID)
+	@XmlElementWrapper(nillable = true, name = "return")
+	@XmlElement(name = "templates")
+	List<ConsentTemplateKeyDTO> getTemplatesWithPolicies(
+			@XmlElement(required = true) @WebParam(name = "policyKeyDTOs") List<PolicyKeyDTO> policyKeyDTOs)
+			throws InvalidParameterException, UnknownDomainException, InvalidVersionException;
+
+
+	/**
+	 * Returns all mapped consent templates for a signer ID in the specified domain.
+	 * (Durch holen aller Einwilligungsvorlagen der signerId)
+	 *
+	 * @param domainName the name of the domain to return consent templates for
+	 * @param ctType the type of consent templates to return
+	 * @param signerId the signer ID to return consent templates for
+	 * @param useAliases true to use aliases
+	 * @return all mapped consent templates for a signer ID in the specified domain
+	 * @throws UnknownDomainException if the domain is unknown
+	 * @throws UnknownSignerIdException if the signer ID is unknown
+	 * @throws InvalidParameterException if parameters are invalid
+	 */
+	@XmlElementWrapper(nillable = true, name = "return")
+	@XmlElement(name = "templates")
+	List<ConsentTemplateKeyDTO> getMappedTemplatesForSignerId(
+			@XmlElement(required = true) @WebParam(name = "domainName") String domainName,
+			@XmlElement(required = true) @WebParam(name = "ctType") ConsentTemplateType ctType,
+			@XmlElement(required = true) @WebParam(name = "signerId") SignerIdDTO signerId,
+			@XmlElement(required = true) @WebParam(name = "useAliases") boolean useAliases)
+			throws UnknownDomainException, UnknownSignerIdException, UnknownSignerIdTypeException, InvalidVersionException, InconsistentStatusException, InvalidParameterException;
+
+	/**
+	 * Searches the object with the given fhirID.
+	 *
+	 * @param clazz the class of the object to search for
+	 * @param fhirID the FHIR ID to search for
+	 * @return the object with the given fhirID
+	 * @throws UnknownFhirIdObjectException if that object is not known (DAO.getObjectByFhirID)
+	 * @throws UnknownIDException if that object is not found
+	 */
+	<T extends FhirIdDTO> T getObjectByFhirID(
+			@XmlElement(required = true) @WebParam(name = "clazz") Class<T> clazz,
+			@XmlElement(required = true) @WebParam(name = "fhirID") String fhirID)
 			throws UnknownFhirIdObjectException, UnknownIDException;
 }

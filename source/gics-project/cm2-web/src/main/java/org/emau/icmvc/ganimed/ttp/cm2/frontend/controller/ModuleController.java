@@ -4,9 +4,9 @@ package org.emau.icmvc.ganimed.ttp.cm2.frontend.controller;
  * ###license-information-start###
  * gICS - a Generic Informed Consent Service
  * __
- * Copyright (C) 2014 - 2022 Trusted Third Party of the University Medicine Greifswald -
+ * Copyright (C) 2014 - 2023 Trusted Third Party of the University Medicine Greifswald -
  * 							kontakt-ths@uni-greifswald.de
- * 
+ *
  * 							concept and implementation
  * 							l.geidel, c.hampf
  * 							web client
@@ -15,17 +15,18 @@ package org.emau.icmvc.ganimed.ttp.cm2.frontend.controller;
  * 							m.bialke
  * 							docker
  * 							r. schuldt
- * 
+ *
  * 							The gICS was developed by the University Medicine Greifswald and published
- *  							in 2014 as part of the research project "MOSAIC" (funded by the DFG HO 1937/2-1).
- *  
+ * 							in 2014 as part of the research project "MOSAIC" (funded by the DFG HO 1937/2-1).
+ *
  * 							Selected functionalities of gICS were developed as
  * 							part of the following research projects:
  * 							- MAGIC (funded by the DFG HO 1937/5-1)
  * 							- MIRACUM (funded by the German Federal Ministry of Education and Research 01ZZ1801M)
  * 							- NUM-CODEX (funded by the German Federal Ministry of Education and Research 01KX2021)
- * 
+ *
  * 							please cite our publications
+ * 							https://doi.org/10.1186/s12911-022-02081-4
  * 							https://doi.org/10.1186/s12967-020-02457-y
  * 							http://dx.doi.org/10.3414/ME14-01-0133
  * 							http://dx.doi.org/10.1186/s12967-015-0545-6
@@ -35,12 +36,12 @@ package org.emau.icmvc.ganimed.ttp.cm2.frontend.controller;
  * it under the terms of the GNU Affero General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  * ###license-information-end###
@@ -50,8 +51,8 @@ import java.io.Serializable;
 import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -62,6 +63,7 @@ import javax.faces.bean.ManagedBean;
 import javax.faces.bean.ViewScoped;
 import javax.faces.context.FacesContext;
 
+import org.apache.commons.lang3.StringUtils;
 import org.emau.icmvc.ganimed.ttp.cm2.dto.AssignedPolicyDTO;
 import org.emau.icmvc.ganimed.ttp.cm2.dto.ModuleDTO;
 import org.emau.icmvc.ganimed.ttp.cm2.dto.ModuleKeyDTO;
@@ -105,7 +107,7 @@ public class ModuleController extends AbstractConsentController implements Seria
 		pageMode = PageMode.READ;
 	}
 
-	public void onNewModule() throws UnknownDomainException, InvalidVersionException
+	public void onNewModule() throws UnknownDomainException, InvalidVersionException, InvalidParameterException
 	{
 		pageMode = PageMode.NEW;
 		editModule = new ModuleDTO(new ModuleKeyDTO());
@@ -113,7 +115,7 @@ public class ModuleController extends AbstractConsentController implements Seria
 		loadPolicies(editModule);
 	}
 
-	public void onEditModule(ModuleDTO module) throws UnknownDomainException, InvalidVersionException
+	public void onEditModule(ModuleDTO module) throws UnknownDomainException, InvalidVersionException, InvalidParameterException
 	{
 		pageMode = PageMode.EDIT;
 		editModule = module;
@@ -125,7 +127,7 @@ public class ModuleController extends AbstractConsentController implements Seria
 		}
 	}
 
-	public ModuleDTO onDuplicateModule(ModuleDTO module) throws UnknownDomainException, InvalidVersionException
+	public ModuleDTO onDuplicateModule(ModuleDTO module) throws UnknownDomainException, InvalidVersionException, InvalidParameterException
 	{
 		pageMode = PageMode.NEW;
 		editModule = new ModuleDTO(module.getKey());
@@ -152,14 +154,17 @@ public class ModuleController extends AbstractConsentController implements Seria
 				// Finalise domain to be able to add module
 				if (!domainSelector.getSelectedDomain().getFinalised())
 				{
-					service.finaliseDomain(domainSelector.getSelectedDomainName());
+					manager.finaliseDomain(domainSelector.getSelectedDomainName());
 					domainSelector.loadDomains();
 					domainSelector.setSelectedDomain(domainSelector.getSelectedDomainName());
 				}
 
 				// Add module
-				editModule.getKey().setName(editModule.getLabel());
-				service.addModule(editModule, false);
+				if (StringUtils.isEmpty(editModule.getKey().getName()))
+				{
+					editModule.getKey().setName(editModule.getLabel());
+				}
+				manager.addModule(editModule, false);
 				logMessage(new MessageFormat(getBundle().getString("module.message.info.added")).format(args), Severity.INFO, scroll);
 				loadModules();
 				pageMode = PageMode.READ;
@@ -174,7 +179,7 @@ public class ModuleController extends AbstractConsentController implements Seria
 				FacesContext.getCurrentInstance().validationFailed();
 				logMessage(getBundle().getString("module.message.error.invalidVersion"), Severity.WARN, scroll);
 			}
-			catch (UnknownDomainException | UnknownPolicyException | RequirementsNotFullfilledException e)
+			catch (UnknownDomainException | UnknownPolicyException | RequirementsNotFullfilledException | InvalidParameterException e)
 			{
 				FacesContext.getCurrentInstance().validationFailed();
 				logMessage(e.getLocalizedMessage(), Severity.ERROR, scroll);
@@ -186,11 +191,12 @@ public class ModuleController extends AbstractConsentController implements Seria
 			{
 				if (editModule.getFinalised())
 				{
-					service.updateModuleInUse(editModule.getKey(), editModule.getLabel(), editModule.getShortText(), editModule.getExternProperties(), editModule.getComment(), new HashSet<>());
+					manager.updateModuleInUse(editModule.getKey(), editModule.getLabel(), editModule.getShortText(), editModule.getExternProperties(), editModule.getComment(),
+							editModule.getAssignedPolicies());
 				}
 				else
 				{
-					service.updateModule(editModule, false);
+					manager.updateModule(editModule, false);
 				}
 				logMessage(new MessageFormat(getBundle().getString("module.message.info.updated")).format(args), Severity.INFO, scroll);
 				loadModules();
@@ -217,12 +223,12 @@ public class ModuleController extends AbstractConsentController implements Seria
 	{
 		try
 		{
-			service.finaliseModule(module.getKey(), true);
+			manager.finaliseModule(module.getKey(), true);
 			Object[] args = { module.getLabel(), module.getKey().getVersion() };
 			logMessage(new MessageFormat(getBundle().getString("module.message.info.finalised")).format(args), Severity.INFO);
 			loadModules();
 		}
-		catch (UnknownModuleException | InvalidVersionException | RequirementsNotFullfilledException | UnknownDomainException e)
+		catch (UnknownModuleException | InvalidVersionException | RequirementsNotFullfilledException | UnknownDomainException | InvalidParameterException e)
 		{
 			logMessage(e.getLocalizedMessage(), Severity.ERROR);
 		}
@@ -234,7 +240,7 @@ public class ModuleController extends AbstractConsentController implements Seria
 
 		try
 		{
-			service.deleteModule(module.getKey());
+			manager.deleteModule(module.getKey());
 			logMessage(new MessageFormat(getBundle().getString("module.message.info.deleted")).format(args), Severity.INFO);
 			loadModules();
 		}
@@ -242,18 +248,18 @@ public class ModuleController extends AbstractConsentController implements Seria
 		{
 			logMessage(getBundle().getString("module.message.error.deleteInUse"), Severity.WARN);
 		}
-		catch (InvalidVersionException e)
+		catch (InvalidVersionException | InvalidParameterException e)
 		{
 			logMessage(e.getLocalizedMessage(), Severity.ERROR);
 		}
 	}
 
-	public void addNewestPolicy() throws UnknownDomainException, InvalidVersionException
+	public void addNewestPolicy() throws UnknownDomainException, InvalidVersionException, InvalidParameterException
 	{
 		if (!FacesContext.getCurrentInstance().isValidationFailed())
 		{
 			List<PolicyDTO> newPolicies = service.listPolicies(domainSelector.getSelectedDomainName(), false);
-			AssignedPolicyDTO newAssignedPolicy = new AssignedPolicyDTO(newPolicies.get(newPolicies.size() - 1));
+			AssignedPolicyDTO newAssignedPolicy = new AssignedPolicyDTO(newPolicies.stream().max(Comparator.comparing(PolicyDTO::getCreationDate)).orElse(null));
 			policies.getTarget().add(0, newAssignedPolicy);
 			sortPolicies();
 
@@ -263,14 +269,13 @@ public class ModuleController extends AbstractConsentController implements Seria
 		}
 	}
 
-	public void refreshAvailablePolicies() throws UnknownDomainException, InvalidVersionException
+	public void refreshAvailablePolicies() throws UnknownDomainException, InvalidVersionException, InvalidParameterException
 	{
 		List<AssignedPolicyDTO> sourcePolicies = new ArrayList<>();
 		// Get all available policies
 		List<PolicyDTO> unassignedPolicies = service.listPolicies(domainSelector.getSelectedDomainName(), false);
 
-		unassignedPolicies:
-		for (PolicyDTO policy : unassignedPolicies)
+		unassignedPolicies: for (PolicyDTO policy : unassignedPolicies)
 		{
 			for (AssignedPolicyDTO assignedPolicyDTO : policies.getTarget())
 			{
@@ -293,7 +298,7 @@ public class ModuleController extends AbstractConsentController implements Seria
 		{
 			modules = service.listModules(domainSelector.getSelectedDomainName(), false);
 		}
-		catch (UnknownDomainException | InvalidVersionException e)
+		catch (UnknownDomainException | InvalidVersionException | InvalidParameterException e)
 		{
 			logMessage(e.getLocalizedMessage(), Severity.ERROR);
 		}
@@ -307,8 +312,9 @@ public class ModuleController extends AbstractConsentController implements Seria
 	 * @param module
 	 * @throws InvalidVersionException
 	 * @throws UnknownDomainException
+	 * @throws InvalidParameterException
 	 */
-	private void loadPolicies(ModuleDTO module) throws InvalidVersionException, UnknownDomainException
+	private void loadPolicies(ModuleDTO module) throws InvalidVersionException, UnknownDomainException, InvalidParameterException
 	{
 		List<AssignedPolicyDTO> sourcePolicies = new ArrayList<>();
 		policyExpirations = new HashMap<>();
@@ -450,5 +456,25 @@ public class ModuleController extends AbstractConsentController implements Seria
 	{
 		Collections.sort(policies.getSource());
 		Collections.sort(policies.getTarget());
+	}
+
+	public String getEditModuleSanitizedTitle()
+	{
+		return text.sanitizeRelaxed(editModule.getTitle());
+	}
+
+	public void setEditModuleSanitizedTitle(String title)
+	{
+		editModule.setTitle(title);
+	}
+
+	public String getEditModuleSanitizedText()
+	{
+		return text.sanitizeRelaxed(editModule.getText());
+	}
+
+	public void setEditModuleSanitizedText(String text)
+	{
+		editModule.setText(text);
 	}
 }

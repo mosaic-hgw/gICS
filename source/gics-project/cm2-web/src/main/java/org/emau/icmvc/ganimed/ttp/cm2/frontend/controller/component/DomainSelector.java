@@ -4,7 +4,7 @@ package org.emau.icmvc.ganimed.ttp.cm2.frontend.controller.component;
  * ###license-information-start###
  * gICS - a Generic Informed Consent Service
  * __
- * Copyright (C) 2014 - 2022 Trusted Third Party of the University Medicine Greifswald -
+ * Copyright (C) 2014 - 2023 Trusted Third Party of the University Medicine Greifswald -
  * 							kontakt-ths@uni-greifswald.de
  * 
  * 							concept and implementation
@@ -17,8 +17,8 @@ package org.emau.icmvc.ganimed.ttp.cm2.frontend.controller.component;
  * 							r. schuldt
  * 
  * 							The gICS was developed by the University Medicine Greifswald and published
- *  							in 2014 as part of the research project "MOSAIC" (funded by the DFG HO 1937/2-1).
- *  
+ * 							in 2014 as part of the research project "MOSAIC" (funded by the DFG HO 1937/2-1).
+ * 
  * 							Selected functionalities of gICS were developed as
  * 							part of the following research projects:
  * 							- MAGIC (funded by the DFG HO 1937/5-1)
@@ -26,6 +26,7 @@ package org.emau.icmvc.ganimed.ttp.cm2.frontend.controller.component;
  * 							- NUM-CODEX (funded by the German Federal Ministry of Education and Research 01KX2021)
  * 
  * 							please cite our publications
+ * 							https://doi.org/10.1186/s12911-022-02081-4
  * 							https://doi.org/10.1186/s12967-020-02457-y
  * 							http://dx.doi.org/10.3414/ME14-01-0133
  * 							http://dx.doi.org/10.1186/s12967-015-0545-6
@@ -47,12 +48,13 @@ package org.emau.icmvc.ganimed.ttp.cm2.frontend.controller.component;
  */
 
 import java.io.IOException;
+import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import javax.annotation.PostConstruct;
-import javax.ejb.EJB;
 import javax.faces.bean.ManagedBean;
 import javax.faces.bean.SessionScoped;
 import javax.faces.context.ExternalContext;
@@ -60,9 +62,8 @@ import javax.faces.context.FacesContext;
 import javax.servlet.http.HttpServletRequest;
 
 import org.apache.commons.lang3.StringUtils;
-import org.emau.icmvc.ganimed.ttp.cm2.GICSService;
 import org.emau.icmvc.ganimed.ttp.cm2.dto.DomainDTO;
-import org.icmvc.ttp.web.controller.AbstractBean;
+import org.emau.icmvc.ganimed.ttp.cm2.frontend.controller.common.AbstractGICSServiceBean;
 
 import static org.apache.commons.lang3.StringUtils.isNotEmpty;
 
@@ -73,11 +74,8 @@ import static org.apache.commons.lang3.StringUtils.isNotEmpty;
  */
 @SessionScoped
 @ManagedBean(name = "domainSelector")
-public class DomainSelector extends AbstractBean
+public class DomainSelector extends AbstractGICSServiceBean
 {
-	@EJB(lookup = "java:global/gics/cm2-ejb/GICSServiceImpl!org.emau.icmvc.ganimed.ttp.cm2.GICSService")
-	protected GICSService cmManager;
-
 	private List<DomainDTO> domains;
 	private DomainDTO selectedDomain;
 
@@ -87,7 +85,7 @@ public class DomainSelector extends AbstractBean
 	 * Init domains.
 	 */
 	@PostConstruct
-	private void init()
+	private void initialize()
 	{
 		loadDomains();
 		if (domains.size() > 0)
@@ -98,18 +96,25 @@ public class DomainSelector extends AbstractBean
 
 	public void loadDomains()
 	{
-		domains = cmManager.listDomains();
+		domains = service.listDomains().stream()
+				.sorted(Comparator.comparing(d -> d.getLabelOrName().toLowerCase()))
+				.collect(Collectors.toList());
 	}
 
 	public List<DomainDTO> getDomains()
 	{
+		// We are @SessionScoped but login via OIDC does not invalidate the session.
+		// So we need to manually check if the auth type has changed.
+		if (hasAuthTypeChanged()) {
+			loadDomains();
+		}
 		return domains;
 	}
 
 	public DomainDTO getSelectedDomain()
 	{
 		boolean found = false;
-		for (DomainDTO domain : domains)
+		for (DomainDTO domain : getDomains())
 		{
 			if (selectedDomain != null && domain.getName().equals(selectedDomain.getName()))
 			{
@@ -151,7 +156,7 @@ public class DomainSelector extends AbstractBean
 
 	public void setSelectedDomain(String name)
 	{
-		for (DomainDTO domain : domains)
+		for (DomainDTO domain : getDomains())
 		{
 			if (domain.getName().equals(name))
 			{

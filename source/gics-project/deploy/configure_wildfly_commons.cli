@@ -1,12 +1,66 @@
-
 # console-log-level
+####################
 set consoleLogLevel=${CONSOLE_LOG_LEVEL}
+if (outcome == "success") of :resolve-expression(expression=${env.WF_CONSOLE_LOG_LEVEL})
+	set consoleLogLevel=${env.WF_CONSOLE_LOG_LEVEL}
+end-if
 if (result ~= "(TRACE|DEBUG|INFO|WARN|ERROR|FATAL)") of :resolve-expression(expression=$consoleLogLevel)
 	echo \>\>\> set console-log-level to $consoleLogLevel
 	/subsystem=logging/console-handler=CONSOLE:write-attribute(name=level,value=$consoleLogLevel)
 end-if
 
+# logger for ttp.auth
+######################
+echo \>\>\> add logger for ttp.auth
+set authLogLevel=${env.TTP_AUTH_LOG_LEVEL}
+if (result ~= "(TRACE|DEBUG|INFO|WARN|ERROR|FATAL)") of :resolve-expression(expression=$authLogLevel)
+	echo \>\>\> set auth-log-level to $authLogLevel
+else
+	set authLogLevel="INFO"
+end-if
+if (result ~= "(?i)(on|true|yes|1)") of :resolve-expression(expression=${env.TTP_AUTH_LOG_TO_FILE})
+	echo \>\>\> add auth-logger as separate file
+	/subsystem=logging/size-rotating-file-handler=auth-handler:add(file={"relative-to"=>"jboss.server.log.dir", "path"=>"auth.log"})
+	/subsystem=logging/logger=org.emau.icmvc.ttp.auth:add(use-parent-handlers=false,handlers=["auth-handler"])
+	/subsystem=logging/logger=org.emau.icmvc.ttp.auth:write-attribute(name=level,value=$authLogLevel)
+else
+	echo \>\>\> add auth-logger to console-logger
+	/subsystem=logging/logger=org.emau.icmvc.ttp.auth:add(use-parent-handlers=false,handlers=["CONSOLE"])
+	/subsystem=logging/logger=org.emau.icmvc.ttp.auth:write-attribute(name=level, value=$authLogLevel)
+end-if
+
+# logger for ttp.web
+######################
+echo \>\>\> add logger for ttp.web
+set webLogLevel=${env.TTP_WEB_LOG_LEVEL}
+if (result ~= "(TRACE|DEBUG|INFO|WARN|ERROR|FATAL)") of :resolve-expression(expression=$webLogLevel)
+	echo \>\>\> set web-log-level to $webLogLevel
+else
+	set webLogLevel="INFO"
+end-if
+if (result ~= "(?i)(on|true|yes|1)") of :resolve-expression(expression=${env.TTP_WEB_LOG_TO_FILE})
+	echo \>\>\> add web-logger as separate file
+	/subsystem=logging/size-rotating-file-handler=web-handler:add(file={"relative-to"=>"jboss.server.log.dir", "path"=>"web.log"})
+	/subsystem=logging/logger=org.icmvc.ttp.web:add(use-parent-handlers=false,handlers=["web-handler"])
+	/subsystem=logging/logger=org.icmvc.ttp.web:write-attribute(name=level,value=$webLogLevel)
+else
+	echo \>\>\> add web-logger to console-logger
+	/subsystem=logging/logger=org.icmvc.ttp.web:add(use-parent-handlers=false,handlers=["CONSOLE"])
+	/subsystem=logging/logger=org.icmvc.ttp.web:write-attribute(name=level, value=$webLogLevel)
+end-if
+
+# enable microprofile-health
+#############################
+echo \>\>\> enable microprofile-health
+if (outcome != "success") of /subsystem=microprofile-health-smallrye:read-resource
+    /extension=org.wildfly.extension.microprofile.health-smallrye:add
+    /subsystem=microprofile-health-smallrye:add
+else
+    echo \<\<\< microprofile-health already exists
+end-if
+
 # Set WSDL address to use incoming request address
+###################################################
 /subsystem=webservices:write-attribute(name=wsdl-host, value=jbossws.undefined.host)
 # Set WSDL scheme to HTTPS (optional)
 # /subsystem=webservices:write-attribute(name=wsdl-uri-scheme, value=https)
@@ -16,47 +70,207 @@ end-if
 # /subsystem=webservices:write-attribute(name=wsdl-secure-port, value=8443)
 
 # set custom max-post-size
-set maxPostSize=${MAX_POST_SIZE}
-if (result ~= "[0-9]+") of :resolve-expression(expression=$maxPostSize)
-	try
-		echo \>\>\> set max-post-size to $maxPostSize
-		/subsystem=undertow/server=default-server/http-listener=default/:write-attribute(name=max-post-size,value=$maxPostSize)
-		/subsystem=undertow/server=default-server/https-listener=https/:write-attribute(name=max-post-size,value=$maxPostSize)
-	catch
-		echo \<\<\< FAILED can\'t set max-post-size
-	end-try
+###########################
+set temp=${MAX_POST_SIZE}
+if (outcome == "success") of :resolve-expression(expression=${env.WF_MAX_POST_SIZE})
+	set temp=${env.WF_MAX_POST_SIZE}
+end-if
+if (result ~= "[0-9]+") of :resolve-expression(expression=$temp)
+	echo \>\>\> set max-post-size to $temp
+	/subsystem=undertow/server=default-server/http-listener=default/:write-attribute(name=max-post-size,value=$temp)
+	/subsystem=undertow/server=default-server/https-listener=https/:write-attribute(name=max-post-size,value=$temp)
 end-if
 
 # set custom max-child-elements
-set maxChildElements=${MAX_CHILD_ELEMENTS}
-if (result ~= "[0-9]+") of :resolve-expression(expression=$maxChildElements)
-	try
-		echo \>\>\> set max-child-elements to $maxChildElements
-		/system-property=org.apache.cxf.stax.maxChildElements:add(value=$maxChildElements)
-	catch
-		echo \<\<\< FAILED can\'t set max-child-elements
-	end-try
+################################
+set temp=${MAX_CHILD_ELEMENTS}
+if (outcome == "success") of :resolve-expression(expression=${env.WF_MAX_CHILD_ELEMENTS})
+	set temp=${env.WF_MAX_CHILD_ELEMENTS}
+end-if
+if (result ~= "[0-9]+") of :resolve-expression(expression=$temp)
+	echo \>\>\> set max-child-elements to $temp
+	/system-property=org.apache.cxf.stax.maxChildElements:add(value=$temp)
 end-if
 
 # set custom blocking-timeout
-if (result ~= "[0-9]+") of :resolve-expression(expression=${env.BLOCKING_TIMEOUT})
-	try
-		set blockingTimeout=${BLOCKING_TIMEOUT}
-		echo \>\>\> set blocking-timeout to $blockingTimeout seconds
-		/system-property=jboss.as.management.blocking.timeout:add(value=$blockingTimeout)
-	catch
-		echo \<\<\< FAILED can\'t set blocking-timeout
-	end-try
-else
+##############################
+if (result ~= "[0-9]+") of :resolve-expression(expression=${env.WF_BLOCKING_TIMEOUT})
+    set temp=${env.WF_BLOCKING_TIMEOUT}
+    echo \>\>\> set blocking-timeout to $temp seconds
+    /system-property=jboss.as.management.blocking.timeout:add(value=$temp)
 end-if
 
 # set custom transaction-timeout
-if (result ~= "[0-9]+") of :resolve-expression(expression=${env.TRANSACTION_TIMEOUT})
-	try
-		set transactionTimeout=${TRANSACTION_TIMEOUT}
-		echo \>\>\> set transaction-timeout to $blockingTimeout seconds
-		/subsystem=transactions/:write-attribute(name=default-timeout,value=$transactionTimeout)
-	catch
-		echo \<\<\< FAILED can\'t set transaction-timeout
-	end-try
+#################################
+if (result ~= "[0-9]+") of :resolve-expression(expression=${env.WF_TRANSACTION_TIMEOUT})
+    set temp=${env.WF_TRANSACTION_TIMEOUT}
+    echo \>\>\> set transaction-timeout to $temp seconds
+    /subsystem=transactions/:write-attribute(name=default-timeout,value=$temp)
 end-if
+
+# disable http2
+################
+if (result ~= "(?i)(on|true|yes|1)") of :resolve-expression(expression=${env.WF_DISABLE_HTTP2})
+    echo \>\>\> disable http2
+    /subsystem=undertow/server=default-server/http-listener=default:write-attribute(name=enable-http2,value=false)
+    /subsystem=undertow/server=default-server/https-listener=https:write-attribute(name=enable-http2,value=false)
+end-if
+
+# KeycloakTTPAuthSoapInterceptor and AuthContextRemovalSoapInterceptor as cxf.interceptors.in
+##############################################################################################
+if (outcome != "success") of /subsystem=webservices/endpoint-config=Standard-Endpoint-Config/property=cxf.interceptors.in:read-resource
+    echo \>\>\> add property for KeycloakTTPAuthSoapInterceptor and AuthContextRemovalSoapInterceptor as cxf.interceptors.in
+    /subsystem=webservices/endpoint-config=Standard-Endpoint-Config/property=cxf.interceptors.in:add(\
+    	value="org.emau.icmvc.ttp.auth.KeycloakTTPAuthSoapInterceptor,org.emau.icmvc.ttp.auth.AuthContextRemovalSoapInterceptor")
+else
+	echo \>\>\> property for cxf.interceptors.in already exists
+end-if
+
+# Global-Modules
+#################
+echo \>\>\> add global-modules for SOAP-KeyCloak
+/subsystem=ee/:list-add(name=global-modules,value={name=org.apache.cxf.impl,slot=main})
+/subsystem=ee/:list-add(name=global-modules,value={name=org.wildfly.security.elytron-http-oidc,slot=main})
+/subsystem=ee/:list-add(name=global-modules,value={name=io.undertow.servlet,slot=main})
+/subsystem=ee/:list-add(name=global-modules,value={name=io.undertow.core,slot=main})
+
+# add shared System-Properties for SOAP/FHIR-KeyCloak
+######################################################
+set temp=null
+if (outcome == "success") of :resolve-expression(expression=${env.KEYCLOAK_SERVER_URL})
+	echo \>\>\> KEYCLOAK_SERVER_URL is obsolete and will not be supported in the future
+	set temp=${env.KEYCLOAK_SERVER_URL}
+end-if
+if (outcome == "success") of :resolve-expression(expression=${env.TTP_KEYCLOAK_SERVER_URL})
+	set temp=${env.TTP_KEYCLOAK_SERVER_URL}
+end-if
+if (result != "null") of :resolve-expression(expression=$temp)
+    echo \>\>\> set system-property for TTP_KEYCLOAK_SERVER_URL
+    /system-property=ttp.auth.keycloak.baseUrl:add(value=$temp)
+end-if
+
+set temp=null
+if (outcome == "success") of :resolve-expression(expression=${env.KEYCLOAK_REALM})
+	echo \>\>\> KEYCLOAK_REALM is obsolete and will not be supported in the future
+	set temp=${env.KEYCLOAK_REALM}
+end-if
+if (outcome == "success") of :resolve-expression(expression=${env.TTP_KEYCLOAK_REALM})
+	set temp=${env.TTP_KEYCLOAK_REALM}
+end-if
+if (result != "null") of :resolve-expression(expression=$temp)
+    echo \>\>\> set system-property for TTP_KEYCLOAK_REALM
+    /system-property=ttp.auth.keycloak.realm:add(value=$temp)
+end-if
+
+set temp=null
+if (outcome == "success") of :resolve-expression(expression=${env.KEYCLOAK_RESOURCE})
+	echo \>\>\> KEYCLOAK_RESOURCE is obsolete and will not be supported in the future
+	set temp=${env.KEYCLOAK_RESOURCE}
+end-if
+if (outcome == "success") of :resolve-expression(expression=${env.KEYCLOAK_CLIENT_ID})
+	echo \>\>\> KEYCLOAK_CLIENT_ID is obsolete and will not be supported in the future
+	set temp=${env.KEYCLOAK_CLIENT_ID}
+end-if
+if (outcome == "success") of :resolve-expression(expression=${env.TTP_KEYCLOAK_CLIENT_ID})
+	set temp=${env.TTP_KEYCLOAK_CLIENT_ID}
+end-if
+if (result != "null") of :resolve-expression(expression=$temp)
+    echo \>\>\> set system-property for TTP_KEYCLOAK_CLIENT_ID
+    /system-property=ttp.auth.keycloak.clientId:add(value=$temp)
+end-if
+
+set temp=null
+if (outcome == "success") of :resolve-expression(expression=${env.KEYCLOAK_CLIENT_SECRET})
+	echo \>\>\> KEYCLOAK_CLIENT_SECRET is obsolete and will not be supported in the future
+	set temp=${env.KEYCLOAK_CLIENT_SECRET}
+end-if
+if (outcome == "success") of :resolve-expression(expression=${env.TTP_KEYCLOAK_CLIENT_SECRET})
+	set temp=${env.TTP_KEYCLOAK_CLIENT_SECRET}
+end-if
+if (result != "null") of :resolve-expression(expression=$temp)
+    echo \>\>\> set system-property for TTP_KEYCLOAK_CLIENT_SECRET
+    /system-property=ttp.auth.keycloak.secret:add(value=$temp)
+end-if
+
+set temp=null
+if (outcome == "success") of :resolve-expression(expression=${env.KEYCLOAK_SSL_REQUIRED})
+	echo \>\>\> KEYCLOAK_SSL_REQUIRED is obsolete and will not be supported in the future
+	set temp=${env.KEYCLOAK_SSL_REQUIRED}
+end-if
+if (outcome == "success") of :resolve-expression(expression=${env.TTP_KEYCLOAK_SSL_REQUIRED})
+	set temp=${env.TTP_KEYCLOAK_SSL_REQUIRED}
+end-if
+if (result != "null") of :resolve-expression(expression=$temp)
+    echo \>\>\> set system-property for TTP_KEYCLOAK_SSL_REQUIRED
+    /system-property=ttp.auth.keycloak.sslRequired:add(value=$temp)
+end-if
+
+set temp=null
+if (outcome == "success") of :resolve-expression(expression=${env.KEYCLOAK_CONFIDENTIAL_PORT})
+	echo \>\>\> KEYCLOAK_CONFIDENTIAL_PORT is obsolete and will not be supported in the future
+	set temp=${env.KEYCLOAK_CONFIDENTIAL_PORT}
+end-if
+if (outcome == "success") of :resolve-expression(expression=${env.TTP_KEYCLOAK_CONFIDENTIAL_PORT})
+	set temp=${env.TTP_KEYCLOAK_CONFIDENTIAL_PORT}
+end-if
+if (result != "null") of :resolve-expression(expression=$temp)
+    echo \>\>\> set system-property for TTP_KEYCLOAK_CONFIDENTIAL_PORT
+    /system-property=ttp.auth.keycloak.confidentialPort:add(value=$temp)
+end-if
+
+set temp=null
+if (outcome == "success") of :resolve-expression(expression=${env.KEYCLOAK_USE_RESOURCE_ROLE_MAPPINGS})
+	echo \>\>\> KEYCLOAK_USE_RESOURCE_ROLE_MAPPINGS is obsolete and will not be supported in the future
+	set temp=${env.KEYCLOAK_USE_RESOURCE_ROLE_MAPPINGS}
+end-if
+if (outcome == "success") of :resolve-expression(expression=${env.TTP_KEYCLOAK_USE_RESOURCE_ROLE_MAPPINGS})
+	set temp=${env.TTP_KEYCLOAK_USE_RESOURCE_ROLE_MAPPINGS}
+end-if
+if (result != "null") of :resolve-expression(expression=$temp)
+    echo \>\>\> set system-property for TTP_KEYCLOAK_USE_RESOURCE_ROLE_MAPPINGS
+    /system-property=ttp.auth.keycloak.useResourceRoleMappings:add(value=$temp)
+end-if
+
+# add specific System-Properties for SOAP-KeyCloak
+######################################################
+if (outcome == "success") of :resolve-expression(expression=${env.TTP_SOAP_KEYCLOAK_SERVER_URL})
+    set temp=${env.TTP_SOAP_KEYCLOAK_SERVER_URL}
+    echo \>\>\> set system-property for TTP_SOAP_KEYCLOAK_SERVER_URL
+    /system-property=ttp.auth.soap.keycloak.baseUrl:add(value=$temp)
+end-if
+if (outcome == "success") of :resolve-expression(expression=${env.TTP_SOAP_KEYCLOAK_REALM})
+    set temp=${env.TTP_SOAP_KEYCLOAK_REALM}
+    echo \>\>\> set system-property for TTP_SOAP_KEYCLOAK_REALM
+    /system-property=ttp.auth.soap.keycloak.realm:add(value=$temp)
+end-if
+if (outcome == "success") of :resolve-expression(expression=${env.TTP_SOAP_KEYCLOAK_RESOURCE})
+    set temp=${env.TTP_SOAP_KEYCLOAK_RESOURCE}
+    echo \>\>\> set system-property for TTP_SOAP_KEYCLOAK_RESOURCE
+    /system-property=ttp.auth.soap.keycloak.clientId:add(value=$temp)
+end-if
+if (outcome == "success") of :resolve-expression(expression=${env.TTP_SOAP_KEYCLOAK_CLIENT_ID})
+    set temp=${env.TTP_SOAP_KEYCLOAK_CLIENT_ID}
+    echo \>\>\> set system-property for TTP_SOAP_KEYCLOAK_CLIENT_ID
+    /system-property=ttp.auth.soap.keycloak.clientId:add(value=$temp)
+end-if
+if (outcome == "success") of :resolve-expression(expression=${env.TTP_SOAP_KEYCLOAK_CLIENT_SECRET})
+    set temp=${env.TTP_SOAP_KEYCLOAK_CLIENT_SECRET}
+    echo \>\>\> set system-property for TTP_SOAP_KEYCLOAK_CLIENT_SECRET
+    /system-property=ttp.auth.soap.keycloak.secret:add(value=$temp)
+end-if
+if (outcome == "success") of :resolve-expression(expression=${env.TTP_SOAP_KEYCLOAK_SSL_REQUIRED})
+    set temp=${env.TTP_SOAP_KEYCLOAK_SSL_REQUIRED}
+    echo \>\>\> set system-property for TTP_SOAP_KEYCLOAK_SSL_REQUIRED
+    /system-property=ttp.auth.soap.keycloak.sslRequired:add(value=$temp)
+end-if
+if (outcome == "success") of :resolve-expression(expression=${env.TTP_SOAP_KEYCLOAK_CONFIDENTIAL_PORT})
+    set temp=${env.TTP_SOAP_KEYCLOAK_CONFIDENTIAL_PORT}
+    echo \>\>\> set system-property for TTP_SOAP_KEYCLOAK_CONFIDENTIAL_PORT
+    /system-property=ttp.auth.soap.keycloak.confidentialPort:add(value=$temp)
+end-if
+if (outcome == "success") of :resolve-expression(expression=${env.TTP_SOAP_KEYCLOAK_USE_RESOURCE_ROLE_MAPPINGS})
+    set temp=${env.TTP_SOAP_KEYCLOAK_USE_RESOURCE_ROLE_MAPPINGS}
+    echo \>\>\> set system-property for TTP_SOAP_KEYCLOAK_USE_RESOURCE_ROLE_MAPPINGS
+    /system-property=ttp.auth.soap.keycloak.useResourceRoleMappings:add(value=$temp)
+end-if
+

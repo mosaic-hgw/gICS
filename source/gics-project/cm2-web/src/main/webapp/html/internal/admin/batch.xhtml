@@ -2,7 +2,7 @@
   ###license-information-start###
   gICS - a Generic Informed Consent Service
   __
-  Copyright (C) 2014 - 2022 Trusted Third Party of the University Medicine Greifswald -
+  Copyright (C) 2014 - 2023 Trusted Third Party of the University Medicine Greifswald -
   							kontakt-ths@uni-greifswald.de
   
   							concept and implementation
@@ -15,8 +15,8 @@
   							r. schuldt
   
   							The gICS was developed by the University Medicine Greifswald and published
-   							in 2014 as part of the research project "MOSAIC" (funded by the DFG HO 1937/2-1).
-   
+  							in 2014 as part of the research project "MOSAIC" (funded by the DFG HO 1937/2-1).
+  
   							Selected functionalities of gICS were developed as
   							part of the following research projects:
   							- MAGIC (funded by the DFG HO 1937/5-1)
@@ -24,6 +24,7 @@
   							- NUM-CODEX (funded by the German Federal Ministry of Education and Research 01KX2021)
   
   							please cite our publications
+  							https://doi.org/10.1186/s12911-022-02081-4
   							https://doi.org/10.1186/s12967-020-02457-y
   							http://dx.doi.org/10.3414/ME14-01-0133
   							http://dx.doi.org/10.1186/s12967-015-0545-6
@@ -58,7 +59,7 @@
 	</ui:define>
 
 	<ui:define name="help">
-		<h:outputText value="#{msg['page.batch.help']}" escape="false" />
+		<h:outputText value="#{msg['page.batch.help']}" />
 	</ui:define>
 
 	<ui:define name="content">
@@ -94,7 +95,7 @@
 						</p:fileUpload>
 					</ui:fragment>
 					<ui:fragment rendered="#{batchController.importFile != null}">
-						<h:outputFormat value="#{msg['page.batch.import.file.details']}" escape="false" style="padding: 3px 0 7px; display: block;">
+						<h:outputFormat value="#{msg['page.batch.import.file.details']}" style="padding: 3px 0 7px; display: block;">
 							<f:param value="#{batchController.getUTF8String(batchController.importFile.fileName)}" />
 						</h:outputFormat>
 
@@ -134,8 +135,13 @@
 								  width="100%">
 							<h:outputText value="#{_object.name}" />
 						</p:column>
-						<p:column headerText="#{msg['page.batch.import.objects.version']}" sortBy="#{_object.version}" filterBy="#{_object.version}" filterable="false">
+						<p:column headerText="#{msg['page.batch.import.objects.version']}" field="_object.version"
+								  sortBy="#{batchController.convertVersion(_object.version, _object.versionConverter)}" filterBy="#{_object.version}" filterable="false">
 							<h:outputText value="#{_object.version}" />
+						</p:column>
+						<p:column headerText="version sort index" rendered="false">
+							<!-- for debugging and testing, kann danach weg -->
+							<h:outputText value="#{batchController.convertVersion(_object.version, _object.versionConverter)}" />
 						</p:column>
 						<p:column
 								headerText="#{batchController.currentStep == 3 ? msg['page.batch.import.objects.status.preview'] : msg['page.batch.import.objects.status']}"

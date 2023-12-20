@@ -1,0 +1,43 @@
+version: '3.7'
+services:
+  mysql:
+    image: ${docker.mysql.image}
+    container_name: ${project.shortName}-mysql
+    ports:
+      - "3306:3306"
+    env_file:
+      - ./envs/mysql.env
+    volumes:
+      - ./sqls:/docker-entrypoint-initdb.d
+#      - ./data/mysql:/var/lib/mysql
+    command: --max_allowed_packet=20M --default-time-zone=Europe/Berlin
+  wildfly:
+    image: ${docker.baseImage}
+    container_name: ${project.shortName}-wildfly
+    ports:
+#      - "8787:8787"
+      - "8080:8080"
+      - "9990:9990"
+    env_file:
+      - ./envs/ttp_commons.env
+      - ./envs/ttp_${project.shortName}.env
+    depends_on:
+      - mysql
+    volumes:
+      - ./jboss:${docker.wildfly.jboss}
+      - ./deployments:${docker.wildfly.deployments}
+      - ./logs:${docker.wildfly.logs}
+    entrypoint: /bin/bash
+    command: -c "./wait-for-it.sh mysql:3306 -t 120 && ./run.sh"
+  jmeter:
+    image: mosaicgreifswald/jmeter:5.4.3-20220103
+    container_name: ${project.shortName}-jmeter
+    depends_on:
+      - wildfly
+    env_file:
+      - envs/ttp_loadtest.env
+    volumes:
+      - ./jmeter:/entrypoint-jmeter-testfiles
+      - ./logs/:/entrypoint-jmeter-logs
+    entrypoint: /bin/bash
+    command: -c "./wait-for-it.sh wildfly:9990 -t 400 && sleep 10 && ./run.sh"

@@ -4,7 +4,7 @@ package org.emau.icmvc.ganimed.ttp.cm2.frontend.converter;
  * ###license-information-start###
  * gICS - a Generic Informed Consent Service
  * __
- * Copyright (C) 2014 - 2022 Trusted Third Party of the University Medicine Greifswald -
+ * Copyright (C) 2014 - 2023 Trusted Third Party of the University Medicine Greifswald -
  * 							kontakt-ths@uni-greifswald.de
  * 
  * 							concept and implementation
@@ -17,8 +17,8 @@ package org.emau.icmvc.ganimed.ttp.cm2.frontend.converter;
  * 							r. schuldt
  * 
  * 							The gICS was developed by the University Medicine Greifswald and published
- *  							in 2014 as part of the research project "MOSAIC" (funded by the DFG HO 1937/2-1).
- *  
+ * 							in 2014 as part of the research project "MOSAIC" (funded by the DFG HO 1937/2-1).
+ * 
  * 							Selected functionalities of gICS were developed as
  * 							part of the following research projects:
  * 							- MAGIC (funded by the DFG HO 1937/5-1)
@@ -26,6 +26,7 @@ package org.emau.icmvc.ganimed.ttp.cm2.frontend.converter;
  * 							- NUM-CODEX (funded by the German Federal Ministry of Education and Research 01KX2021)
  * 
  * 							please cite our publications
+ * 							https://doi.org/10.1186/s12911-022-02081-4
  * 							https://doi.org/10.1186/s12967-020-02457-y
  * 							http://dx.doi.org/10.3414/ME14-01-0133
  * 							http://dx.doi.org/10.1186/s12967-015-0545-6
@@ -49,7 +50,6 @@ package org.emau.icmvc.ganimed.ttp.cm2.frontend.converter;
 
 import java.util.List;
 
-import javax.ejb.EJB;
 import javax.faces.application.FacesMessage;
 import javax.faces.bean.ManagedBean;
 import javax.faces.bean.RequestScoped;
@@ -58,17 +58,14 @@ import javax.faces.context.FacesContext;
 import javax.faces.convert.Converter;
 import javax.faces.convert.ConverterException;
 
-import org.emau.icmvc.ganimed.ttp.cm2.GICSService;
 import org.emau.icmvc.ganimed.ttp.cm2.dto.DomainDTO;
+import org.emau.icmvc.ganimed.ttp.cm2.frontend.controller.common.AbstractGICSServiceBean;
 
 // Cannot use @FacesConverter with @EJB until JSF 2.3
 @ManagedBean
 @RequestScoped
-public class DomainDTOConverter implements Converter
+public class DomainDTOConverter extends AbstractGICSServiceBean implements Converter
 {
-	@EJB(lookup = "java:global/gics/cm2-ejb/GICSServiceImpl!org.emau.icmvc.ganimed.ttp.cm2.GICSService")
-	protected GICSService cmManager;
-
 	@Override
 	public String getAsString(FacesContext context, UIComponent component, Object modelValue)
 	{
@@ -97,7 +94,7 @@ public class DomainDTOConverter implements Converter
 
 		try
 		{
-			List<DomainDTO> domains = cmManager.listDomains();
+			List<DomainDTO> domains = service.listDomains();
 
 			for (DomainDTO domain : domains)
 			{

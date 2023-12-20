@@ -2,7 +2,7 @@
   ###license-information-start###
   gICS - a Generic Informed Consent Service
   __
-  Copyright (C) 2014 - 2022 Trusted Third Party of the University Medicine Greifswald -
+  Copyright (C) 2014 - 2023 Trusted Third Party of the University Medicine Greifswald -
   							kontakt-ths@uni-greifswald.de
   
   							concept and implementation
@@ -15,8 +15,8 @@
   							r. schuldt
   
   							The gICS was developed by the University Medicine Greifswald and published
-   							in 2014 as part of the research project "MOSAIC" (funded by the DFG HO 1937/2-1).
-   
+  							in 2014 as part of the research project "MOSAIC" (funded by the DFG HO 1937/2-1).
+  
   							Selected functionalities of gICS were developed as
   							part of the following research projects:
   							- MAGIC (funded by the DFG HO 1937/5-1)
@@ -24,6 +24,7 @@
   							- NUM-CODEX (funded by the German Federal Ministry of Education and Research 01KX2021)
   
   							please cite our publications
+  							https://doi.org/10.1186/s12911-022-02081-4
   							https://doi.org/10.1186/s12967-020-02457-y
   							http://dx.doi.org/10.3414/ME14-01-0133
   							http://dx.doi.org/10.1186/s12967-015-0545-6
@@ -87,7 +88,8 @@
 				<h4>
 					<h:outputText value="#{msg['page.policyStatus.step.upload']}" />
 				</h4>
-				<file:upload webFile="#{policyStatusController.webFile}" rendered="#{empty policyStatusController.webFile.uploadFile}" />
+				<file:upload webFile="#{policyStatusController.webFile}" rendered="#{empty policyStatusController.webFile.uploadFile}"
+							 containsHeaderText="#{msg['page.policyStatus.step.upload.containsHeader']}" />
 				<file:details webFile="#{policyStatusController.webFile}" onNewUpload="#{policyStatusController.onNewUpload}"
 							  rendered="#{not empty policyStatusController.webFile.uploadFile}" />
 			</p:panel>
@@ -140,8 +142,11 @@
 							   value="#{policyStatusController.webFile.columns}" var="_column" columnIndexVar="_columnIndex"
 							   styleClass="hl hl-#{policyStatusController.webFile.selectedColumnCSS} relative">
 						<f:facet name="header">
-							#{_column}
+							<h:outputFormat value="#{_column}" />
+							<h:outputFormat value=" [#{policyStatusController.getPolicyLabelAndVersion(policyStatusController.webFile.columnPolicyMapping.get(_column))}]"
+											rendered="#{policyStatusController.webFile.columnPolicyMapping.containsKey(_column)}" />
 							<p:commandButton actionListener="#{policyStatusController.webFile.setSelectedColumn(_columnIndex)}"
+											 disabled="#{policyStatusController.webFile.processed or policyStatusController.webFile.columnPolicyMapping.containsKey(_column)}"
 											 update="main:elements, main:options" process="@this" value=" " styleClass="secondary thButton"
 											 rendered="#{policyStatusController.webFile.selectedColumn ne _columnIndex}" />
 						</f:facet>
@@ -155,18 +160,24 @@
 				<h4>
 					<h:outputText value="#{msg['page.policyStatus.step.processData']}" />
 				</h4>
-				<h:outputText value="#{msg['page.policyStatus.step.processData.info']}" escape="false" />
+				<h:outputText value="#{msg['page.policyStatus.step.processData.first.info']}" escape="false" rendered="#{policyStatusController.detectedPoliciesSize == 0}" />
+				<h:outputFormat value="#{msg['page.policyStatus.step.processData.found.info']}" escape="false" rendered="#{policyStatusController.detectedPoliciesSize != 0}">
+					<f:param value="#{policyStatusController.detectedPoliciesSize}" />
+				</h:outputFormat>
+				<br />
+				<h:outputText value="#{msg['page.policyStatus.step.processData.later.info']}" />
 				<br />
 				<br />
 
 				<p:panelGrid columns="2" columnClasses="ui-grid-col-3,ui-grid-col-9" layout="grid">
 
 					<!-- Policy -->
-					<p:outputLabel value="#{msg['page.policyStatus.policy']}" />
+					<p:outputLabel value="#{msg['page.policyStatus.policy']}" rendered="#{policyStatusController.detectedPoliciesSize == 0}" />
 					<p:selectOneMenu required="true" value="#{policyStatusController.policy}" converter="genericConverter" filter="true" filterMatchMode="contains"
-									 styleClass="max">
-						<f:selectItems value="#{policyStatusController.policies}" var="_policy" itemLabel="#{_policy.label} V #{_policy.key.version}"
+									 styleClass="max" rendered="#{policyStatusController.detectedPoliciesSize == 0}">
+						<f:selectItems value="#{policyStatusController.availablePolicies}" var="_policy" itemLabel="#{policyStatusController.getPolicyLabelAndVersion(_policy)}"
 									   itemValue="#{_policy}" />
+						<p:ajax partialSubmit="true" process="@this" />
 					</p:selectOneMenu>
 
 					<!-- Detailed -->
@@ -178,28 +189,39 @@
 
 					<!-- Request Date -->
 					<p:column>
-						<p:outputLabel value="#{msg['page.policyStatus.requestDate']}" style="height: 70px; display: inline-block;" />
+						<p:outputLabel id="requestDateLabel" value="#{msg['page.policyStatus.requestDate']}"
+									   style="height: #{policyStatusController.requestDateType.name() == 'DATE' ? '112' : '70'}px; display: inline-block;" />
 						<components:tooltip id="requestDate" value="#{msg['page.policyStatus.requestDate.hint']}" />
 					</p:column>
 					<p:outputPanel>
 						<p:selectOneRadio id="requestDateType" value="#{policyStatusController.requestDateType}" layout="custom">
 							<f:selectItems value="#{policyStatusController.availableRequestDateTypes}" />
-							<p:ajax event="valueChange" update="@parent" process="@this" partialSubmit="true" />
+							<p:ajax update="@parent, requestDateLabel" process="@this" partialSubmit="true" />
 						</p:selectOneRadio>
 
-						<p:panelGrid columns="3" styleClass="no-border">
+						<p:panelGrid columns="2" styleClass="no-border">
 							<p:radioButton id="opt0" for="requestDateType" itemIndex="0" />
 							<h:outputLabel for="opt0" value="#{msg['page.policyStatus.requestDate.'.concat(policyStatusController.availableRequestDateTypes[0].name())]}" />
-							<p:column />
 
 							<p:radioButton id="opt1" for="requestDateType" itemIndex="1" />
-							<h:outputLabel for="opt1" value="#{msg['page.policyStatus.requestDate.'.concat(policyStatusController.availableRequestDateTypes[1].name())]}" />
-							<p:datePicker id="requestDateDate"
-										  disabled="#{policyStatusController.requestDateType.name() != 'DATE'}"
-										  mask="#{cmsg['ui.date.mask.date']}"
-										  pattern="#{cmsg['ui.date.pattern.date']}"
-										  required="#{policyStatusController.requestDateType.name() == 'DATE'}"
-										  value="#{policyStatusController.requestDate}" />
+							<h:panelGroup layout="block">
+								<h:outputLabel for="opt1" value="#{msg['page.policyStatus.requestDate.'.concat(policyStatusController.availableRequestDateTypes[1].name())]}" />
+								<p:datePicker id="requestDateDate"
+											  disabled="#{policyStatusController.requestDateType.name() != 'DATE'}"
+											  mask="#{cmsg['ui.date.mask.date']}"
+											  pattern="#{cmsg['ui.date.pattern.date']}"
+											  required="#{policyStatusController.requestDateType.name() == 'DATE'}"
+											  style="display: inline-block; margin-left: 10px;"
+											  value="#{policyStatusController.requestDate}" />
+							</h:panelGroup>
+
+							<p:selectBooleanCheckbox id="useHistoricalData" rendered="#{policyStatusController.requestDateType.name() == 'DATE'}" style="margin-right: -7px;"
+													 value="#{policyStatusController.useHistoricalData}" />
+							<h:panelGroup layout="block" rendered="#{policyStatusController.requestDateType.name() == 'DATE'}">
+								<h:outputLabel for="useHistoricalData"
+											   value="#{msg['page.policyStatus.requestDate.useHistoricalData']}" />
+								<components:tooltip value="#{msg['page.policyStatus.requestDate.useHistoricalData.hint']}" />
+							</h:panelGroup>
 						</p:panelGrid>
 					</p:outputPanel>
 
@@ -207,13 +229,21 @@
 					<p:outputLabel value="#{msg['page.policyStatus.signerId']}" rendered="#{policyStatusController.mode == 'UPLOAD'}" />
 					<p:selectOneMenu value="#{policyStatusController.signerIdType}" rendered="#{policyStatusController.mode == 'UPLOAD'}">
 						<f:selectItems value="#{policyStatusController.selectedDomain.signerIdTypes}" var="_id" itemLabel="#{_id}" itemValue="#{_id}" />
-						<p:ajax event="itemSelect" process="@this" />
+						<p:ajax process="@this" partialSubmit="true" />
 					</p:selectOneMenu>
 
 					<!-- Process -->
 					<p:commandButton value="#{policyStatusController.webFile.processed ? cmsg['ui.button.reprocess'] : cmsg['ui.button.process']}"
 									 icon="mdi mdi-database-export" styleClass="#{policyStatusController.webFile.processed ? 'secondary' : ''}"
-									 actionListener="#{policyStatusController.onDoAction}" update="main" onclick="PF('progressDialog').show();PF('progressBar').start();"
+									 actionListener="#{policyStatusController.onRequestPolicy}"
+									 rendered="#{policyStatusController.detectedPoliciesSize == 0}"
+									 update="main" onclick="PF('progressDialog').show();PF('progressBar').start();"
+									 oncomplete="PF('progressDialog').hide();PF('progressBar').cancel();" />
+					<p:commandButton value="#{cmsg['ui.button.process.all']}"
+									 icon="mdi mdi-database-export" styleClass="#{policyStatusController.webFile.processed ? 'secondary' : ''}"
+									 actionListener="#{policyStatusController.onProcessUploadedPolicies}"
+									 rendered="#{policyStatusController.detectedPoliciesSize != 0}"
+									 update="main" onclick="PF('progressDialog').show();PF('progressBar').start();"
 									 oncomplete="PF('progressDialog').hide();PF('progressBar').cancel();" />
 
 				</p:panelGrid>
@@ -231,7 +261,7 @@
 		</h:form>
 
 		<!-- Watch progress -->
-		<file:progress webFile="#{policyStatusController.webFile}" progress="#{policyStatusController.progress}"
+		<file:progress size="#{policyStatusController.webFile.elements.size()}" progress="#{policyStatusController.progress}"
 					   message="#{msg['page.policyStatus.progress.processing']}" />
 	</ui:define>
 </ui:composition>
