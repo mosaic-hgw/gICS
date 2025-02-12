@@ -1,0 +1,150 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+		"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<!--
+  ###license-information-start###
+  gICS - a Generic Informed Consent Service
+  __
+  Copyright (C) 2014 - 2024 Trusted Third Party of the University Medicine Greifswald -
+  							kontakt-ths@uni-greifswald.de
+  
+  							concept and implementation
+  							l.geidel, c.hampf
+  							web client
+  							a.blumentritt, m.bialke, f.m.moser
+  							fhir-api
+  							m.bialke
+  							docker
+  							r. schuldt
+  
+  							The gICS was developed by the University Medicine Greifswald and published
+  							in 2014 as part of the research project "MOSAIC" (funded by the DFG HO 1937/2-1).
+  
+  							Selected functionalities of gICS were developed as
+  							part of the following research projects:
+  							- MAGIC (funded by the DFG HO 1937/5-1)
+  							- MIRACUM (funded by the German Federal Ministry of Education and Research 01ZZ1801M)
+  							- NUM-CODEX (funded by the German Federal Ministry of Education and Research 01KX2021)
+  
+  							please cite our publications
+  							https://doi.org/10.1186/s12911-022-02081-4
+  							https://doi.org/10.1186/s12967-020-02457-y
+  							http://dx.doi.org/10.3414/ME14-01-0133
+  							http://dx.doi.org/10.1186/s12967-015-0545-6
+  							http://dx.doi.org/10.3205/17gmds146
+  __
+  This program is free software: you can redistribute it and/or modify
+  it under the terms of the GNU Affero General Public License as published by
+  the Free Software Foundation, either version 3 of the License, or
+  (at your option) any later version.
+  
+  This program is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  GNU General Public License for more details.
+  
+  You should have received a copy of the GNU Affero General Public License
+  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+  ###license-information-end###
+  -->
+
+
+<!-- author: Arne Blumentritt -->
+
+<html xmlns="http://www.w3.org/1999/xhtml"
+	  xmlns:h="http://java.sun.com/jsf/html"
+	  xmlns:f="http://java.sun.com/jsf/core"
+	  xmlns:p="http://primefaces.org/ui"
+	  xmlns:composite="http://java.sun.com/jsf/composite">
+
+<!-- INTERFACE -->
+<composite:interface>
+	<composite:attribute name="update" type="java.lang.String" required="true" />
+	<composite:attribute name="problem" type="org.emau.icmvc.ganimed.ttp.cm2.dto.QCProblemDTO" required="true" />
+</composite:interface>
+
+<!-- IMPLEMENTATION -->
+<composite:implementation>
+	<p:panel styleClass="mb-2">
+		<h:outputText value="#{cc.attrs.problem.ref}" style="display: none" />
+		<p:focus for="qcProblemScanValue" />
+		<h3>
+			<h:outputText value="#{msg['model.qc.problem.type']}" />
+		</h3>
+
+		<p:panelGrid columnClasses="ui-grid-col-6,ui-grid-col-6" columns="2" layout="grid">
+
+			<h:outputText value="#{msg['model.qc.problem.type.label']}" />
+			<h:outputText value="#{qcController.getProblemType(cc.attrs.problem.type).getLabelOrId(commonLanguageBean.language)}" />
+
+			<p:outputLabel for="qcProblemStatus" value="#{msg['model.qc.problem.status']}" />
+			<p:selectOneMenu id="qcProblemStatus" converter="genericConverter"
+							 rendered="#{qcController.qcProblemMode != 'READ' and !qcController.isHistoryOrDeleted(cc.attrs.problem)}"
+							 required="true" styleClass="w-full"
+							 value="#{cc.attrs.problem.status}">
+				<f:selectItems value="#{qcController.problemStatusSelectList}" />
+			</p:selectOneMenu>
+			<h:outputText rendered="#{qcController.qcProblemMode == 'READ' or qcController.isHistoryOrDeleted(cc.attrs.problem)}"
+						  value="#{msg['model.qc.problem.status.'.concat(cc.attrs.problem.status.name())]}"
+						  styleClass="tag tag_#{msg['model.qc.problem.status.type.'.concat(cc.attrs.problem.status.type.name()).concat('.color')]}" />
+
+			<p:outputLabel for="qcProblemCommentIntern" value="#{msg['model.qc.problem.commentIntern']}" />
+			<p:inputTextarea id="qcProblemCommentIntern"
+							 disabled="#{qcController.qcProblemMode == 'READ' or qcController.isHistoryOrDeleted(cc.attrs.problem)}"
+							 value="#{cc.attrs.problem.commentIntern}"
+							 maxlength="255" counter="qcProblemCommentIntern_counter"
+							 counterTemplate="#{cmsg['ui.text.charsRemaining']}" styleClass="w-full" />
+			<p:column />
+			<h:outputText id="qcProblemCommentIntern_counter" styleClass="textCounter w-full" />
+		</p:panelGrid>
+
+		<h3>
+			<h:outputText value="#{msg['model.qc.problem.type.action']}" />
+		</h3>
+		<p:panelGrid columnClasses="ui-grid-col-6,ui-grid-col-6" columns="2" layout="grid" styleClass="mt-3 mb-0">
+			<h:outputText value="#{msg['model.qc.problem.type.action.label']}" />
+			<h:outputText value="#{qcController.getProblemType(cc.attrs.problem.type).action.getLabelOrId(commonLanguageBean.language)}" />
+
+			<p:outputLabel for="qcProblemScanValue" value="#{msg['model.qc.problem.scanValue']}" />
+			<p:inputText id="qcProblemScanValue"
+						 disabled="#{qcController.qcProblemMode == 'READ' or qcController.isHistoryOrDeleted(cc.attrs.problem)}"
+						 value="#{cc.attrs.problem.scanValue}" styleClass="w-full" />
+
+			<p:outputLabel for="qcProblemFormValue" value="#{msg['model.qc.problem.formValue']}" />
+			<p:inputText id="qcProblemFormValue"
+						 disabled="#{qcController.qcProblemMode == 'READ' or qcController.isHistoryOrDeleted(cc.attrs.problem)}"
+						 value="#{cc.attrs.problem.formValue}" styleClass="w-full" />
+
+			<p:outputLabel for="qcProblemCommentExtern" value="#{msg['model.qc.problem.commentExtern']}" />
+			<p:inputTextarea id="qcProblemCommentExtern"
+							 disabled="#{qcController.qcProblemMode == 'READ' or qcController.isHistoryOrDeleted(cc.attrs.problem)}"
+							 value="#{cc.attrs.problem.commentExtern}" maxlength="255" counter="qcProblemCommentExtern_counter"
+							 counterTemplate="#{cmsg['ui.text.charsRemaining']}" styleClass="w-full" />
+			<p:column />
+			<h:outputText id="qcProblemCommentExtern_counter" styleClass="textCounter w-full" />
+		</p:panelGrid>
+	</p:panel>
+
+
+	<p:commandButton actionListener="#{qcController.onSaveProblem}" icon="mdi mdi-check"
+					 oncomplete="if (args &amp;&amp; !args.validationFailed) {PF('qc_problem_dialog').hide()}"
+					 update="@form, #{cc.attrs.update}"
+					 rendered="#{qcController.qcProblemMode != 'READ'}"
+					 styleClass="orange"
+					 value="#{cmsg['ui.button.save']}" />
+	<p:commandButton icon="mdi mdi-close" immediate="true" onclick="PF('qc_problem_dialog').hide();" styleClass="secondary orange"
+					 value="#{cmsg[qcController.qcProblemMode == 'READ' ? 'ui.button.close' : 'ui.button.cancel']}" />
+	<p:commandButton actionListener="#{qcController.onDeleteProblem(cc.attrs.problem)}" icon="mdi mdi-delete-empty"
+					 oncomplete="PF('qc_problem_dialog').hide()"
+					 process="@this" partialSubmit="true"
+					 rendered="#{qcController.qcProblemMode == 'EDIT' and !qcController.isHistoryOrDeleted(cc.attrs.problem)}"
+					 update="#{cc.attrs.update}"
+					 style="float: right" styleClass="secondary red"
+					 value="#{cmsg['ui.button.delete']}" />
+	<p:commandButton actionListener="#{qcController.onResurrectProblem(cc.attrs.problem)}" icon="mdi mdi-delete-restore"
+					 process="@this" partialSubmit="true"
+					 rendered="#{qcController.qcProblemMode == 'EDIT' and !qcController.isHistory(cc.attrs.problem) and cc.attrs.problem.status.type == 'DELETED'}"
+					 update="@form, #{cc.attrs.update}"
+					 style="float: right" styleClass="secondary green"
+					 value="#{cmsg['ui.button.resurrect']}" />
+</composite:implementation>
+</html>

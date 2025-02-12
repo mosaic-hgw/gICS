@@ -1,0 +1,1 @@
+ALTER TABLE consent_template ADD VALID_FROM_PROPERTIES varchar(255) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci NULL AFTER FHIR_ID;

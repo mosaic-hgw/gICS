@@ -1,6 +1,4 @@
-![context](https://www.ths-greifswald.de/wp-content/uploads/2019/01/Design-Logo-THS-deutsch-542.png)
-
-Stand: April 2022
+${ttp.gics.readme.header}
 
 # Aktualisierung der THS-Tools per Docker
 
@@ -64,7 +62,7 @@ docker exec -it gics-2.9.1-mysql /usr/bin/mysql -u gics_user -p -e "USE gics; $(
 docker exec -it gics-2.9.1-mysql /usr/bin/mysql -u gics_user -p -e "USE gics; $(cat gics-new/standard/update_database_gics_2.10.x-2.11.0.sql)"
 ```
 
-### Aktualisierung der Deployments und Wildfly-Konfiguration
+### Aktualisieren der Deployments und Wildfly-Konfiguration
 
 Den Datenbank-Container nun herunterfahren
 
@@ -72,32 +70,81 @@ Den Datenbank-Container nun herunterfahren
 docker gics-<old-version>-mysql down
 ```
 
-Die Deployments im `<gics-old>` Verzeichnis auf dem Host-System löschen und die neuen Deployments hinein kopieren
+#### Aktualisieren der Deployments
+
+Die Deployments im `<gics-old>` Verzeichnis auf dem Host-System löschen und die neuen Deployments hinein kopieren:
 
 ```
 rm -f <gics-old>/deployments/* 
 cp -R <gics-new>/deployments/ <gics-old>/deployments/
 ```
 
-Aktualisierung der Bezeichnung des MySQL Containers
+#### Aktualisieren der Bezeichnung des MySQL Containers
 
 ```
 sudo docker rename gics-<old-version>-mysql gics-<new-version>-mysql
 ```
 
-JBOSS Konfiguration aktualisieren
+#### Aktualisieren der JBOSS Konfigurationsskripte
+
+Die alten Dateien können gesichert oder gelöscht und die neuen müssen eingespielt werden:
 
 ```
-cp -R <gics-new>/jboss/ <gics-old>/jboss/
+mv <gics-old>/jboss <gics-old>/jboss-<old-version>
+cp -R <gics-new>/jboss/ <gics-old>/jboss
 ```
 
-Docker-Compose-Konfiguration aktualisieren
+Mit Hilfe dieser Dateien wird JBOSS nach den Vorgaben aus den `*.env`-Dateien konfiguriert.
+
+#### Aktualisieren der Umgebungsvariablen für die JBOSS Konfigurationsskripte
+
+In der aktuellen Version liegen die zugehörigen `*.env`-Dateien im Unterordner `./envs`. In älteren Versionen lagen diese direkt im Wurzelverzeichnis des Dockerpaketes. Falls eine solche Version aktualisiert werden soll, müssen zuvor die `*.env`-Dateien in den Unterordner `./envs` verschoben werden:
 
 ```
-cp -R <gics-new>/docker-compose.yml <gics-old>/docker-compose.yml
+mkdir <gics-old>/envs
+mv <gics-old>/*.env <gics-old>/envs/
 ```
 
-Anpassen des Eigentümer-Benutzers
+Dieser Ordner sollte auch gesichert werden:
+
+```
+cp -R <gics-old>/envs <gics-old>/envs-<old-version>
+```
+
+Nun muss die Liste der neuen und umbenannten `ENV`-Variablen in der `README_gICS.md` im Wurzelverzeichnis des Dockerpaketes studiert werden, um gegebenenfalls die `*.env`-Dateien entsprechend anzupassen. **Achtung**: unter Umständen wurden auch die Namen der `*.env`-Dateien geändert. Dies muss auf auf jeden Fall angepasst werden.
+
+**Alternativ** kann man mit etwas höherem Aufwand die Anpassungen der alten `*.env`-Dateien manuell in die neuen übertragen, um größtmögliche Ähnlichkeit zwischen den angepassten und ausgelieferten `*.env`-Dateien zu bewahren. Dazu müssen die alten angepassten Dateien  gesichert und die neuen eingespielt werden:
+
+```
+mv <gics-old>/envs <gics-old>/envs-<old-version>
+cp -R <gics-new>/envs/ <gics-old>/envs
+```
+
+Anschließend müssen alle manuellen Anpassungen der alten in die neuen `*.env`-Dateien übertragen werden. Dabei ist hohe Aufmerksamkeit erforderlich. Wir empfehlen die Nutzung eines grafischen Diff-Werkzeuges (z.B [devart Code Compare Free](https://www.devart.com/codecompare/featurematrix.html)). Für zukünftige Updates ist es hilfreich, die bestehenden Skeletons, Beispiele und Kommentare nicht zu ändern, sondern die eigenen Zeilen zu ergänzen und durch einen leicht wiederauffindbaren Kommentar zu markieren.
+
+#### Aktualisieren der Docker-Compose-Konfiguration
+
+Die alte angepasste Datei muss gesichert und die neue eingespielt werden:
+
+```
+mv <gics-old>/docker-compose.yml <gics-old>/docker-compose-<old-version>.yml
+cp <gics-new>/docker-compose.yml <gics-old>/docker-compose.yml
+```
+
+Wahrscheinlich müssen auch hier die Anpassungen der alten `docker-compose.yml` (inbesondere für Ports und Volumes) in die neue übertragen werden (am besten wieder mit Hilfe eines grafischen Diff-Werkzeuges).
+
+#### Aktualisieren der Dokumentationsdateien
+
+Schließlich empfiehlt es sich, auch die aktualisierten Dokumentationsdateien zu übertragen:
+
+```
+rm -f <gics-old>/*.md 
+cp <gics-new>/*.md <gics-old>/
+rm -f <gics-old>/docs/* 
+cp -R <gics-new>/docs/ <gics-old>/docs/
+```
+
+#### Anpassen des Eigentümer-Benutzers
 
 ```
 chown 999 <gics-new>/sqls
@@ -124,41 +171,4 @@ Im Fehlerfall, kann die bisherige Datenbank wiederhergestellt werden (sofern die
 docker exec -it gics-<new-version>-mysql /usr/bin/mysql -u gics_user -p -e "USE gics; $(cat backup-gics-2022-03-31.sql)"
 ```
 
-# Additional Information #
-
-The gICS was developed by the University Medicine Greifswald and published in 2014 as part of the [MOSAIC-Project](https://ths-greifswald.de/mosaic "")  (funded by the DFG HO 1937/2-1). Selected
-functionalities of gICS were developed as part of the following research projects:
-
-- MAGIC (funded by the DFG HO 1937/5-1)
-- MIRACUM (funded by the German Federal Ministry of Education and Research 01ZZ1801M)
-- NUM-CODEX (funded by the German Federal Ministry of Education and Research 01KX2021)
-
-## Credits ##
-
-Concept and implementation: L. Geidel
-
-Web-Client: A. Blumentritt, M. Bialke, F.M.Moser
-
-Docker: R. Schuldt
-
-TTP-FHIR Gateway für gICS: M. Bialke, P. Penndorf, L. Geidel, S. Lang
-
-## License ##
-
-License: AGPLv3, https://www.gnu.org/licenses/agpl-3.0.en.html
-
-Copyright: 2014 - 2022 University Medicine Greifswald
-
-Contact: https://www.ths-greifswald.de/kontakt/
-
-## Publications ##
-https://rdcu.be/b5Yck
-
-https://rdcu.be/6LJd
-
-http://dx.doi.org/10.3414/ME14-01-0133
-
-http://dx.doi.org/10.1186/s12967-015-0545-6
-
-# Supported languages #
-German, English
+${ttp.gics.readme.footer}

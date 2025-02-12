@@ -1,0 +1,99 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+		 xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+	<parent>
+		<groupId>org.emau.icmvc.ganimed.ttp</groupId>
+		<artifactId>gics-project</artifactId>
+		<version>2024.3.0</version>
+	</parent>
+	<artifactId>gics-web</artifactId>
+	<packaging>war</packaging>
+
+	<dependencies>
+		<dependency>
+			<groupId>org.emau.icmvc.ganimed.ttp</groupId>
+			<artifactId>gics-commons</artifactId>
+		</dependency>
+
+		<dependency>
+			<groupId>io.nayuki</groupId>
+			<artifactId>qrcodegen</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.primefaces.extensions</groupId>
+			<artifactId>barcode4j-light</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.primefaces</groupId>
+			<artifactId>primefaces</artifactId>
+			<classifier>jakarta</classifier>
+		</dependency>
+		<dependency>
+			<groupId>software.xdev</groupId>
+			<artifactId>chartjs-java-model</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.emau.icmvc.ttp</groupId>
+			<artifactId>ttp-web-common</artifactId>
+			<type>war</type>
+		</dependency>
+		<dependency>
+			<groupId>org.emau.icmvc.ttp</groupId>
+			<artifactId>ttp-web-common</artifactId>
+			<classifier>classes</classifier>
+			<scope>provided</scope>
+		</dependency>
+		<!-- for notification-service and soap/web-auth-->
+		<dependency>
+			<groupId>org.emau.icmvc.ttp</groupId>
+			<artifactId>ths-utils</artifactId>
+			<scope>provided</scope>
+		</dependency>
+		<dependency>
+			<groupId>com.ibm.icu</groupId>
+			<artifactId>icu4j</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.slf4j</groupId>
+			<artifactId>slf4j-api</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>jakarta.platform</groupId>
+			<artifactId>jakarta.jakartaee-api</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.openpnp</groupId>
+			<artifactId>opencv</artifactId>
+			<version>3.2.0-1</version>
+		</dependency>
+		<dependency>
+			<groupId>com.google.zxing</groupId>
+			<artifactId>core</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>com.google.zxing</groupId>
+			<artifactId>javase</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.apache.pdfbox</groupId>
+			<artifactId>pdfbox</artifactId>
+		</dependency>
+
+		<!-- PDF Generation (do not set scope to test!) -->
+		<dependency>
+			<groupId>org.seleniumhq.selenium</groupId>
+			<artifactId>selenium-java</artifactId>
+		</dependency>
+
+		<!-- Test -->
+		<dependency>
+			<groupId>org.emau.icmvc.ttp</groupId>
+			<artifactId>ttp-web-common</artifactId>
+			<type>test-jar</type>
+		</dependency>
+	</dependencies>
+
+	<build>
+		<finalName>${project.shortName}-web-${project.version}</finalName>
+	</build>
+</project>

@@ -1,9 +1,152 @@
-${ttp.gics.readme.header}
+${ttp.readme.header}
+
+# gICS 2024.3.0
+
+## New Features
+*  Prüfung und automatische Benachrichtigung an den THSNotificationService bei Änderung der Gültigkeit einer Policy durch Zeit
+*  Einbettung von gICS Formularen in externe Anwendungen
+*  Individuell berechnetes Ablaufdatum für unterzeichnete Policies
+*  Speicherung der vom Nutzer ausgewählten Tabellenspalten
+*  Auflistung ungültiger Policies in Teilnehmeransicht
+
+## Improvements
+*  Optionale Spalten für das Datum der Unterschriften in der Dokumentenliste
+*  Beschleunigter Aufruf der Dokumentenliste
+*  Beschleunigter Aufruf des Dashboards
+*  Allgemeine Verbesserungen in der Weboberfläche
+*  Filtern nach Policies in Teilnehmeransicht
+
+## Bug Fixes
+*  Fehlende Aktualisierung der Dokumentenliste nach Leerung des Filters
+*  Leerer Ausdruck bei wiederholtem Druck des selben Modulbaums
+
+
+# gICS 2024.2.2
+
+## Improvements
+*  Aktualisierung der Dependency FHIR HAPI auf Version 7.4.5
+
+## Bug Fixes
+*  Bearbeiten und Speichern von Vorlagen kann zu maskiertem HTML Code führen
+
+
+# gICS 2024.2.1
+
+## Improvements
+*  Aktualisierung der Dependency FHIR HAPI auf Version 7.4.3
+
+
+# gICS 2024.2.0
+
+## Improvements
+*  Im- und Export von Gültigkeitsdatum und Gültigkeitszeitraum
+*  Rückgabe der angelegten Einwilligung (Opt-Out) bei Aufruf von addConsentOptOut
+*  Möglichkeit einen validen QC Status, auch bei offenen Auffälligkeiten zu setzen  
+*  Neue Qualitätsproblem-Typen und Felder
+*  Allgemeine Verbesserungen in der Weboberfläche
+
+## Bug Fixes
+*  Filterung nach Vorlagentyp liefert bei gleichem Vorlagennamen Dokumente des falschen Typs
+*  Nachträgliche Änderungen des Gültigkeitsbeginns einer Vorlage werden nicht gespeichert
+*  Falsch zugeordnete Modulauswahl bei via PDF eingelesenen Widerrufen
+*  Policy und Modulauswahl filtern nach dem Schlüssel statt der angezeigten Bezeichnung
+*  Gelegentlicher Fehler bei der Anzeige von PDFs
+*  Interner Fehler bei der Suche nach nachträglich hinzugefügten Teilnehmer-IDs
+
+
+# gICS 2024.1.1
+
+## Bug Fixes
+*  Widerspruch wird nicht berücksichtigt, wenn Einwilligung (Opt-Out) am selben Tag registriert wurde
+*  Bearbeiten einer existierenden Vorlage vertauscht Modulreihenfolge
+
+
+# gICS 2024.1.0
+
+## New Features
+*  Unterstützung für Einwilligung (Opt-Out) und Widerspruch
+*  Hinzufügen von Einwilligungen (Opt-Out) ohne Modulstatus und Unterschriften
+*  Konfiguration in der Weboberfläche anzuzeigender Vorlagentypen
+*  Export von Vorlagen als PDF
+*  Bereitstellung der Vorlagen und Policynutzung als CSV Download
+*  Funktion zur Finalisierung aller Elemente einer Domäne
+
+## Improvements
+*  Optionale Finalisierung der Elemente beim Import
+*  Anpassung zukünftiger ExpirationProperties in der Weboberfläche auch für finalisierte Domänen ermöglichen
+*  Angabe in der Weboberfläche ob ein Dokument durch einen gesetzlicher Vertreter unterzeichnet wurde
+*  Erweiterte Darstellungsoptionen im Modulbaum
+*  Anzeige des Ortes der Unterschrift in Dokumentendetails
+*  Optionale Prüfung auf Vorhandensein des Scans bei der Validierung von Dokumenten
+*  Alphabetische Sortierung von Policy-Listen in der Weboberfläche
+*  Eingabe und Anzeige langer Schlüssel in der Weboberfläche
+*  Allgemeine Verbesserungen in der Weboberfläche
+
+## Bug Fixes
+*  Zeitstempel updatedAt im QCProblem wird nicht aktualisiert
+*  Dokumente lassen sich ohne Scan anlegen, obwohl verpflichtender Scan in Domäne konfiguriert ist
+*  ConsentTemplateKey und ConsentTemplateType werden nicht gegeneinander geprüft
+*  Fehlerhafter Wert für qcPassed in ConsentStatusNotification
+
+## Docker
+*  Geänderte Logging-Variable: TTP_GICS_LOG_TO_FILE zu TTP_GICS_LOG_TO
+
+
+# gICS 2023.2.1
+
+## Bug Fixes
+*  Merge Bugfixes von 2023.1.4
+
+
+# gICS 2023.2.0
+
+## New Features
+*  Export einer Vorlage aus Vorlagenliste heraus
+*  Umfangreiche Qualitätsprüfung in der Weboberfläche
+*  Konfiguration der Qualitätsstatusoptionen in der Weboberfläche
+*  Summe der Signed Policies in Statistik
+
+## API-Changes
+*  Verschiebung der ConsentNotificationMessage von gics-ejb nach gics-commons
+
+## Improvements
+*  Überarbeitete Domänenkonfiguration und Bearbeitung in der Weboberfläche
+*  Ausfüllen einer Einwilligung aus Vorlagenliste heraus
+*  Speichern einer Einwilligung, ohne dass eine der angebotenen Moduloptionen gewählt wurde, sofern eine versteckte Vorauswahl definiert wurde
+*  Ignorieren invalidierter Dokumente beim Aufruf der Funktion getMappedTemplatesForSignerId
+*  Ausblenden der Gesamtstatistik, sofern kein Recht für alle Domänen besteht
+*  Neue IllegalCompositionException bei mehrfacher Verwendung von Modul/Policy in einer Vorlage oder einem Modul
+*  Verwendung von JakartaEE statt JavaEE
+*  Anpassbarer Context Root der Weboberfläche und SOAP-Schnittstelle
+*  Berücksichtigung des flexiblen Context-Roots beim Link vom gICS zum gPAS
+*  Allgemeine Verbesserung im Frontend
+*  Dashboard Statistiken für Summe aller Domänen
+*  Wählbarer Start und Endzeitpunkt in Statistik-Diagrammen
+*  Lokalisierter Kalender in Datumsauswahl
+
+## Bug Fixes
+*  Widerrufszuordnung verhindert ggf. Ausfüllen von neuen Einwilligungen
+*  Fehlerhafte Ausrichtung der Unterschriftenfelder im Ausdruck von Vorlagen und Einwilligungen
+*  Unterschiedliche Größe von QR Codes beim Druck einer Vorlagen
+*  Trimmen von IDs beim Anlegen von Objekten
+
+## Docker
+*  Anpassbarer Context Root der Weboberfläche und SOAP-Schnittstelle
+
+
+# gICS 2023.1.4
+
+## Bug Fixes
+*  Änderungen an Modulen und Policies werden erst nach einem Neustart in AssignedModules und AssignedPolicies übernommen
+*  Drucken-Dialog wird nicht angezeigt, nachdem eine Vorlage bearbeitet wurde
+*  Export stellt keinen Download bereit
+
 
 # gICS 2023.1.3
 
 ## Bug Fixes
 *  Allgemeine Fehlerbehebungen im Frontend
+
 
 # gICS 2023.1.2
 
@@ -281,4 +424,4 @@ https://www.ths-greifswald.de/gics/fhir
 
 Weitere Details sind dem Anwenderhandbuch zu entnehmen: https://www.ths-greifswald.de/gics/handbuch/
 
-${ttp.gics.readme.footer}
+${ttp.readme.footer}

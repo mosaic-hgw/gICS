@@ -1,0 +1,428 @@
+<!--
+  ###license-information-start###
+  gICS - a Generic Informed Consent Service
+  __
+  Copyright (C) 2014 - 2024 Trusted Third Party of the University Medicine Greifswald -
+  							kontakt-ths@uni-greifswald.de
+  
+  							concept and implementation
+  							l.geidel, c.hampf
+  							web client
+  							a.blumentritt, m.bialke, f.m.moser
+  							fhir-api
+  							m.bialke
+  							docker
+  							r. schuldt
+  
+  							The gICS was developed by the University Medicine Greifswald and published
+  							in 2014 as part of the research project "MOSAIC" (funded by the DFG HO 1937/2-1).
+  
+  							Selected functionalities of gICS were developed as
+  							part of the following research projects:
+  							- MAGIC (funded by the DFG HO 1937/5-1)
+  							- MIRACUM (funded by the German Federal Ministry of Education and Research 01ZZ1801M)
+  							- NUM-CODEX (funded by the German Federal Ministry of Education and Research 01KX2021)
+  
+  							please cite our publications
+  							https://doi.org/10.1186/s12911-022-02081-4
+  							https://doi.org/10.1186/s12967-020-02457-y
+  							http://dx.doi.org/10.3414/ME14-01-0133
+  							http://dx.doi.org/10.1186/s12967-015-0545-6
+  							http://dx.doi.org/10.3205/17gmds146
+  __
+  This program is free software: you can redistribute it and/or modify
+  it under the terms of the GNU Affero General Public License as published by
+  the Free Software Foundation, either version 3 of the License, or
+  (at your option) any later version.
+  
+  This program is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  GNU General Public License for more details.
+  
+  You should have received a copy of the GNU Affero General Public License
+  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+  ###license-information-end###
+  -->
+
+<html xmlns="http://www.w3.org/1999/xhtml"
+	  xmlns:component="http://java.sun.com/jsf/composite/components"
+	  xmlns:dashboard="http://java.sun.com/jsf/composite/components/dashboard"
+	  xmlns:f="http://java.sun.com/jsf/core"
+	  xmlns:h="http://java.sun.com/jsf/html"
+	  xmlns:p="http://primefaces.org/ui"
+	  xmlns:ui="http://java.sun.com/jsf/facelets">
+
+<body>
+<ui:composition template="/resources/templates/gics.xhtml">
+
+	<ui:define name="header_title">
+		<h:outputText value="#{msg['page.dashboard.title']}" />
+	</ui:define>
+
+	<ui:define name="title">
+		<h:outputText value="#{msg['page.dashboard.title']}" />
+	</ui:define>
+
+	<ui:define name="help">
+		<h:outputText value="#{cmsg['welcome.help']}" escape="false" styleClass="desktop-only" />
+		<h:outputText value="#{cmsg['welcome.help.mobile']}" escape="false" styleClass="mobile-only" />
+	</ui:define>
+
+	<ui:define name="content">
+		<f:event listener="#{dashboardController.checkDomainChange}" type="preRenderView" />
+
+		<h:form id="main" onkeypress="return event.keyCode != 13">
+			<p:panel rendered="#{dashboardController.selectedDomain == null}">
+				<h:outputText value="#{msg['page.dashboard.noDomain']}" />
+			</p:panel>
+			<p:panel rendered="#{dashboardController.selectedDomain != null and !dashboardController.hasStats}">
+				<h:outputText value="#{msg['page.dashboard.empty']}" />
+				<p:commandButton actionListener="#{dashboardController.updateStats}" icon="mdi mdi-refresh" styleClass="secondary" update="@form" value="#{cmsg['ui.button.refresh']}"
+								 onclick="PF('loading').show()" oncomplete="PF('loading').hide()" />
+			</p:panel>
+
+			<div class="grid">
+				<ui:fragment rendered="#{dashboardController.selectedDomain != null and dashboardController.hasStats}">
+					<div class="col-12 section-heading justify-content-between gap-3">
+						<div class="flex align-items-center gap-3">
+
+							<h:outputText value="#{msg['page.dashboard.domain.statsFor']} " />
+							<p:selectOneButton value="#{dashboardController.domain}">
+								<f:selectItem itemLabel="#{dashboardController.selectedDomain.label}" itemValue="CURRENT" />
+								<f:selectItem itemLabel="#{msg['page.dashboard.domain.ALL']}" itemValue="ALL"
+											  itemDisabled="#{not dashboardController.hasSummaryStats}" />
+								<p:ajax listener="#{dashboardController.loadStats()}" process="@this" partialSubmit="true" update="main" />
+							</p:selectOneButton>
+						</div>
+					</div>
+				</ui:fragment>
+
+				<ui:fragment rendered="#{dashboardController.selectedDomain != null  and dashboardController.hasStatsInTimespan}">
+					<!-- All domains -->
+					<div class="col-12 md:col-8">
+						<p:panel style="margin-bottom: 0">
+							<div class="overview flex flex-wrap">
+								<ui:repeat value="#{dashboardController.latestStatsLabels.entrySet()}" var="_stat" varStatus="_i">
+									<div class="box">
+										<div>
+											<h:outputText styleClass="title block text-center" value="#{dashboardController.stats.mappedStatValue.getOrDefault(_stat.key, 0)}" />
+											<h:outputText styleClass="details block text-center" value="#{_stat.value}" />
+										</div>
+										<p:divider layout="vertical" />
+									</div>
+								</ui:repeat>
+								<div class="box">
+									<div>
+										<p:commandButton ajax="false" icon="mdi mdi-download" styleClass="secondary title block text-center" value="#{cmsg['page.dashboard.export.current']}">
+											<p:fileDownload
+													value="#{dashboardController.latestStatsDownload}" />
+										</p:commandButton>
+									</div>
+									<p:divider layout="vertical" />
+								</div>
+								<div class="box">
+									<p:outputPanel deferred="true" loaded="#{dashboardController.rangeStatsLoaded}" layout="block">
+										<p:ajax event="load" listener="#{dashboardController.loadRangeStats}" ignoreAutoUpdate="true" />
+										<f:facet name="loading">
+											<p:skeleton shape="rectangle" width="105px" height="68px" />
+										</f:facet>
+										<p:commandButton ajax="false" icon="mdi mdi-download" styleClass="secondary title block text-center" value="#{cmsg['page.dashboard.export.history']}">
+											<p:fileDownload
+													value="#{dashboardController.historyStatsDownload}" />
+										</p:commandButton>
+									</p:outputPanel>
+								</div>
+							</div>
+						</p:panel>
+					</div>
+
+					<!-- Meta -->
+					<div class="col-12 md:col-4">
+						<p:panel styleClass="h-full">
+							<div class="overview flex flex-wrap">
+								<div class="box">
+									<div>
+										<h:outputText styleClass="title block text-center" value="#{webUtil.showTimeInAutoFormat(dashboardController.latestStatsCalculationTime)}" />
+										<h:outputText styleClass="details block text-center" value="#{cmsg['page.dashboard.meta.calculation']}" />
+									</div>
+									<p:divider layout="vertical" />
+								</div>
+								<div class="box">
+									<div>
+										<p:commandButton icon="mdi mdi-calendar-clock-outline" process="@this" onclick="PF('date_dialog').show();"
+														 style="margin: -5px auto 0 auto; padding-bottom: 4px" styleClass="title block text-center secondary"
+														 value="#{cmsg['page.dashboard.meta.latestDateTime']}" />
+										<h:outputText styleClass="details block text-center z-1 text-xs" style="margin-bottom: -20px" value="#{dashboardController.latestStatsDateTimeString}" />
+									</div>
+									<p:divider layout="vertical" />
+								</div>
+								<div class="box">
+									<div>
+										<p:commandButton actionListener="#{dashboardController.updateStats}" icon="mdi mdi-refresh" styleClass="secondary title block text-center" update="@form"
+														 value="#{cmsg['ui.button.refresh']}" onclick="PF('loading').show();" oncomplete="PF('loading').hide();" />
+									</div>
+								</div>
+							</div>
+						</p:panel>
+					</div>
+
+					<!-- Documents -->
+					<div class="col-12 xl:col-6">
+						<dashboard:pie_chart
+								download="#{dashboardController.getPieChartAsCsv(dashboardController.getDocumentsChart(false), dashboardController.stats.entrydate,dashboardController.selectedDomain.name.concat(' documents latest'), dashboardController.tool)}"
+								pieChartDesktop="#{dashboardController.getDocumentsChart(false)}"
+								pieChartMobile="#{dashboardController.getDocumentsChart(true)}"
+								title="#{msg['page.dashboard.documents.types']}"
+								hint="#{msg['page.dashboard.documents.hint']}" />
+					</div>
+
+					<!-- QC -->
+					<div class="col-12 xl:col-6">
+						<dashboard:pie_chart
+								download="#{dashboardController.getPieChartAsCsv(dashboardController.getQcChart(false), dashboardController.stats.entrydate, dashboardController.selectedDomain.name.concat(' qc latest'), dashboardController.tool)}"
+								pieChartDesktop="#{dashboardController.getQcChart(false)}"
+								pieChartMobile="#{dashboardController.getQcChart(true)}"
+								title="#{msg['page.dashboard.qc']}"
+								hint="#{msg['page.dashboard.qc.hint']}"
+								showChart="#{dashboardController.domain != 'ALL'}" />
+					</div>
+
+					<!-- Documents History -->
+					<p:outputPanel styleClass="col-12 xl:col-6" deferred="true" loaded="#{dashboardController.rangeStatsLoaded}" layout="block">
+						<f:facet name="loading">
+							<p:panel styleClass="h-full">
+								<h:outputText value="#{msg['page.dashboard.documents.history']}" styleClass="font-bold block" style="margin-bottom: 20px" />
+								<p:skeleton shape="rectangle" width="100%" height="300px" />
+							</p:panel>
+						</f:facet>
+						<dashboard:line_chart
+								download="#{dashboardController.getLineChartAsCsv(dashboardController.documentsHistoryChart, dashboardController.selectedDomain.name.concat(' documents history'), dashboardController.tool)}"
+								lineChart="#{dashboardController.documentsHistoryChart}"
+								title="#{msg['page.dashboard.documents.history']}" />
+					</p:outputPanel>
+
+					<!-- QC History -->
+					<p:outputPanel styleClass="col-12 xl:col-6" deferred="true" loaded="#{dashboardController.rangeStatsLoaded}" layout="block">
+						<f:facet name="loading">
+							<p:panel styleClass="h-full">
+								<h:outputText value="#{msg['page.dashboard.qc.history']}" styleClass="font-bold block" style="margin-bottom: 20px" />
+								<p:skeleton shape="rectangle" width="100%" height="300px" />
+							</p:panel>
+						</f:facet>
+						<dashboard:line_chart
+								download="#{dashboardController.getLineChartAsCsv(dashboardController.qcHistoryChart, dashboardController.selectedDomain.name.concat(' qc history'), dashboardController.tool)}"
+								lineChart="#{dashboardController.qcHistoryChart}"
+								title="#{msg['page.dashboard.qc.history']}"
+								showChart="#{dashboardController.domain != 'ALL'}" />
+					</p:outputPanel>
+
+					<!-- Documents Bar Chart -->
+					<p:outputPanel styleClass="col-12 xl:col-6" deferred="true" loaded="#{dashboardController.rangeStatsLoaded}" layout="block">
+						<f:facet name="loading">
+							<p:panel styleClass="h-full">
+								<h:outputText value="#{msg['page.dashboard.documents.increase']}" styleClass="font-bold block" style="margin-bottom: 20px" />
+								<p:skeleton shape="rectangle" width="100%" height="300px" />
+							</p:panel>
+						</f:facet>
+						<dashboard:bar_chart
+								download="#{dashboardController.getBarChartAsCsv(dashboardController.documentsBarScale == 'MONTHS_12' ? dashboardController.documentsMonthChart : dashboardController.documentsYearChart, dashboardController.selectedDomain.name.concat(' documents increase'), dashboardController.tool)}"
+								scale="#{dashboardController.documentsBarScale}"
+								availableScales="#{dashboardController.availableBarScales}"
+								barChartMonths="#{dashboardController.documentsMonthChart}"
+								barChartYears="#{dashboardController.documentsYearChart}"
+								title="#{msg['page.dashboard.documents.increase']}" />
+					</p:outputPanel>
+
+					<!-- QC Bar Chart -->
+					<p:outputPanel styleClass="col-12 xl:col-6" deferred="true" loaded="#{dashboardController.rangeStatsLoaded}" layout="block">
+						<f:facet name="loading">
+							<p:panel styleClass="h-full">
+								<h:outputText value="#{msg['page.dashboard.qc.increase']}" styleClass="font-bold block" style="margin-bottom: 20px" />
+								<p:skeleton shape="rectangle" width="100%" height="300px" />
+							</p:panel>
+						</f:facet>
+						<dashboard:bar_chart
+								download="#{dashboardController.getBarChartAsCsv(dashboardController.qcBarScale == 'MONTHS_12' ? dashboardController.qcMonthChart : dashboardController.qcYearChart, dashboardController.selectedDomain.name.concat(' qc change'), dashboardController.tool)}"
+								scale="#{dashboardController.qcBarScale}"
+								availableScales="#{dashboardController.availableBarScales}"
+								barChartMonths="#{dashboardController.qcMonthChart}"
+								barChartYears="#{dashboardController.qcYearChart}"
+								title="#{msg['page.dashboard.qc.increase']}"
+								showChart="#{dashboardController.domain != 'ALL'}" />
+					</p:outputPanel>
+
+					<!-- Templates -->
+					<div class="col-12 lg:col-6 xl:col-4">
+						<p:panel styleClass="h-full">
+							<div class="flex justify-content-between gap-3">
+								<h:panelGroup layout="block">
+									<h:outputText value="#{msg['page.dashboard.templates']}" styleClass="font-bold" />
+								</h:panelGroup>
+								<h:panelGroup styleClass="flex justify-content-between gap-1" layout="block" rendered="#{dashboardController.domain != 'ALL'}">
+									<p:commandButton ajax="false" icon="mdi mdi-download" styleClass="secondary m-0" title="#{cmsg['ui.button.download']}">
+										<p:fileDownload
+												value="#{dashboardController.templateStatisticDownload}" />
+									</p:commandButton>
+								</h:panelGroup>
+							</div>
+							<h:outputFormat value="#{msg['page.dashboard.templates.hint']}" styleClass="block">
+								<f:param value="#{dashboardController.allDocuments}" />
+							</h:outputFormat>
+							<p:dataView var="_template" value="#{dashboardController.templateStatistic.entrySet()}" rows="8"
+										currentPageReportTemplate="#{props.currentPageReport}"
+										paginator="true"
+										paginatorTemplate="#{props.paginatorTemplate}"
+										paginatorPosition="bottom" layout="list"
+										styleClass="no-header"
+										style="margin: 15px -10px 0;">
+								<p:dataViewListItem>
+									<div style="padding-bottom: 18px; word-break: break-word;">
+										<h:outputText value="#{_template.key.label} #{_template.key.key.version}" style="padding-right: 100px;" />
+										<p:progressBar value="#{dashboardController.getPercentage(_template.value, dashboardController.allDocuments)}"
+													   labelTemplate="#{_template.value} (#{dashboardController.getPercentage(_template.value, dashboardController.allDocuments)} %)"
+													   displayOnly="true" styleClass="accepted" />
+									</div>
+								</p:dataViewListItem>
+							</p:dataView>
+
+							<h:outputText value="#{msg['page.dashboard.notAvailableForAllDomains']}" escape="false" rendered="#{dashboardController.domain == 'ALL'}"
+										  styleClass="text-sm opacity-90 block text-center pt-8" style="clear:both" />
+						</p:panel>
+					</div>
+
+					<!-- Policies -->
+					<ui:fragment rendered="#{dashboardController.domain != 'ALL' and dashboardController.selectedDomain.config.statisticConfig.calculatePolicyDetails}">
+						<div class="col-12 lg:col-6 xl:col-4">
+							<p:panel id="policies" styleClass="h-full">
+								<div class="flex justify-content-between gap-3">
+									<h:panelGroup layout="block">
+										<h:outputText value="#{msg['page.dashboard.policies']}" styleClass="font-bold" />
+									</h:panelGroup>
+									<h:panelGroup styleClass="flex justify-content-between gap-1" layout="block" rendered="#{dashboardController.domain != 'ALL'}">
+										<p:commandButton ajax="false" icon="mdi mdi-download" styleClass="secondary m-0" title="#{cmsg['ui.button.download']}">
+											<p:fileDownload
+													value="#{dashboardController.policyStatisticDownload}" />
+										</p:commandButton>
+									</h:panelGroup>
+								</div>
+								<h:outputText value="#{msg['page.dashboard.policies.hint']}" styleClass="block" />
+								<p:dataView var="_policy" value="#{dashboardController.getPolicyStatistic(dashboardController.domainSignerIdTypes.get(0))}" rows="8"
+											currentPageReportTemplate="#{props.currentPageReport}"
+											paginator="true"
+											paginatorTemplate="#{props.paginatorTemplate}"
+											paginatorPosition="bottom" layout="list"
+											rendered="#{dashboardController.domainSignerIdTypes.size() == 1}"
+											styleClass="no-header"
+											style="margin: 15px -10px 0;">
+									<p:dataViewListItem>
+										<div style="padding-bottom: 18px; word-break: break-word;">
+											<h:outputText value="#{_policy.label} #{_policy.key.version}" style="padding-right: 100px;" />
+											<p:progressBar value="#{_policy.getAcceptedPercentage(dashboardController.includeUnknownPolicyStatus)}"
+														   labelTemplate="#{_policy.accepted} / #{_policy.getAll(dashboardController.includeUnknownPolicyStatus)} (#{_policy.getAcceptedPercentage(dashboardController.includeUnknownPolicyStatus)} %)"
+														   displayOnly="true" styleClass="accepted declined" />
+										</div>
+									</p:dataViewListItem>
+								</p:dataView>
+
+								<p:tabView value="#{dashboardController.domainSignerIdTypes}" var="_signerIdType" rendered="#{dashboardController.domainSignerIdTypes.size() > 1}"
+										   activeIndex="#{dashboardController.selectedSignerIdIndex}">
+									<p:tab title="#{_signerIdType}">
+										<p:panel>
+											<p:dataView var="_policy" value="#{dashboardController.getPolicyStatistic(_signerIdType)}" rows="8"
+														currentPageReportTemplate="#{props.currentPageReport}"
+														paginator="true"
+														paginatorTemplate="#{props.paginatorTemplate}"
+														paginatorPosition="bottom" layout="list"
+														styleClass="no-header"
+														style="margin: 15px -10px 0;">
+												<p:dataViewListItem>
+													<div style="padding-bottom: 18px; word-break: break-word;">
+														<h:outputText value="#{_policy.label} v#{_policy.key.version}" style="padding-right: 100px;" />
+														<p:progressBar value="#{_policy.getAcceptedPercentage(dashboardController.includeUnknownPolicyStatus)}"
+																	   labelTemplate="#{_policy.accepted} / #{_policy.getAll(dashboardController.includeUnknownPolicyStatus)} (#{_policy.getAcceptedPercentage(dashboardController.includeUnknownPolicyStatus)} %)"
+																	   displayOnly="true" styleClass="accepted declined" />
+													</div>
+												</p:dataViewListItem>
+											</p:dataView>
+										</p:panel>
+									</p:tab>
+								</p:tabView>
+
+								<p:selectBooleanCheckbox value="#{dashboardController.includeUnknownPolicyStatus}">
+									<p:ajax process="policies" update="policies" />
+								</p:selectBooleanCheckbox> <h:outputText value="#{msg['page.dashboard.policies.unknown']}" />
+
+								<h:outputText value="#{msg['page.dashboard.notAvailableForAllDomains']}" escape="false" rendered="#{dashboardController.domain == 'ALL'}"
+											  styleClass="text-sm opacity-90 block text-center pt-8" style="clear:both" />
+							</p:panel>
+						</div>
+					</ui:fragment>
+
+					<!-- Documents details -->
+					<div class="col-12 xl:col-4">
+						<p:panel styleClass="h-full">
+							<h4>
+								#{msg['page.dashboard.documents.details']}
+							</h4>
+							<h:outputFormat value="#{msg['page.dashboard.documents.details.hint']}" style="display: block; margin-bottom: 19px;">
+								<f:param value="#{dashboardController.allDocuments}" />
+							</h:outputFormat>
+							<div style="padding-bottom: 18px;">
+								<h:outputText value="#{msg['page.dashboard.documents.details.withScan']}" />
+								<p:progressBar
+										labelTemplate="#{dashboardController.documentsWithScan} (#{dashboardController.documentsWithScanPercentage} %)"
+										value="#{dashboardController.documentsWithScanPercentage}" displayOnly="true" styleClass="accepted" />
+							</div>
+							<ui:fragment rendered="#{dashboardController.domain == 'ALL' or dashboardController.selectedDomain.config.statisticConfig.calculateDocumentDetails}">
+								<div style="padding-bottom: 18px;">
+									<h:outputText value="#{msg['page.dashboard.documents.details.withDigitalSignature']}" />
+									<p:progressBar
+											labelTemplate="#{dashboardController.documentsWithDigitalSignature} (#{dashboardController.documentsWithDigitalSignaturePercentage} %)"
+											value="#{dashboardController.documentsWithDigitalSignaturePercentage}" displayOnly="true" styleClass="accepted" />
+								</div>
+								<div style="padding-bottom: 18px;">
+									<h:outputText value="#{msg['page.dashboard.documents.details.expiredFull']}" />
+									<p:progressBar
+											labelTemplate="#{dashboardController.documentsExpiredFull} (#{dashboardController.documentsExpiredFullPercentage} %)"
+											value="#{dashboardController.documentsExpiredFullPercentage}" displayOnly="true" styleClass="declined" />
+								</div>
+							</ui:fragment>
+							<ui:fragment rendered="#{dashboardController.domain != 'ALL'}">
+								<div style="padding-bottom: 18px;">
+									<h:outputText value="#{msg['page.dashboard.qc.checkedDocuments']}" />
+									<p:progressBar
+											labelTemplate="#{dashboardController.qcChecked} (#{dashboardController.qcCheckedPercentage} %)"
+											value="#{dashboardController.qcCheckedPercentage}" displayOnly="true" styleClass="accepted" />
+								</div>
+								<div style="padding-bottom: 18px;">
+									<h:outputText value="#{msg['page.dashboard.qc.validDocuments']}" />
+									<p:progressBar
+											labelTemplate="#{dashboardController.stats.mappedStatValue.get('qc_valid'.concat('.per_domain.').concat(dashboardController.selectedDomain.name))} (#{dashboardController.qcPercentage} %)"
+											value="#{dashboardController.qcPercentage}" displayOnly="true" styleClass="accepted" />
+								</div>
+							</ui:fragment>
+						</p:panel>
+					</div>
+				</ui:fragment>
+			</div>
+		</h:form>
+		<component:dummy />
+		<dashboard:range_dialog id="range_dialog_component" startDate="#{dashboardController.rangeStartDate}"
+								endDate="#{dashboardController.rangeEndDate}"
+								minDate="#{dashboardController.statsMinDate}"
+								maxDate="#{dashboardController.statsDate}"
+								dateChangeListener="#{dashboardController.onDateChange}"
+								update=":main" />
+		<dashboard:date_dialog date="#{dashboardController.statsDate}"
+							   dateChangeListener="#{dashboardController.onDateChange}"
+							   minDate="#{dashboardController.statsMinDate}"
+							   maxDate="#{dashboardController.statsMaxDate}"
+							   update=":main" />
+		<!-- ${disclaimer.enable.start}
+		<component:demo_disclaimer/>
+		${disclaimer.enable.end} -->
+	</ui:define>
+</ui:composition>
+</body>
+</html>

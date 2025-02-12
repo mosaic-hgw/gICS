@@ -1,4 +1,4 @@
-${ttp.gics.readme.header}
+${ttp.readme.header}
 
 # About #
 The Consent Management solution gICS (generic Informed Consent Administration Service) supports the management of digital informed consent documents. It facilitates checking  for various policies and modules of a consent in real time.
@@ -53,4 +53,4 @@ Access to relevant application and database servers of the Trusted Third Party t
 * Access restriction at URL level with Basic Authentication (e.g. with NGINX or Apache)
 * use of Keycloak to restrict access to Web-Frontends and technical interfaces
 
-${ttp.gics.readme.footer}
+${ttp.readme.footer}

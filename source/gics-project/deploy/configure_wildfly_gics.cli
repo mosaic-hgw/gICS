@@ -1,41 +1,67 @@
 # add datasource for gics
 ##########################
 set gicsDbHost=mysql
+#>available-env< TTP_DB_HOST mysql
+if (outcome == "success") of :resolve-expression(expression=${env.TTP_DB_HOST})
+	set gicsDbHost=${env.TTP_DB_HOST}
+end-if
+#>deprecated-env< GICS_DB_HOST TTP_GICS_DB_HOST
 if (outcome == "success") of :resolve-expression(expression=${env.GICS_DB_HOST})
 	set gicsDbHost=${env.GICS_DB_HOST}
 end-if
+#>available-env< TTP_GICS_DB_HOST mysql
 if (outcome == "success") of :resolve-expression(expression=${env.TTP_GICS_DB_HOST})
 	set gicsDbHost=${env.TTP_GICS_DB_HOST}
 end-if
 
 set gicsDbPort=3306
+#>available-env< TTP_DB_PORT 3306
+if (outcome == "success") of :resolve-expression(expression=${env.TTP_DB_PORT})
+	set gicsDbPort=${env.TTP_DB_PORT}
+end-if
+#>deprecated-env< GICS_DB_PORT TTP_GICS_DB_PORT
 if (outcome == "success") of :resolve-expression(expression=${env.GICS_DB_PORT})
 	set gicsDbPort=${env.GICS_DB_PORT}
 end-if
+#>available-env< TTP_GICS_DB_PORT 3306
 if (outcome == "success") of :resolve-expression(expression=${env.TTP_GICS_DB_PORT})
 	set gicsDbPort=${env.TTP_GICS_DB_PORT}
 end-if
 
 set gicsDbName=gics
+#>deprecated-env< GICS_DB_NAME TTP_GICS_DB_NAME
 if (outcome == "success") of :resolve-expression(expression=${env.GICS_DB_NAME})
 	set gicsDbName=${env.GICS_DB_NAME}
 end-if
+#>available-env< TTP_GICS_DB_NAME gics
 if (outcome == "success") of :resolve-expression(expression=${env.TTP_GICS_DB_NAME})
 	set gicsDbName=${env.TTP_GICS_DB_NAME}
 end-if
 
 set gicsDbUser=gics_user
+#>available-env< TTP_DB_USER
+if (outcome == "success") of :resolve-expression(expression=${env.TTP_DB_USER})
+	set gicsDbUser=${env.TTP_DB_USER}
+end-if
+#>deprecated-env< GICS_DB_USER TTP_GICS_DB_USER
 if (outcome == "success") of :resolve-expression(expression=${env.GICS_DB_USER})
 	set gicsDbUser=${env.GICS_DB_USER}
 end-if
+#>available-env< TTP_GICS_DB_USER gics_user
 if (outcome == "success") of :resolve-expression(expression=${env.TTP_GICS_DB_USER})
 	set gicsDbUser=${env.TTP_GICS_DB_USER}
 end-if
 
 set gicsDbPass=gics_password
+#>available-env< TTP_DB_PASS
+if (outcome == "success") of :resolve-expression(expression=${env.TTP_DB_PASS})
+	set gicsDbPass=${env.TTP_DB_PASS}
+end-if
+#>deprecated-env< GICS_DB_PASS TTP_GICS_DB_PASS
 if (outcome == "success") of :resolve-expression(expression=${env.GICS_DB_PASS})
 	set gicsDbPass=${env.GICS_DB_PASS}
 end-if
+#>available-env< TTP_GICS_DB_PASS gics_password
 if (outcome == "success") of :resolve-expression(expression=${env.TTP_GICS_DB_PASS})
 	set gicsDbPass=${env.TTP_GICS_DB_PASS}
 end-if
@@ -65,36 +91,72 @@ end-if
 
 # add logger for gics
 ######################
-set gicsLogLevel=${GICS_LOG_LEVEL}
+set logLevel="INFO"
+if (outcome == "success") of :resolve-expression(expression=${env.TTP_LOG_LEVEL})
+	set logLevel=${env.TTP_LOG_LEVEL}
+end-if
+#>deprecated-env< GICS_LOG_LEVEL TTP_GICS_LOG_LEVEL
+if (outcome == "success") of :resolve-expression(expression=${env.GICS_LOG_LEVEL})
+	set logLevel=${env.GICS_LOG_LEVEL}
+end-if
+#>available-env< TTP_GICS_LOG_LEVEL INFO
 if (outcome == "success") of :resolve-expression(expression=${env.TTP_GICS_LOG_LEVEL})
-	set gicsLogLevel=${env.TTP_GICS_LOG_LEVEL}
+	set logLevel=${env.TTP_GICS_LOG_LEVEL}
 end-if
-if (result ~= "(TRACE|DEBUG|INFO|WARN|ERROR|FATAL)") of :resolve-expression(expression=$gicsLogLevel)
-	echo \>\>\> set gics-log-level to $gicsLogLevel
+if (result ~= "(TRACE|DEBUG|INFO|WARN|ERROR|FATAL)") of :resolve-expression(expression=$logLevel)
+	echo \>\>\> set gics-logger to level $logLevel
 else
-	set gicsLogLevel="INFO"
+	echo \<\<\< given loglevel not allowed ($logLevel), set INFO
+	set logLevel="INFO"
 end-if
-set gicsFileLog=${GICS_FILE_LOG}
-if (outcome == "success") of :resolve-expression(expression=${env.TTP_GICS_LOG_TO_FILE})
-	set gicsFileLog=${env.TTP_GICS_LOG_TO_FILE}
+
+set logTo="console"
+if (outcome == "success") of :resolve-expression(expression=${env.TTP_LOG_TO})
+	set logTo=${env.TTP_LOG_TO}
 end-if
-if (result ~= "(?i)(on|true|yes|1)") of :resolve-expression(expression=$gicsFileLog)
-	echo \>\>\> add gics-logger as separate file
-	/subsystem=logging/size-rotating-file-handler=gics-handler:add(file={"relative-to"=>"jboss.server.log.dir", "path"=>"gics.log"})
-	/subsystem=logging/logger=org.emau.icmvc.ttp.gics:add(use-parent-handlers=false,handlers=["gics-handler"])
-	/subsystem=logging/logger=org.emau.icmvc.ttp.gics:write-attribute(name=level,value=$gicsLogLevel)
-	/subsystem=logging/logger=org.emau.icmv.ganimed.ttp.cm2:add(use-parent-handlers=false,handlers=["gics-handler"])
-	/subsystem=logging/logger=org.emau.icmv.ganimed.ttp.cm2:write-attribute(name=level,value=$gicsLogLevel)
-	/subsystem=logging/logger=org.emau.icmvc.ganimed.ttp.cm2:add(use-parent-handlers=false,handlers=["gics-handler"])
-	/subsystem=logging/logger=org.emau.icmvc.ganimed.ttp.cm2:write-attribute(name=level,value=$gicsLogLevel)
-else
-	echo \>\>\> add gics-logger to console-logger
-	/subsystem=logging/logger=org.emau.icmvc.ttp.gics:add(use-parent-handlers=false,handlers=["CONSOLE"])
-	/subsystem=logging/logger=org.emau.icmvc.ttp.gics:write-attribute(name=level,value=$gicsLogLevel)
-	/subsystem=logging/logger=org.emau.icmv.ganimed.ttp.cm2:add(use-parent-handlers=false,handlers=["CONSOLE"])
-	/subsystem=logging/logger=org.emau.icmv.ganimed.ttp.cm2:write-attribute(name=level,value=$gicsLogLevel)
-	/subsystem=logging/logger=org.emau.icmvc.ganimed.ttp.cm2:add(use-parent-handlers=false,handlers=["CONSOLE"])
-	/subsystem=logging/logger=org.emau.icmvc.ganimed.ttp.cm2:write-attribute(name=level,value=$gicsLogLevel)
+#>deprecated-env< GICS_FILE_LOG TTP_GICS_LOG_TO
+if (result ~= "(?i)(on|true|yes|1)") of :resolve-expression(expression=${env.GICS_FILE_LOG})
+    set logTo="file"
+end-if
+if (result ~= "(?i)(off|false|no|0)") of :resolve-expression(expression=${env.GICS_FILE_LOG})
+    set logTo="console"
+end-if
+#>deprecated-env< TTP_GICS_LOG_TO_FILE TTP_GICS_LOG_TO
+if (result ~= "(?i)(on|true|yes|1)") of :resolve-expression(expression=${env.TTP_GICS_LOG_TO_FILE})
+    set logTo="file"
+end-if
+if (result ~= "(?i)(off|false|no|0)") of :resolve-expression(expression=${env.TTP_GICS_LOG_TO_FILE})
+    set logTo="console"
+end-if
+#>available-env< TTP_GICS_LOG_TO CONSOLE
+if (outcome == "success") of :resolve-expression(expression=${env.TTP_GICS_LOG_TO})
+	set logTo=${env.TTP_GICS_LOG_TO}
+end-if
+if (outcome != "success") of /subsystem=logging/logger=org.emau.icmvc.ttp.gics:read-resource
+    /subsystem=logging/logger=org.emau.icmvc.ttp.gics:add(use-parent-handlers=false,handlers=[])
+end-if
+if (outcome != "success") of /subsystem=logging/logger=org.emau.icmv.ganimed.ttp.cm2:read-resource
+    /subsystem=logging/logger=org.emau.icmv.ganimed.ttp.cm2:add(use-parent-handlers=false,handlers=[])
+end-if
+if (outcome != "success") of /subsystem=logging/logger=org.emau.icmvc.ganimed.ttp.cm2:read-resource
+    /subsystem=logging/logger=org.emau.icmvc.ganimed.ttp.cm2:add(use-parent-handlers=false,handlers=[])
+end-if
+/subsystem=logging/logger=org.emau.icmvc.ttp.gics:write-attribute(name=level,value=$logLevel)
+/subsystem=logging/logger=org.emau.icmv.ganimed.ttp.cm2:write-attribute(name=level,value=$logLevel)
+/subsystem=logging/logger=org.emau.icmvc.ganimed.ttp.cm2:write-attribute(name=level,value=$logLevel)
+if (result ~= "(?i).*file.*") of :resolve-expression(expression=$logTo)
+	echo \>\>\> add gics-logger as separate file (gics.log)
+	/subsystem=logging/custom-handler=gics-file-handler:add(class=org.jboss.logmanager.handlers.PeriodicSizeRotatingFileHandler, module=org.jboss.logmanager, formatter="%d{HH:mm:ss,SSS} %-5p [%c] (%t) %s%E%n", properties={rotateSize=10240000,maxBackupIndex=20,append=true,suffix=".yyyy-MM-dd",fileName="${jboss.server.log.dir}/gics/gics.log"})
+    /subsystem=logging/logger=org.emau.icmvc.ttp.gics:add-handler(name="gics-file-handler")
+	/subsystem=logging/logger=org.emau.icmv.ganimed.ttp.cm2:add-handler(name="gics-file-handler")
+	/subsystem=logging/logger=org.emau.icmvc.ganimed.ttp.cm2:add-handler(name="gics-file-handler")
+end-if
+if (result ~= "(?i).*console.*") of :resolve-expression(expression=$logTo)
+	echo \>\>\> add gics-logger to console
+	/subsystem=logging/console-handler=gics-console-handler:add(named-formatter=COLOR-PATTERN)
+    /subsystem=logging/logger=org.emau.icmvc.ttp.gics:add-handler(name="gics-console-handler")
+	/subsystem=logging/logger=org.emau.icmv.ganimed.ttp.cm2:add-handler(name="gics-console-handler")
+	/subsystem=logging/logger=org.emau.icmvc.ganimed.ttp.cm2:add-handler(name="gics-console-handler")
 end-if
 
 
@@ -102,6 +164,8 @@ set wfOverlaysDir=${docker.wildfly.jboss}
 if (outcome == "success") of :resolve-expression(expression=${env.WF_OVERLAYS_DIR})
 	set wfOverlaysDir=${env.WF_OVERLAYS_DIR}
 end-if
+#>deprecated-env< GICS_AUTH_MODE TTP_GICS_WEB_AUTH_MODE
+#>available-env< TTP_GICS_WEB_AUTH_MODE
 set authMode=${GICS_AUTH_MODE}
 if (outcome == "success") of :resolve-expression(expression=${env.TTP_GICS_WEB_AUTH_MODE})
 	set authMode=${env.TTP_GICS_WEB_AUTH_MODE}
@@ -132,81 +196,103 @@ end-if
 # KeyCloak-Authentication for WEB (alternative Methode)
 ########################################################
 set ttpWebKeycloakRealm=ttp
+#>deprecated-env< KEYCLOAK_REALM TTP_KEYCLOAK_REALM
 if (outcome == "success") of :resolve-expression(expression=${env.KEYCLOAK_REALM})
 	set ttpWebKeycloakRealm=${env.KEYCLOAK_REALM}
 end-if
+#>available-env< TTP_KEYCLOAK_REALM ttp
 if (outcome == "success") of :resolve-expression(expression=${env.TTP_KEYCLOAK_REALM})
 	set ttpWebKeycloakRealm=${env.TTP_KEYCLOAK_REALM}
 end-if
+#>available-env< TTP_WEB_KEYCLOAK_REALM ttp
 if (outcome == "success") of :resolve-expression(expression=${env.TTP_WEB_KEYCLOAK_REALM})
 	set ttpWebKeycloakRealm=${env.TTP_WEB_KEYCLOAK_REALM}
 end-if
 
 set ttpWebKeycloakClientId=ths
+#>deprecated-env< KEYCLOAK_RESOURCE TTP_KEYCLOAK_CLIENT_ID
 if (outcome == "success") of :resolve-expression(expression=${env.KEYCLOAK_RESOURCE})
 	set ttpWebKeycloakClientId=${env.KEYCLOAK_RESOURCE}
 end-if
+#>deprecated-env< KEYCLOAK_CLIENT_ID TTP_KEYCLOAK_CLIENT_ID
 if (outcome == "success") of :resolve-expression(expression=${env.KEYCLOAK_CLIENT_ID})
 	set ttpWebKeycloakClientId=${env.KEYCLOAK_CLIENT_ID}
 end-if
+#>available-env< TTP_KEYCLOAK_CLIENT_ID ths
 if (outcome == "success") of :resolve-expression(expression=${env.TTP_KEYCLOAK_CLIENT_ID})
 	set ttpWebKeycloakClientId=${env.TTP_KEYCLOAK_CLIENT_ID}
 end-if
+#>available-env< TTP_WEB_KEYCLOAK_CLIENT_ID ths
 if (outcome == "success") of :resolve-expression(expression=${env.TTP_WEB_KEYCLOAK_CLIENT_ID})
 	set ttpWebKeycloakClientId=${env.TTP_WEB_KEYCLOAK_CLIENT_ID}
 end-if
 
 set ttpWebKeycloakBaseUrl=<PROTOCOL://HOST_OR_IP:PORT/auth/>
+#>deprecated-env< KEYCLOAK_SERVER_URL TTP_KEYCLOAK_SERVER_URL
 if (outcome == "success") of :resolve-expression(expression=${env.KEYCLOAK_SERVER_URL})
 	set ttpWebKeycloakBaseUrl=${env.KEYCLOAK_SERVER_URL}
 end-if
+#>available-env< TTP_KEYCLOAK_SERVER_URL
 if (outcome == "success") of :resolve-expression(expression=${env.TTP_KEYCLOAK_SERVER_URL})
 	set ttpWebKeycloakBaseUrl=${env.TTP_KEYCLOAK_SERVER_URL}
 end-if
+#>available-env< TTP_WEB_KEYCLOAK_SERVER_URL
 if (outcome == "success") of :resolve-expression(expression=${env.TTP_WEB_KEYCLOAK_SERVER_URL})
 	set ttpWebKeycloakBaseUrl=${env.TTP_WEB_KEYCLOAK_SERVER_URL}
 end-if
 
 set ttpWebKeycloakSecret=<CLIENT_SECRET>
+#>deprecated-env< KEYCLOAK_CLIENT_SECRET TTP_KEYCLOAK_CLIENT_SECRET
 if (outcome == "success") of :resolve-expression(expression=${env.KEYCLOAK_CLIENT_SECRET})
 	set ttpWebKeycloakSecret=${env.KEYCLOAK_CLIENT_SECRET}
 end-if
+#>available-env< TTP_KEYCLOAK_CLIENT_SECRET
 if (outcome == "success") of :resolve-expression(expression=${env.TTP_KEYCLOAK_CLIENT_SECRET})
 	set ttpWebKeycloakSecret=${env.TTP_KEYCLOAK_CLIENT_SECRET}
 end-if
+#>available-env< TTP_WEB_KEYCLOAK_CLIENT_SECRET
 if (outcome == "success") of :resolve-expression(expression=${env.TTP_WEB_KEYCLOAK_CLIENT_SECRET})
 	set ttpWebKeycloakSecret=${env.TTP_WEB_KEYCLOAK_CLIENT_SECRET}
 end-if
 
 set ttpWebKeycloakSslRequired=external
+#>deprecated-env< KEYCLOAK_SSL_REQUIRED TTP_KEYCLOAK_SSL_REQUIRED
 if (outcome == "success") of :resolve-expression(expression=${env.KEYCLOAK_SSL_REQUIRED})
 	set ttpWebKeycloakSslRequired=${env.KEYCLOAK_SSL_REQUIRED}
 end-if
+#>available-env< TTP_KEYCLOAK_SSL_REQUIRED external
 if (outcome == "success") of :resolve-expression(expression=${env.TTP_KEYCLOAK_SSL_REQUIRED})
 	set ttpWebKeycloakSslRequired=${env.TTP_KEYCLOAK_SSL_REQUIRED}
 end-if
+#>available-env< TTP_WEB_KEYCLOAK_SSL_REQUIRED external
 if (outcome == "success") of :resolve-expression(expression=${env.TTP_WEB_KEYCLOAK_SSL_REQUIRED})
 	set ttpWebKeycloakSslRequired=${env.TTP_WEB_KEYCLOAK_SSL_REQUIRED}
 end-if
 
 set ttpWebKeycloakConfidentialPort=8443
+#>deprecated-env< KEYCLOAK_CONFIDENTIAL_PORT TTP_KEYCLOAK_CONFIDENTIAL_PORT
 if (outcome == "success") of :resolve-expression(expression=${env.KEYCLOAK_CONFIDENTIAL_PORT})
 	set ttpWebKeycloakConfidentialPort=${env.KEYCLOAK_CONFIDENTIAL_PORT}
 end-if
+#>available-env< TTP_KEYCLOAK_CONFIDENTIAL_PORT 8443
 if (outcome == "success") of :resolve-expression(expression=${env.TTP_KEYCLOAK_CONFIDENTIAL_PORT})
 	set ttpWebKeycloakConfidentialPort=${env.TTP_KEYCLOAK_CONFIDENTIAL_PORT}
 end-if
+#>available-env< TTP_WEB_KEYCLOAK_CONFIDENTIAL_PORT 8443
 if (outcome == "success") of :resolve-expression(expression=${env.TTP_WEB_KEYCLOAK_CONFIDENTIAL_PORT})
 	set ttpWebKeycloakConfidentialPort=${env.TTP_WEB_KEYCLOAK_CONFIDENTIAL_PORT}
 end-if
 
 set ttpWebKeycloakUseResourceRoleMappings=false
+#>deprecated-env< KEYCLOAK_USE_RESOURCE_ROLE_MAPPINGS TTP_KEYCLOAK_USE_RESOURCE_ROLE_MAPPINGS
 if (outcome == "success") of :resolve-expression(expression=${env.KEYCLOAK_USE_RESOURCE_ROLE_MAPPINGS})
 	set ttpWebKeycloakUseResourceRoleMappings=${env.KEYCLOAK_USE_RESOURCE_ROLE_MAPPINGS}
 end-if
+#>available-env< TTP_KEYCLOAK_USE_RESOURCE_ROLE_MAPPINGS false
 if (outcome == "success") of :resolve-expression(expression=${env.TTP_KEYCLOAK_USE_RESOURCE_ROLE_MAPPINGS})
 	set ttpWebKeycloakUseResourceRoleMappings=${env.TTP_KEYCLOAK_USE_RESOURCE_ROLE_MAPPINGS}
 end-if
+#>available-env< TTP_WEB_KEYCLOAK_USE_RESOURCE_ROLE_MAPPINGS false
 if (outcome == "success") of :resolve-expression(expression=${env.TTP_WEB_KEYCLOAK_USE_RESOURCE_ROLE_MAPPINGS})
 	set ttpWebKeycloakUseResourceRoleMappings=${env.TTP_WEB_KEYCLOAK_USE_RESOURCE_ROLE_MAPPINGS}
 end-if
@@ -230,6 +316,7 @@ end-if
 
 # KeyCloak-Authentication for SOAP
 ###################################
+#>available-env< TTP_GICS_SOAP_KEYCLOAK_ENABLE false
 if (result ~= "(?i)(on|true|yes|1)") of :resolve-expression(expression=${env.TTP_GICS_SOAP_KEYCLOAK_ENABLE})
     echo \>\>\> set system-property for TTP_GICS_SOAP_KEYCLOAK_ENABLE
     /system-property=ttp.auth.soap.keycloak.gics.enabled:add(value=true)
@@ -243,21 +330,25 @@ end-if
 # Authentication-Roles for SOAP
 ###################################
 # roles (role.gics.[user|admin].[name|services])
+#>available-env< TTP_GICS_SOAP_ROLE_USER_NAME
 if (outcome == "success") of :resolve-expression(expression=${env.TTP_GICS_SOAP_ROLE_USER_NAME})
     set temp="${env.TTP_GICS_SOAP_ROLE_USER_NAME}"
     echo \>\>\> set system-property for TTP_GICS_SOAP_ROLE_USER_NAME
     /system-property=ttp.auth.soap.role.gics.user.name:add(value=$temp)
 end-if
+#>available-env< TTP_GICS_SOAP_ROLE_USER_SERVICES
 if (outcome == "success") of :resolve-expression(expression=${env.TTP_GICS_SOAP_ROLE_USER_SERVICES})
     set temp="${env.TTP_GICS_SOAP_ROLE_USER_SERVICES}"
     echo \>\>\> set system-property for TTP_GICS_SOAP_ROLE_USER_SERVICES
     /system-property=ttp.auth.soap.role.gics.user.services:add(value=$temp)
 end-if
+#>available-env< TTP_GICS_SOAP_ROLE_ADMIN_NAME
 if (outcome == "success") of :resolve-expression(expression=${env.TTP_GICS_SOAP_ROLE_ADMIN_NAME})
     set temp="${env.TTP_GICS_SOAP_ROLE_ADMIN_NAME}"
     echo \>\>\> set system-property for TTP_GICS_SOAP_ROLE_ADMIN_NAME
     /system-property=ttp.auth.soap.role.gics.admin.name:add(value=$temp)
 end-if
+#>available-env< TTP_GICS_SOAP_ROLE_ADMIN_SERVICES
 if (outcome == "success") of :resolve-expression(expression=${env.TTP_GICS_SOAP_ROLE_ADMIN_SERVICES})
     set temp="${env.TTP_GICS_SOAP_ROLE_ADMIN_SERVICES}"
     echo \>\>\> set system-property for TTP_GICS_SOAP_ROLE_ADMIN_SERVICES
@@ -266,8 +357,27 @@ end-if
 
 # Domain-based Auth-Roles
 ##########################
+#>available-env< TTP_GICS_AUTH_DOMAIN_ROLES
 if (outcome == "success") of :resolve-expression(expression=${env.TTP_GICS_AUTH_DOMAIN_ROLES})
     set temp=${env.TTP_GICS_AUTH_DOMAIN_ROLES}
     echo \>\>\> set system-property for TTP_GICS_AUTH_DOMAIN_ROLES
     /system-property=ttp.auth.gics.domain.roles:add(value=$temp)
 end-if
+
+# ROOT-CONTEXT
+###############
+set temp=gics-web
+#>available-env< TTP_GICS_WEB_CONTEXT gics-web
+if (outcome == "success") of :resolve-expression(expression=${env.TTP_GICS_WEB_CONTEXT})
+    set temp=${env.TTP_GICS_WEB_CONTEXT}
+end-if
+echo \>\>\> set system-property env.TTP_GICS_WEB_CONTEXT to $temp
+/system-property=env.TTP_GICS_WEB_CONTEXT:add(value=$temp)
+
+set temp=gics
+#>available-env< TTP_GICS_SOAP_CONTEXT gics
+if (outcome == "success") of :resolve-expression(expression=${env.TTP_GICS_SOAP_CONTEXT})
+    set temp=${env.TTP_GICS_SOAP_CONTEXT}
+end-if
+echo \>\>\> set system-property env.TTP_GICS_SOAP_CONTEXT to $temp
+/system-property=env.TTP_GICS_SOAP_CONTEXT:add(value=$temp)

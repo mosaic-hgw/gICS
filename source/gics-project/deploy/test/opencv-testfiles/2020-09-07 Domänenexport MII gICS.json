@@ -1,0 +1,219 @@
+{
+	"resourceType": "ExchangeFormatDefinition",
+	"meta": {
+		"profile": [
+			"http://example.com/StructureDefinition/dontuse#ExchangeFormatDefinition"
+		]
+	},
+	"supportedVersion": "2023.1.0",
+	"domain": {
+		"name": "MII",
+		"label": "MII",
+		"comment": "Medizininformatik Initiative",
+		"signerIdType": [
+			"caseId",
+			"patId",
+			"studyPSN"
+		],
+		"policyVersionConverter": "org.emau.icmvc.ganimed.ttp.cm2.version.MajorMinorVersionConverter",
+		"moduleVersionConverter": "org.emau.icmvc.ganimed.ttp.cm2.version.MajorMinorVersionConverter",
+		"consentTemplateVersionConverter": "org.emau.icmvc.ganimed.ttp.cm2.version.MajorMinorCharVersionConverter",
+		"properties": "REVOKE_IS_PERMANENT = false; TAKE_HIGHEST_VERSION_INSTEAD_OF_NEWEST = false; SCANS_ARE_NOT_MANDATORY_FOR_ACCEPTED_CONSENTS = true; SCANS_SIZE_LIMIT = 15728640; TAKE_MOST_SPECIFIC_PERIOD_OF_VALIDITY_INSTEAD_OF_SHORTEST = false"
+	},
+	"policiesConsentPolicy": [
+		{
+			"domainName": "MII",
+			"name": "FBDAT_erheben",
+			"label": "FBDAT_erheben",
+			"version": "1.0",
+			"comment": "Erhebung von Fragebogendaten"
+		},
+		{
+			"domainName": "MII",
+			"name": "FBDAT_nutzen",
+			"label": "FBDAT_nutzen",
+			"version": "1.0",
+			"comment": "Nutzung von Fragebogendaten"
+		},
+		{
+			"domainName": "MII",
+			"name": "FBDAT_speichern",
+			"label": "FBDAT_speichern",
+			"version": "1.0",
+			"comment": "Speicherung von Fragebogendaten"
+		},
+		{
+			"domainName": "MII",
+			"name": "IDAT_erheben",
+			"label": "IDAT_erheben",
+			"version": "1.0",
+			"comment": "Erfassung neuer identifizierender Daten (IDAT)"
+		},
+		{
+			"domainName": "MII",
+			"name": "IDAT_nutzen",
+			"label": "IDAT_nutzen",
+			"version": "1.0",
+			"comment": "Wissenschaftliche Nutzung identifizierender Daten (IDAT)"
+		},
+		{
+			"domainName": "MII",
+			"name": "IDAT_speichern",
+			"label": "IDAT_speichern",
+			"version": "1.0",
+			"comment": "Speicherung identifizierender Daten (IDAT)"
+		},
+		{
+			"domainName": "MII",
+			"name": "FBDAT_bereitstellen_DE_DSGVO_konform",
+			"label": "FBDAT_bereitstellen_DE_DSGVO_konform",
+			"version": "1.0",
+			"comment": "erhobene Fragebogendaten in anonymisierter Form national nutzen"
+		},
+		{
+			"domainName": "MII",
+			"name": "FBDAT_bereitstellen_EU_DSGVO_konform",
+			"label": "FBDAT_bereitstellen_EU_DSGVO_konform",
+			"version": "1.0",
+			"comment": "Herausgabe Fragebogendaten (FBDAT) an Dritte Länder mit EU-Datenschutzniveau"
+		},
+		{
+			"domainName": "MII",
+			"name": "FBDAT_bereitstellen_EU_DSGVO_non_konform",
+			"label": "neues labelFBDAT_bereitstellen_EU_DSGVO_non_konform",
+			"version": "1.0",
+			"comment": "Herausgabe Fragebogendaten (FBDAT) an Dritte Länder ohne EU-Datenschutzniveau"
+		},
+		{
+			"domainName": "MII",
+			"name": "Rekontaktierung_Verknuepfung_Datenbanken",
+			"label": "Rekontaktierung_Verknuepfung_Datenbanken",
+			"version": "1.0",
+			"comment": "Rekontaktierung zur Verknüpfung von PatDat mit Info anderer Dbs"
+		},
+		{
+			"domainName": "MII",
+			"name": "Rekontaktierung_weitere_Erhebung",
+			"label": "Rekontaktierung_weitere_Erhebung",
+			"version": "1.0",
+			"comment": "Rekontaktierung bezüglich zusätzlicher wissenschaftlicher Fragestellungen"
+		}
+	],
+	"modulesConsentModule": [
+		{
+			"domainName": "MII",
+			"name": "C19_M1_COVER_FBDAT_Studienteilnahme",
+			"label": "C19_M1_COVER_FBDAT_Studienteilnahme",
+			"version": "1.1",
+			"title": "<h3 style=\"text-align: justify;\">Datenschutzrechtliche Einwilligung zur Erhebung, Verarbeitung und Nutzung der Befragungsdaten</h3>",
+			"text": "<div style=\"text-align: justify;\">Ich willige ein in die Erhebung, Verarbeitung, Speicherung und wissenschaftliche Nutzung meiner <strong>Befragungsdaten</strong>, wie in der Basisinformation und Teilnehmer*inneninformation beschrieben.</div>",
+			"policyKey": [
+				"MII;FBDAT_erheben;1.0",
+				"MII;FBDAT_nutzen;1.0",
+				"MII;FBDAT_speichern;1.0",
+				"MII;IDAT_erheben;1.0",
+				"MII;IDAT_nutzen;1.0",
+				"MII;IDAT_speichern;1.0"
+			]
+		},
+		{
+			"domainName": "MII",
+			"name": "C19_M1_COVER_FBDAT_Datenweitergabe_EU",
+			"label": "C19_M1_COVER_FBDAT_Datenweitergabe_EU",
+			"version": "1.0",
+			"title": "<h3>Weitergabe von Befragungsdaten (ohne personenidentifizierende Angaben)</h3>",
+			"text": "<div style=\"text-align: justify;\">Ich willige ein in die Weitergabe meiner <strong>Befragungsdaten</strong> zur wissenschaftlichen Erforschung von Sars-CoV-2 <strong>innerhalb</strong> der Europäischen Union (s. Punkt 2.3 der Basisinformation).</div>",
+			"policyKey": [
+				"MII;FBDAT_bereitstellen_DE_DSGVO_konform;1.0",
+				"MII;FBDAT_bereitstellen_EU_DSGVO_konform;1.0"
+			]
+		},
+		{
+			"domainName": "MII",
+			"name": "C19_M1_COVER_FBDAT_Datenweitergabe_Non-EU",
+			"label": "C19_M1_COVER_FBDAT_Datenweitergabe_Non-EU",
+			"version": "1.0",
+			"text": "<div style=\"text-align: justify;\">Ich willige ein in die Weitergabe meiner <strong>Befragungsdaten </strong>zur wissenschaftlichen Erforschung von&nbsp;Sars-CoV-2 in Länder <strong>außerhalb </strong>der Europäischen Union (s. Punkt 2.4 der Basisinformation).</div>",
+			"policyKey": [
+				"MII;FBDAT_bereitstellen_EU_DSGVO_non_konform;1.0"
+			]
+		},
+		{
+			"domainName": "MII",
+			"name": "C19_M1_COVER_Rekontaktierung",
+			"label": "C19_M1_COVER_Rekontaktierung",
+			"version": "1.0",
+			"title": "<h3>Erneute Kontaktaufnahme</h3>",
+			"text": "<div style=\"text-align: justify;\">Ich willige ein, dass ich von der Unabhängigen Treuhandstelle der Universitätsmedizin Greifswald erneut im Rahmen der Forschung zu Covid-19 kontaktiert werden darf, z. B. um weitere Informationen oder meine Einwilligung in die Verknüpfung meiner medizinischen Daten und Befragungsdaten aus anderen Datenbanken einzuholen.</div>",
+			"policyKey": [
+				"MII;Rekontaktierung_Verknuepfung_Datenbanken;1.0",
+				"MII;Rekontaktierung_weitere_Erhebung;1.0"
+			]
+		},
+		{
+			"domainName": "MII",
+			"name": "C19_M1_COVER_Widerrufsrecht",
+			"label": "C19_M1_COVER_Widerrufsrecht",
+			"version": "1.1",
+			"title": "<h3>Widerrufsrecht</h3>",
+			"text": "<div style=\"text-align: justify;\">Sie können Ihre Einwilligungserklärung zur Teilnahme an der Studie jederzeit teilweise oder vollständig ohne Angabe von Gründen gegenüber der Unabhängigen Treuhandstelle (Anschrift: Ellernholzstr. 1-2, 17475 Greifswald, Tel.: (+49) 03834 86-7854) <strong>schriftlich </strong>widerrufen, ohne dass Ihnen daraus Nachteile entstehen. Sie können in Ihrem Widerruf jede Einwilligung auch einzeln widerrufen. Die Daten, die zum Zeitpunkt des Widerrufs schon für wissenschaftliche Auswertungen und Analysen genutzt wurden, können aus diesen nicht mehr entfernt werden. Durch die Löschung der Zuordnung zwischen dem Pseudonym (Kennnummer), unter dem die Daten gespeichert sind, und Ihren personenidentifizierenden Daten wird in diesem Fall ein Rückschluss auf Ihre Person unmöglich gemacht.</div><div style=\"text-align: justify;\"><strong>Ich wurde über die Nutzung meiner Teilnehmer*innendaten sowie die damit verbundenen Risiken informiert und erteile im vorgenannten Rahmen meine Einwilligung. Ich hatte ausreichend Bedenkzeit und alle meine Fragen wurden zufriedenstellend beantwortet.&nbsp;</strong></div><div style=\"text-align: justify;\"><strong>Ich wurde darüber informiert, dass ich ein Exemplar der Teilnehmer*inneninformation und eine Kopie der unterschriebenen Einwilligungserklärung erhalten werde.&nbsp;</strong></div><div style=\"text-align: justify;\"><br></div>"
+		}
+	],
+	"templatesConsentTemplate": [
+		{
+			"domainName": "MII",
+			"Name": "C19_M1_COVER",
+			"Label": "C19_M1_COVER",
+			"version": "1.3.a",
+			"type": "CONSENT",
+			"title": "<h2> Einwilligungserklärung SARS-CoV-2-beeinflussende Faktoren (Studie 1)</h2>",
+			"comment": "Vorlage UMG COVID Studie COVER 2020-08-06, mit Pflichtmodul",
+			"header": "<style>\r\n            table.template-header {   \r\n              border-collapse: collapse;\r\n            }            \r\n            table.template-header td {\r\n              border: 1px solid #000000;\r\n              text-align: left;\r\n              vertical-align: top;\r\n              padding: 8px;\r\n            }            \r\n            </style> \r\n            <table class=\"template-header\"> \r\n              <tbody><tr>\r\n                <td><strong>Studientitel</strong></td>\r\n                <td>Untersuchung zu Faktoren, die den Verlauf einer SARS-CoV-2 Infektion beeinflussen können: Eine Studie der Universitätsmedizin Greifswald</td>     \r\n              </tr>\r\n              <tr>\r\n                <td><strong>Verantwortlicher der Studie</strong></td>\r\n                <td>Prof. Dr. Klaus Hahnenkamp<br>Universitätsmedizin Greifswald<br>Klinik für Anästhesiologie und Intensivmedizin<br>Ferdinand-Sauerbruch-Straße<br>17475 Greifswald<br>Telefon: 03834 86-5801 Fax: 03834 86-5802<br>E-Mail: klaus.hahnenkamp@med.uni-greifswald.de</td>\r\n              </tr>      \r\n            </tbody></table></div>\r\n           <div><p>Mit Ihrer datenschutzrechtlichen Einwilligung stimmen Sie der Nutzung der von Ihnen stammenden medizinischen Daten zu.</p></div>",
+			"expirationProperties": "VALIDITY_PERIOD=p10y",
+			"externProperties": "study=C19_M1_COVER;optional=false;orderNr=1;collapseHeader=false;collapseFooter=false",
+			"modulesAssignedConsentModule": [
+				{
+					"displayCheckBoxes": [
+						"ACCEPTED",
+						"DECLINED"
+					],
+					"mandatory": true,
+					"moduleKey": "MII;C19_M1_COVER_FBDAT_Studienteilnahme;1.1",
+					"orderNumber": 0
+				},
+				{
+					"displayCheckBoxes": [
+						"ACCEPTED",
+						"DECLINED"
+					],
+					"mandatory": false,
+					"moduleKey": "MII;C19_M1_COVER_FBDAT_Datenweitergabe_EU;1.0",
+					"orderNumber": 1
+				},
+				{
+					"displayCheckBoxes": [
+						"ACCEPTED",
+						"DECLINED"
+					],
+					"mandatory": false,
+					"moduleKey": "MII;C19_M1_COVER_FBDAT_Datenweitergabe_Non-EU;1.0",
+					"orderNumber": 2
+				},
+				{
+					"displayCheckBoxes": [
+						"ACCEPTED",
+						"DECLINED"
+					],
+					"mandatory": false,
+					"moduleKey": "MII;C19_M1_COVER_Rekontaktierung;1.0",
+					"orderNumber": 3
+				},
+				{
+					"mandatory": false,
+					"moduleKey": "MII;C19_M1_COVER_Widerrufsrecht;1.1",
+					"orderNumber": 4
+				}
+			]
+		}
+	]
+}

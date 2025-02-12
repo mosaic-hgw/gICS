@@ -1,0 +1,41 @@
+# https://www.jetbrains.com/help/idea/http-client-in-product-code-editor.html
+# https://www.jetbrains.com/help/idea/exploring-http-syntax.html#environment-variables
+
+@soap.service-url = {{protocol}}://{{host}}:{{port}}/{{soap.context}}/{{soap.service}}
+@soap.manage-url = {{protocol}}://{{host}}:{{port}}/{{soap.context}}/{{soap.manage}}
+
+@domain.name = opt-out
+
+### Finalise all for domain
+POST {{soap.manage-url}}
+Content-Type: application/xml
+
+<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:cm2="http://cm2.ttp.ganimed.icmvc.emau.org/">
+	<soapenv:Header/>
+	<soapenv:Body>
+		<cm2:finaliseAllForDomain>
+			<domainName>{{domain.name}}</domainName>
+		</cm2:finaliseAllForDomain>
+	</soapenv:Body>
+</soapenv:Envelope>
+
+### add OptOut-Consent
+POST {{soap.service-url}}
+Content-Type: application/xml
+
+<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:cm2="http://cm2.ttp.ganimed.icmvc.emau.org/">
+	<soapenv:Header/>
+	<soapenv:Body>
+		<cm2:addConsentOptOut>
+			<consentTemplateKey>
+				<domainName>{{domain.name}}</domainName>
+				<name>oo1</name>
+				<version>1.0</version>
+			</consentTemplateKey>
+			<signerIds>
+				<id>qqq</id>
+				<idType>studyPSN</idType>
+			</signerIds>
+		</cm2:addConsentOptOut>
+	</soapenv:Body>
+</soapenv:Envelope>

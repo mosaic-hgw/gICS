@@ -1,0 +1,440 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+		"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<!--
+  ###license-information-start###
+  gICS - a Generic Informed Consent Service
+  __
+  Copyright (C) 2014 - 2024 Trusted Third Party of the University Medicine Greifswald -
+  							kontakt-ths@uni-greifswald.de
+  
+  							concept and implementation
+  							l.geidel, c.hampf
+  							web client
+  							a.blumentritt, m.bialke, f.m.moser
+  							fhir-api
+  							m.bialke
+  							docker
+  							r. schuldt
+  
+  							The gICS was developed by the University Medicine Greifswald and published
+  							in 2014 as part of the research project "MOSAIC" (funded by the DFG HO 1937/2-1).
+  
+  							Selected functionalities of gICS were developed as
+  							part of the following research projects:
+  							- MAGIC (funded by the DFG HO 1937/5-1)
+  							- MIRACUM (funded by the German Federal Ministry of Education and Research 01ZZ1801M)
+  							- NUM-CODEX (funded by the German Federal Ministry of Education and Research 01KX2021)
+  
+  							please cite our publications
+  							https://doi.org/10.1186/s12911-022-02081-4
+  							https://doi.org/10.1186/s12967-020-02457-y
+  							http://dx.doi.org/10.3414/ME14-01-0133
+  							http://dx.doi.org/10.1186/s12967-015-0545-6
+  							http://dx.doi.org/10.3205/17gmds146
+  __
+  This program is free software: you can redistribute it and/or modify
+  it under the terms of the GNU Affero General Public License as published by
+  the Free Software Foundation, either version 3 of the License, or
+  (at your option) any later version.
+  
+  This program is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  GNU General Public License for more details.
+  
+  You should have received a copy of the GNU Affero General Public License
+  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+  ###license-information-end###
+  -->
+
+
+<!-- author: Arne Blumentritt -->
+
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:h="http://java.sun.com/jsf/html" xmlns:f="http://java.sun.com/jsf/core"
+	  xmlns:ui="http://java.sun.com/jsf/facelets" xmlns:p="http://primefaces.org/ui"
+	  xmlns:composite="http://java.sun.com/jsf/composite"
+	  xmlns:consentComponents="http://java.sun.com/jsf/composite/components/consent">
+
+<!-- INTERFACE -->
+<composite:interface>
+	<composite:attribute name="consent" type="org.emau.icmvc.ganimed.ttp.cm2.frontend.model.WebConsent" required="true" />
+</composite:interface>
+
+<!-- IMPLEMENTATION -->
+<composite:implementation>
+	<p:dialog id="details_dialog" appendTo="@(body)" blockScroll="true" showEffect="none" styleClass="details-dialog header-center"
+			  resizable="false" modal="true" draggable="false"
+			  widgetVar="details_dialog" width="#{empty consentController.selectedConsent.scans ? 'auto' : '95%'}">
+
+		<f:facet name="header">
+			<h:panelGroup id="header" layout="block" styleClass="h-full" rendered="#{qcController.qc != null}">
+				<h:outputText value="#{cc.attrs.consent.template.labelOrName}" />
+				<h:outputText value=" #{cc.attrs.consent.template.versionLabelAndVersion}" />
+				<consentComponents:qc_group_button group="TEMPLATE" />
+			</h:panelGroup>
+		</f:facet>
+
+		<h:form id="details_form" rendered="#{not empty consentController.selectedConsent.template and qcController.qc != null}" styleClass="h-full">
+			<f:event type="preRenderComponent" listener="#{cc.attrs.consent.prepareScanPreview}" />
+			<div class="grid grid-nogutter h-full">
+				<h:panelGroup
+						id="paper_consent"
+						layout="block"
+						rendered="#{not empty cc.attrs.consent.scans}"
+						styleClass="col-12 lg:col-6 p-3 pr-1 h-full">
+					<h:panelGroup styleClass="relative z-1">
+						<h3 class="border-bottom-2">
+							<h:outputText value="#{msg['page.consents.paper.'.concat(cc.attrs.consent.templateType)]}" />
+							<consentComponents:qc_group_button group="SCAN" />
+						</h3>
+					</h:panelGroup>
+					<p:tabView cache="false" dynamic="true" value="#{cc.attrs.consent.scans}" var="_scan" varStatus="_i" styleClass="pdf-tabs">
+						<p:ajax event="tabChange" listener="#{cc.attrs.consent.prepareScanPreview(_scan.fhirID)}" />
+						<p:tab titletip="#{_scan.fileName}">
+							<f:facet name="title">
+								<h:outputText value="#{consentController.getConsentScanTitle(_scan)}" />
+								<consentComponents:qc_group_button group="SCAN" ref="#{_scan.fhirID}" meta="#{_scan.fileName}" />
+							</f:facet>
+							<p:media value="#{mediaProvider.consentPDFStream}" player="pdf" styleClass="pdf-preview">
+								<f:param name="#view" value="Fit" />
+								#{msg['consent.scan.pdf.browserNotSupported']}
+								<br />
+								<p:commandLink ajax="false" icon="mdi mdi-download" value="#{msg['consent.scan.download']}">
+									<p:fileDownload value="#{mediaProvider.consentPDFStream}" />
+								</p:commandLink>
+								<!-- unique id to force the browser pdf plugin to refresh -->
+								<f:param name="id" value="#{_scan.fhirID}" />
+							</p:media>
+						</p:tab>
+					</p:tabView>
+				</h:panelGroup>
+				<h:panelGroup
+						id="digital_consent"
+						layout="block"
+						styleClass="col-12 lg:col-#{empty cc.attrs.consent.scans ? '12' : '6'} p-3 h-full overflow-auto">
+					<h3 class="border-bottom-2">
+						<h:outputText value="#{msg['page.consents.digital.'.concat(cc.attrs.consent.templateType)]}" />
+					</h3>
+					<!-- Consent -->
+					<p:panelGrid columns="2" columnClasses="ui-grid-col-6,ui-grid-col-6" layout="grid" styleClass="mimic-datatable">
+						<h:outputText value="#{msg['model.consent.date']}" />
+						<h:panelGroup styleClass="flex flex-wrap gap-2 align-items-center">
+							<div>
+								<h:outputText value="#{cc.attrs.consent.key.consentDate}" converter="datetime" />
+								<h:outputText value="#{cc.attrs.consent.key.consentDate}" styleClass="lightgrey little" style="margin-left: 1px;">
+									<f:convertDateTime pattern=".SSS" />
+								</h:outputText>
+							</div>
+							<consentComponents:module_expiration consent="#{cc.attrs.consent}" />
+						</h:panelGroup>
+						<h:outputText value="#{msg['consent.comment']}" rendered="#{not empty cc.attrs.consent.comment}" />
+						<h:outputText value="#{cc.attrs.consent.comment}" rendered="#{not empty cc.attrs.consent.comment}" />
+						<h:outputText value="#{msg['module.signerIds']}" />
+						<h:panelGroup>
+							<ui:repeat value="#{cc.attrs.consent.key.orderedSignerIds}" var="_sid">
+								<h:outputText value="#{_sid.id}" />
+								<a href="/#{consentController.getGpasContextRoot()}/html/internal/edit.xhtml?originalValue=#{_sid.id}" target="_blank" class="ttp-logo-button">
+									<i class="mdi mdi-share"></i>
+									<p:graphicImage value="/html/public/assets/images/gPAS-Logo-ohne-Text-160y.png" />
+								</a>
+							</ui:repeat>
+							<consentComponents:qc_group_button group="SIGNER_ID" />
+						</h:panelGroup>
+						<h:outputText value="#{msg['consent.externProperties']}" rendered="#{not empty cc.attrs.consent.externProperties}" />
+						<h:outputText value="#{cc.attrs.consent.externProperties}" rendered="#{not empty cc.attrs.consent.externProperties}" />
+					</p:panelGrid>
+
+					<!-- Consent Quality -->
+					<h4>
+						<h:outputText value="#{msg['page.consents.qc']}" />
+					</h4>
+
+					<p:commandButton actionListener="#{qcController.onEdit}"
+									 icon="mdi mdi-octagram-plus"
+									 rendered="#{!qcController.edit}"
+									 update="@form:digital_consent, #{cc.clientId}:header, @form:paper_consent"
+									 value="#{msg['page.qc.start']}" />
+					<p:commandButton actionListener="#{qcController.onPrepareFinish}" icon="mdi mdi-check-decagram"
+									 oncomplete="PF('qc_finish_dialog').show()"
+									 rendered="#{qcController.edit}"
+									 styleClass=""
+									 update="#{cc.clientId}:qc_finish_dialog"
+									 value="#{msg['page.qc.finish']}" />
+					<p:commandButton actionListener="#{qcController.onCancel}"
+									 icon="mdi mdi-close"
+									 rendered="#{qcController.edit}"
+									 styleClass="secondary "
+									 update="@form:digital_consent, #{cc.clientId}:header, @form:paper_consent"
+									 value="#{msg['page.qc.cancel']}" />
+					<h:outputText rendered="#{qcController.edit}" styleClass="block mt-1 text-sm opacity-80" value="#{msg['page.qc.hint']}" />
+
+					<ui:fragment rendered="#{qcController.edit or not empty qcController.qc.problems}">
+						<h5 class="mt-2">
+							<h:outputText value="#{msg['model.qc.problem.types']}" />
+						</h5>
+						<p:dataTable id="qc_problems_table" reflow="true" value="#{qcController.qc.problems}" var="_problem" emptyMessage="#{msg['page.qc.finish.noProblems']}" styleClass="no-header">
+							<p:column styleClass="icons">
+								<h:outputText
+										styleClass="mx-2 mdi mdi-#{msg['model.qc.problem.type.field.group.'.concat(qcController.getProblemType(_problem.type).field.group.name().concat('.icon'))]}" />
+							</p:column>
+							<p:column width="50%">
+								<h:outputText value="#{qcController.getProblemType(_problem.type).getLabelOrId(commonLanguageBean.language)}" />
+							</p:column>
+							<p:column width="50%">
+								<h:outputText value="#{msg['model.qc.problem.status.'.concat(_problem.status.name())]}"
+											  styleClass="tag tag_light#{msg['model.qc.problem.status.type.'.concat(_problem.status.type.name()).concat('.color')]}" />
+							</p:column>
+							<p:column styleClass="icons">
+								<p:commandButton icon="mdi mdi-#{qcController.edit ? 'pencil' : 'clipboard-text-clock-outline'}"
+												 actionListener="#{qcController.onEditProblem(_problem)}"
+												 oncomplete="PF('qc_problem_dialog').show();"
+												 styleClass="secondary "
+												 title="#{cmsg['ui.button.edit']}"
+												 update="#{cc.clientId}:qc_problem_dialog" />
+								<p:commandButton actionListener="#{qcController.onDeleteProblem(_problem)}" icon="mdi mdi-delete-empty"
+												 process="@this" partialSubmit="true"
+												 rendered="#{qcController.edit and _problem.status.type != 'DELETED'}"
+												 update="#{cc.clientId}:details_form:digital_consent, #{cc.clientId}:header, #{cc.clientId}:details_form:paper_consent"
+												 styleClass="secondary"
+												 title="#{cmsg['ui.button.delete']}" />
+								<p:commandButton actionListener="#{qcController.onResurrectProblem(_problem)}" icon="mdi mdi-delete-restore"
+												 process="@this" partialSubmit="true"
+												 rendered="#{qcController.edit and _problem.status.type == 'DELETED'}"
+												 update="#{cc.clientId}:details_form:digital_consent, #{cc.clientId}:header, #{cc.clientId}:details_form:paper_consent"
+												 styleClass="secondary"
+												 title="#{cmsg['ui.button.resurrect']}" />
+							</p:column>
+						</p:dataTable>
+						<ui:fragment rendered="#{qcController.edit}">
+							<p:button id="new_problem" icon="mdi mdi-alert-plus" styleClass="secondary " value="#{msg['page.qc.problem.add']}" onclick="return false;" />
+							<p:contextMenu for="new_problem" event="click" model="#{qcController.getProblemTypesMenu(null, null, null)}" />
+						</ui:fragment>
+					</ui:fragment>
+
+					<h5 class="mt-2">
+						<h:outputText value="#{msg['model.consent.qc']}" />
+					</h5>
+					<p:dataTable id="qc_table" reflow="true" value="#{consentController.showQcHistory ? cc.attrs.consent.qcHistory : cc.attrs.consent.getQcHistoryLimit(1)}" var="_qc"
+								 rendered="#{consentController.qcEnabled}" styleClass="no-header" rowIndexVar="_i"
+								 style="margin-bottom: 20px">
+						<p:column width="50%">
+							<h:outputText value="#{_qc.startDate}" converter="datetime" />
+							<br />
+							<h:outputFormat styleClass="text-sm opacity-90 block" value="#{msg['model.consent.qc.inspectorIs']}">
+								<f:param value="#{_qc.inspector}" />
+							</h:outputFormat>
+							<h:outputText styleClass="text-sm opacity-90 block" value="#{cmsg['common.comment']}: #{_qc.comment}" rendered="#{not empty _qc.comment}" />
+						</p:column>
+						<p:column width="50%">
+							<p:badge value="#{qcController.qc.getProblemsWithStatusType('OPEN').size()}" visible="#{_i == 0 and not empty qcController.qc.getProblemsWithStatusType('OPEN')}"
+									 styleClass="tag tag_lightred" style="right: 1px; top: 4px;">
+								<h:outputText styleClass="white-space-nowrap tag #{_qc.qcPassed ? 'tag_lightgreen' : 'tag_lightred'} m-0"
+											  value="#{consentController.getQcTypeLabel(_qc.type)}" />
+							</p:badge>
+						</p:column>
+						<f:facet name="footer">
+							<h:outputText rendered="#{cc.attrs.consent.qcHistory.size() le 1}" value="#{msg['page.consents.qc.history.none']}" styleClass="text-sm opacity-90 block text-center" />
+							<p:commandButton actionListener="#{consentController.setShowQcHistory(!consentController.showQcHistory)}"
+											 rendered="#{cc.attrs.consent.qcHistory.size() gt 1}"
+											 icon="mdi mdi-chevron-double-#{consentController.showQcHistory ? 'up' : 'down'}"
+											 value="#{msg['page.consents.qc.history.'.concat(consentController.showQcHistory ? 'hide' : 'show')]}"
+											 update="@namingcontainer"
+											 styleClass="tertiary mt-0 w-full secondary darkgrey small" />
+						</f:facet>
+					</p:dataTable>
+
+					<!-- Modules -->
+					<h4>
+						<h:outputText value="#{msg['consent.details.modules']}" />
+						<consentComponents:qc_group_button group="MODULE" showAdd="false" />
+					</h4>
+
+					<p:dataTable id="modules_table" reflow="true" value="#{cc.attrs.consent.modules.entrySet().toArray()}" var="_module" styleClass="no-header modules-table"
+								 style="margin-bottom: 20px" rowIndexVar="_i" rowKey="#{consentController.convertKey(cc.attrs.consent.key.consentDate.toString().concat(_module.value.key))}">
+						<p:column style="min-width: 22px">
+							<p:rowToggler rendered="#{not empty _module.value.policyKeys}" />
+						</p:column>
+
+						<p:column width="50%">
+							<h:outputText value="#{_module.key.module.labelOrName} #{_module.key.module.key.version}" />
+							<br />
+							<h:outputText styleClass="text-sm opacity-90 block" value="#{text.sanitizePlain(_module.key.module.title)}"
+										  rendered="#{not empty _module.key.module.title}" />
+							<h:outputText styleClass="text-sm opacity-90 block" value="#{_module.key.module.shortText}"
+										  rendered="#{not empty _module.key.module.shortText}" />
+						</p:column>
+						<p:column width="50%">
+							<div class="flex flex-wrap gap-2">
+								<ui:fragment rendered="#{not empty _module.value.consentState}">
+
+									<!-- Status -->
+									<h:outputText
+											styleClass="m-0 white-space-nowrap tag #{_module.value.consentState.consentStatusType.name().equals('ACCEPTED') ? 'tag_green' : ''}
+                                            #{_module.value.consentState.consentStatusType.name().equals('DECLINED') ? 'tag_red' : ''}
+                                            #{cc.attrs.consent.getModuleFullyExpired(_module.value.key) or !cc.attrs.consent.qualityControl.qcPassed or cc.attrs.consent.legalConsentDateInFuture ? 'ui-state-disabled' : ''}"
+											value="#{cmsg['model.consent.status.admin.'.concat(_module.value.consentState)]}" />
+
+									<!-- QC -->
+									<consentComponents:qc_group_button group="MODULE" ref="#{_module.key.module.key.name}" meta="#{_module.value}"
+																	   rendered="#{not empty _module.key.displayCheckboxes}" />
+
+									<!-- Validity (valid from & expiration -->
+									<consentComponents:module_expiration consent="#{cc.attrs.consent}" moduleKey="#{_module.value.key}" />
+
+								</ui:fragment>
+							</div>
+						</p:column>
+						<p:rowExpansion>
+							<!-- Policies -->
+							<p:dataTable value="#{_module.key.module.assignedPolicies}" var="_policy" styleClass="no-header modules-table">
+								<p:column style="min-width: 22px">
+								</p:column>
+								<p:column width="50%">
+									<h:outputText value="- #{_policy.policy.labelOrName}" />
+								</p:column>
+								<p:column width="50%">
+									<!-- Validity (valid from & expiration -->
+									<consentComponents:module_expiration consent="#{cc.attrs.consent}" moduleKey="#{_module.value.key}" policyKey="#{_policy.policy.key}" />
+								</p:column>
+							</p:dataTable>
+						</p:rowExpansion>
+					</p:dataTable>
+
+					<ui:fragment rendered="#{not empty cc.attrs.consent.freeTexts}">
+						<h4>
+							<h:outputText value="#{msg['consent.details.customfields']}" />
+						</h4>
+						<p:dataTable reflow="true" value="#{cc.attrs.consent.freeTexts}" var="_freeText" styleClass="no-header modules-table" style="margin-bottom: 20px">
+							<p:column width="50%">
+								<h:outputText value="#{_freeText.dto.labelOrName}" />
+							</p:column>
+							<p:column width="50%">
+								<h:outputText value="#{_freeText.value}" />
+							</p:column>
+						</p:dataTable>
+					</ui:fragment>
+
+					<!-- Signatures -->
+					<ui:fragment rendered="#{cc.attrs.consent.templateType.name() != 'CONSENT_OPT_OUT'}">
+						<h4>
+							<h:outputText value="#{msg['consent.details.signatures']}" />
+						</h4>
+						<p:dataTable reflow="true" value="#{cc.attrs.consent.signatures}" var="_signature" styleClass="no-header" style="margin-bottom: 20px">
+							<p:column width="50%">
+								<h:outputText value="#{_signature.date}" converter="datetime" />
+								<consentComponents:qc_group_button group="#{_signature.type.name() == 'PATIENT' ? 'SIGNATURE_PARTICIPANT' : 'SIGNATURE_PHYSICIAN'}" />
+								<br />
+								<h:outputText styleClass="text-sm opacity-90 block"
+											  value="#{msg['model.consent.signature.location']}: #{_signature.place}" rendered="#{not empty _signature.place}" />
+								<h:outputFormat styleClass="text-sm opacity-90 block" value="#{msg['model.consent.signature.reference']}">
+									<f:param value="#{_signature.reference}" />
+								</h:outputFormat>
+								<h:outputText styleClass="text-sm opacity-90 block"
+											  value="#{msg['model.consent.signature.type']}: #{msg['model.consent.signature.type.'.concat(_signature.fromGuardian ? 'GUARDIAN' : _signature.type.name())]}" />
+							</p:column>
+							<p:column width="50%">
+								<p:graphicImage height="100px"
+												value="#{consentController.getImageStreamFromBase64(_signature.base64, 'png', 'signature-'.concat(_signature.reference))}"
+												rendered="#{not empty _signature.base64}" cache="false" stream="false" />
+
+								<h:outputText value="#{_signature.type.name() == 'PATIENT' ? msg['consent.noPatientSignature'] : msg['consent.noPhysicianSignature']}"
+											  rendered="#{empty _signature.base64 and empty cc.attrs.consent.scans}" />
+								<h:outputText value="#{msg['consent.scan.containsSignatures']}"
+											  rendered="#{empty _signature.base64 and not empty cc.attrs.consent.scans}" />
+							</p:column>
+						</p:dataTable>
+					</ui:fragment>
+				</h:panelGroup>
+			</div>
+		</h:form>
+	</p:dialog>
+
+	<p:dialog widgetVar="qc_problem_dialog" styleClass="no-title" modal="true" style="min-width: 600px" draggable="false">
+		<h:form id="qc_problem_dialog">
+			<ui:fragment rendered="#{qcController.qc != null and qcController.selectedQcProblem != null}">
+				<p:tabView value="#{qcController.getCurrentProblemAndHistory(qcController.selectedQcProblem)}" var="_problem" widgetVar="qc_problem_dialog_tabs">
+					<p:tab>
+						<f:facet name="title">
+							<h:outputText
+									styleClass="#{_problem.status.type == 'DELETED' ? 'line-through' : ''}"
+									value="#{qcController.isHistory(_problem) ? webUtil.dateToString(_problem.startDate, 'datetime') : (_problem.updatedAt == null ? cmsg['ui.button.new'] : webUtil.dateToString(_problem.updatedAt, 'datetime'))}" />
+						</f:facet>
+						<consentComponents:qc_problem_form problem="#{_problem}"
+														   update="#{cc.clientId}:details_form:digital_consent, #{cc.clientId}:header, #{cc.clientId}:details_form:paper_consent" />
+					</p:tab>
+				</p:tabView>
+			</ui:fragment>
+		</h:form>
+	</p:dialog>
+
+	<p:dialog widgetVar="qc_finish_dialog" modal="true" style="max-width: 900px" header="#{msg['page.qc.finish']}">
+		<h:form id="qc_finish_dialog">
+			<ui:fragment rendered="#{qcController.qc != null}">
+				<p:messages escape="false" />
+				<p:focus for="qcStatus" />
+
+				<div class="block mb-3">
+					<h:outputText value="#{msg['page.qc.finish.hint']}" />
+				</div>
+
+				<p:dataTable value="#{qcController.qc.problems}" var="_problem" emptyMessage="#{msg['page.qc.finish.noProblems']}">
+					<p:column>
+						<h:outputText styleClass="mdi mdi-#{msg['model.qc.problem.type.field.group.'.concat(qcController.getProblemType(_problem.type).field.group.name().concat('.icon'))]}" />
+					</p:column>
+					<p:column headerText="#{msg['model.qc.problem.type']}">
+						<h:outputText value="#{qcController.getProblemType(_problem.type).getLabelOrId(commonLanguageBean.language)}" />
+					</p:column>
+					<p:column headerText="#{msg['model.qc.problem.status']}">
+						<h:outputText value="#{msg['model.qc.problem.status.'.concat(_problem.status.name())]}"
+									  styleClass="tag tag_#{msg['model.qc.problem.status.type.'.concat(_problem.status.type.name()).concat('.color')]}" />
+					</p:column>
+					<p:column headerText="#{msg['model.qc.problem.type.action']}">
+						<h:outputText value="#{qcController.getProblemType(_problem.type).action.getLabelOrId(commonLanguageBean.language)}" />
+					</p:column>
+				</p:dataTable>
+
+				<p:panelGrid columnClasses="ui-grid-col-6,ui-grid-col-6" columns="2" layout="grid" styleClass="mt-3">
+					<p:outputLabel for="saveAsNewQc"
+								   value="#{msg['page.qc.finish.saveAsNewQc']}" />
+					<p:selectBooleanCheckbox id="saveAsNewQc"
+											 value="#{qcController.saveAsNewQc}">
+						<p:ajax process="@this" partialSubmit="true" update="@form" />
+					</p:selectBooleanCheckbox>
+
+					<p:outputLabel for="qcStatus" value="#{msg['model.qc.type']}" />
+					<p:selectOneMenu id="qcStatus" converter="genericConverter"
+									 disabled="#{qcController.qc.date != null and !qcController.saveAsNewQc}"
+									 required="true" styleClass="w-full"
+									 value="#{qcController.qc.type}">
+						<f:selectItem itemLabel="#{cmsg['ui.select.pleaseSelect']}" noSelectionOption="true" />
+						<f:selectItems value="#{qcController.qcTypeSelectList}" />
+					</p:selectOneMenu>
+
+					<p:outputLabel for="qcInspector" value="#{msg['model.consent.qc.inspector']}" />
+					<p:inputText id="qcInspector" disabled="#{not empty qcController.user or (qcController.qc.date != null and !qcController.saveAsNewQc)}" required="true" styleClass="w-full"
+								 value="#{qcController.qc.inspector}" />
+
+					<p:outputLabel for="qcComment" value="#{msg['model.consent.qc.comment']}" />
+					<p:inputTextarea id="qcComment" counter="qcComment_counter" counterTemplate="#{msg['common.characters.remaining']}"
+									 disabled="#{qcController.qc.date != null and !qcController.saveAsNewQc}"
+									 maxlength="255"
+									 styleClass="w-full"
+									 value="#{qcController.qc.comment}" />
+					<p:column />
+					<h:outputText id="qcComment_counter" styleClass="textCounter w-full" />
+				</p:panelGrid>
+
+				<p:commandButton actionListener="#{qcController.onSave}"
+								 icon="mdi mdi-check"
+								 oncomplete="if (args &amp;&amp; !args.validationFailed) {PF('qc_finish_dialog').hide(); PF('consents').filter();}"
+								 styleClass=""
+								 update="@form, #{cc.clientId}:details_form:digital_consent, #{cc.clientId}:header, #{cc.clientId}:details_form:paper_consent, consentForm:consents"
+								 value="#{cmsg['ui.button.save']}" />
+				<p:commandButton icon="mdi mdi-close" immediate="true" onclick="PF('qc_finish_dialog').hide();" styleClass="secondary "
+								 value="#{cmsg['ui.button.cancel']}" />
+
+			</ui:fragment>
+		</h:form>
+	</p:dialog>
+</composite:implementation>
+</html>

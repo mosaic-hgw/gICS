@@ -17,17 +17,22 @@ CALL createProject(@projectName, @displayName);
 
 -- group_
 -- createGroup(<projectName>, <groupName>, <description>)
+CALL createGroup(@projectName, CONCAT(@displayName, '-embeddeds'), 'this group is for users with embedded right');
 CALL createGroup(@projectName, CONCAT(@displayName, '-users'), 'this group is for users with basic right');
 CALL createGroup(@projectName, CONCAT(@displayName, '-admins'), 'this group is for users with extended right');
 
 -- role
 -- createRole(<projectName>, <roleName>, <description>)
+CALL createRole(@projectName, CONCAT('role.',@projectName,'.embedded'), CONCAT(@displayName, ' embeddedspace'));
 CALL createRole(@projectName, CONCAT('role.',@projectName,'.user'), CONCAT(@displayName, ' userspace'));
 CALL createRole(@projectName, CONCAT('role.',@projectName,'.admin'), CONCAT(@displayName, ' adminspace' ));
 
 -- group_role_mapping
 -- createGroupRoleMapping(<projectName>, <groupName>, <roleName>)
+CALL createGroupRoleMapping(@projectName, CONCAT(@displayName, '-embeddeds'), CONCAT('role.',@projectName,'.embedded'));
+CALL createGroupRoleMapping(@projectName, CONCAT(@displayName, '-users'), CONCAT('role.',@projectName,'.embedded'));
 CALL createGroupRoleMapping(@projectName, CONCAT(@displayName, '-users'), CONCAT('role.',@projectName,'.user'));
+CALL createGroupRoleMapping(@projectName, CONCAT(@displayName, '-admins'), CONCAT('role.',@projectName,'.embedded'));
 CALL createGroupRoleMapping(@projectName, CONCAT(@displayName, '-admins'), CONCAT('role.',@projectName,'.user'));
 CALL createGroupRoleMapping(@projectName, CONCAT(@displayName, '-admins'), CONCAT('role.',@projectName,'.admin'));
 
@@ -35,6 +40,7 @@ CALL createGroupRoleMapping(@projectName, CONCAT(@displayName, '-admins'), CONCA
 -- createUser(<userName>, <password>, <description>)
 call createUser('admin', 'ttp-tools', 'user for admin privileges');
 call createUser('user', 'ttp-tools', 'user for standard privileges');
+call createUser('embedded', 'ttp-tools', 'user for embedded privileges');
 
 -- grant privileges for project
 -- grantAdminRights(<domainName>, <projectName>, <userName>)
@@ -42,3 +48,6 @@ call grantAdminRights(@domainName, @projectName, 'admin');
 
 -- grantStandardRights(<domainName>, <projectName>, <userName>)
 call grantStandardRights(@domainName, @projectName,'user');
+
+-- grantStandardRights(<domainName>, <projectName>, <userName>)
+call grantStandardRights(@domainName, @projectName,'embedded');

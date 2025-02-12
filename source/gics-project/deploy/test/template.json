@@ -1,0 +1,606 @@
+{
+    "resourceType": "ExchangeFormatDefinition",
+    "meta": {
+        "profile": [
+            "http://example.com/StructureDefinition/dontuse#ExchangeFormatDefinition"
+        ]
+    },
+    "supportedVersion": "2.13.0",
+    "domain": {
+        "name": "MII",
+        "finalized": false,
+        "label": "MII",
+        "comment": "Medizininformatik Initiative",
+        "signerIdType": [
+            "Pseudonym"
+        ],
+        "policyVersionConverter": "org.emau.icmvc.ganimed.ttp.cm2.version.MajorMinorVersionConverter",
+        "moduleVersionConverter": "org.emau.icmvc.ganimed.ttp.cm2.version.MajorMinorVersionConverter",
+        "consentTemplateVersionConverter": "org.emau.icmvc.ganimed.ttp.cm2.version.MajorMinorCharVersionConverter",
+        "properties": "REVOKE_IS_PERMANENT=false;TAKE_HIGHEST_VERSION_INSTEAD_OF_NEWEST=false;SCANS_ARE_NOT_MANDATORY_FOR_ACCEPTED_CONSENTS=false;SEND_NOTIFICATIONS_WEB=false;STATISTIC_DOCUMENT_DETAILS=true;STATISTIC_POLICY_DETAILS=true;SCANS_SIZE_LIMIT=10485760;TAKE_MOST_SPECIFIC_PERIOD_OF_VALIDITY_INSTEAD_OF_SHORTEST=false;VALID_QC_TYPES=not_checked,checked_minor_faults,checked_no_faults,###_auto_generated_###;INVALID_QC_TYPES=[checked_major_faults,invalidated;DEFAULT_QC_TYPE=not_checked",
+        "externProperties": "fhirSafeSignerIdType = Pseudonym"
+    },
+    "policiesConsentPolicy": [      
+        {
+            "domainName": "MII",
+            "name": "BIOMAT_Eigentum_uebertragen",
+            "label": "BIOMAT_Eigentum_uebertragen",
+            "version": "1.0",
+            "comment": "Eigentumsübertragung der BIOMAT an den Träger der Biobank",
+            "externProperties": "fhirPolicyCode=2.16.840.1.113883.3.1937.777.24.5.3.21",
+            "finalized": false
+        },
+        {
+            "domainName": "MII",
+            "name": "BIOMAT_wissenschaftlich_nutzen_EU_DSGVO_konform",
+            "label": "BIOMAT_wissenschaftlich_nutzen_EU_DSGVO_NIVEAU",
+            "version": "1.0",
+            "comment": "Bereitstellung umcodierter Biomaterialien (BIOMAT)  für wissenschaftliche Nutzung  und Analysen zu Zwecken med. Forschung an ext. Forscher",
+            "externProperties": "fhirPolicyCode=2.16.840.1.113883.3.1937.777.24.5.3.22",
+            "finalized": false
+        },
+        {
+            "domainName": "MII",
+            "name": "BIOMAT_lagern_verarbeiten",
+            "label": "BIOMAT_lagern_verarbeiten",
+            "version": "1.0",
+            "comment": "Lagerung und Verarbeitung von Biomaterialien innerhalb der verantwortlichen Stelle (BIOMAT)",
+            "externProperties": "fhirPolicyCode=2.16.840.1.113883.3.1937.777.24.5.3.20",
+            "finalized": false
+        },
+        {
+            "domainName": "MII",
+            "name": "BIOMAT_erheben",
+            "label": "BIOMAT_erheben",
+            "version": "1.1",
+            "comment": "Gewinnung von Biomaterialien (BIOMAT)",
+            "externProperties": "fhirPolicyCode=2.16.840.1.113883.3.1937.777.24.5.3.19",
+            "finalized": false
+        },
+        {
+            "domainName": "MII",
+            "name": "BIOMAT_Analysedaten_zusammenfuehren_Dritte",
+            "label": "BIOMAT_Analysedaten_zusammenfuehren_Dritte",
+            "version": "1.1",
+            "comment": "Zusammenführen von auf Biomaterialien (BIOMAT) basierenden Analysedaten mit Analysedaten Dritter, sofern dort ebenfalls eine Einwilligung vorliegt",
+            "externProperties": "fhirPolicyCode=2.16.840.1.113883.3.1937.777.24.5.3.23",
+            "finalized": false
+        },
+        {
+            "domainName": "MII",
+            "name": "Rekontaktierung_Verknuepfung_Datenbanken",
+            "label": "Rekontaktierung_Verknuepfung_Datenbanken",
+            "version": "1.0",
+            "comment": "Rekontaktierung zur Verknüpfung von Patientendaten mit Daten anderer Datenbanken",
+            "externProperties": "fhirPolicyCode=2.16.840.1.113883.3.1937.777.24.5.3.27",
+            "finalized": false
+        },
+        {
+            "domainName": "MII",
+            "name": "Rekontaktierung_weitere_Studien",
+            "label": "Rekontaktierung_weitere_Studien",
+            "version": "1.1",
+            "comment": "Rekontaktierung bezüglich Information zu neuen Forschungsvorhaben oder Studien",
+            "externProperties": "fhirPolicyCode=2.16.840.1.113883.3.1937.777.24.5.3.29",
+            "finalized": false
+        },
+        {
+            "domainName": "MII",
+            "name": "Rekontaktierung_weitere_Erhebung",
+            "label": "Rekontaktierung_weitere_Erhebung",
+            "version": "1.1",
+            "comment": "Rekontaktierung bezüglich Erhebung zusätzlicher Daten",
+            "externProperties": "fhirPolicyCode=2.16.840.1.113883.3.1937.777.24.5.3.28",
+            "finalized": false
+        },
+        {
+            "domainName": "MII",
+            "name": "KKDAT_5J_retro_wissenschaftlich_nutzen",
+            "label": "KKDAT_5J_retro_wissenschaftlich_nutzen",
+            "version": "1.0",
+            "comment": "Bereitstellung umcodierter retrospektiver Krankenkassendaten (KKDAT) für wissenschaftliche Nutzung zu Zwecken med. Forschung an externe Forscher",
+            "externProperties": "fhirPolicyCode=2.16.840.1.113883.3.1937.777.24.5.3.13",
+            "finalized": false
+        },
+        {
+            "domainName": "MII",
+            "name": "KKDAT_KVNR_5J_retro_uebertragen",
+            "label": "KKDAT_5J_retro_uebertragen_KVNR",
+            "version": "1.0",
+            "comment": "Erlaubnis zur retrospektiven Übermittlung der KVNr., MII-Pseudonym und Zeitraum Datenübermittlung (von:5 Jahre vor Datum Unterschrift; bis: Datum Unterschrift) an zuständige Stelle",
+            "externProperties": "fhirPolicyCode=2.16.840.1.113883.3.1937.777.24.5.3.38",
+            "finalized": false
+        },
+        {
+            "domainName": "MII",
+            "name": "KKDAT_5J_retro_uebertragen",
+            "label": "KKDAT_5J_retro_uebertragen",
+            "version": "1.0",
+            "comment": "Krankenkassendaten (KKDAT) der letzten fünf Kalenderjahre vor Datum Unterschrift übertragen",
+            "externProperties": "fhirPolicyCode=2.16.840.1.113883.3.1937.777.24.5.3.11",
+            "finalized": false
+        },
+        {
+            "domainName": "MII",
+            "name": "KKDAT_5J_retro_speichern_verarbeiten",
+            "label": "KKDAT_5J_retro_speichern_verarbeiten",
+            "version": "1.1",
+            "comment": "Retrospektive Krankenkassendaten (KKDAT) aus fünf Jahren vor Einwilligung speichern und codiert verarbeiten zu Zwecken med. Forschung in der verantwortlichen Stelle",
+            "externProperties": "fhirPolicyCode=2.16.840.1.113883.3.1937.777.24.5.3.12",
+            "finalized": false
+        },
+        {
+            "domainName": "MII",
+            "name": "MDAT_speichern_verarbeiten",
+            "label": "MDAT_speichern_verarbeiten",
+            "version": "1.0",
+            "comment": "Speicherung und Verarbeitung von medizinischen codierten Daten zu Zwecken med. Forschung innerhalb der verantwortlichen Stelle (MDAT)",
+            "externProperties": "fhirPolicyCode=2.16.840.1.113883.3.1937.777.24.5.3.7",
+            "finalized": false
+        },
+        {
+            "domainName": "MII",
+            "name": "IDAT_bereitstellen_EU_DSGVO_konform",
+            "label": "IDAT_bereitstellen_EU_DSGVO_NIVEAU",
+            "version": "1.1",
+            "comment": "Herausgabe identifizierender Daten (IDAT) an unabhängige Treuhandstelle zur weiteren Verarbeitung",
+            "externProperties": "fhirPolicyCode=2.16.840.1.113883.3.1937.777.24.5.3.5",
+            "finalized": false
+        },
+        {
+            "domainName": "MII",
+            "name": "MDAT_erheben",
+            "label": "MDAT_erheben",
+            "version": "1.1",
+            "comment": "Erfassung medizinischer Daten (MDAT)",
+            "externProperties": "fhirPolicyCode=2.16.840.1.113883.3.1937.777.24.5.3.6",
+            "finalized": false
+        },
+        {
+            "domainName": "MII",
+            "name": "IDAT_speichern_verarbeiten",
+            "label": "IDAT_speichern_verarbeiten",
+            "version": "1.0",
+            "comment": "Speicherung und Verarbeitung identifizierender Daten (IDAT) zu Zwecken med. Forschung in der verantwortlichen Stelle",
+            "externProperties": "fhirPolicyCode=2.16.840.1.113883.3.1937.777.24.5.3.3",
+            "finalized": false
+        },
+        {
+            "domainName": "MII",
+            "name": "MDAT_zusammenfuehren_Dritte",
+            "label": "MDAT_zusammenfuehren_Dritte",
+            "version": "1.0",
+            "comment": "Zusammenführung medizinischer Daten (MDAT) mit Dritten Forschungspartnern, sofern dort eine Einwilligung vorliegt",
+            "externProperties": "fhirPolicyCode=2.16.840.1.113883.3.1937.777.24.5.3.9",
+            "finalized": false
+        },
+        {
+            "domainName": "MII",
+            "name": "MDAT_wissenschaftlich_nutzen_EU_DSGVO_konform",
+            "label": "MDAT_wissenschaftlich_nutzen_EU_DSGVO_NIVEAU",
+            "version": "1.0",
+            "comment": "Bereitstellung umcodierter medizinischer Daten (MDAT) für wissenschaftliche Nutzung zu Zwecken med. Forschung an externe Forscher",
+            "externProperties": "fhirPolicyCode=2.16.840.1.113883.3.1937.777.24.5.3.8",
+            "finalized": false
+        },
+        {
+            "domainName": "MII",
+            "name": "Rekontaktierung_Ergebnisse_erheblicher_Bedeutung",
+            "label": "Rekontaktierung_Ergebnisse_erheblicher_Bedeutung",
+            "version": "1.0",
+            "comment": "Rekontaktierung des Betroffenen bei Ergebnissen von erheblicher Bedeutung",
+            "externProperties": "fhirPolicyCode=2.16.840.1.113883.3.1937.777.24.5.3.37",
+            "finalized": false
+        },
+        {
+            "domainName": "MII",
+            "name": "IDAT_erheben",
+            "label": "IDAT_erheben",
+            "version": "1.0",
+            "comment": "Erfassung neuer identifizierender Daten (IDAT)",
+            "externProperties": "fhirPolicyCode=2.16.840.1.113883.3.1937.777.24.5.3.2",
+            "finalized": false
+        },
+        {
+            "domainName": "MII",
+            "name": "IDAT_zusammenfuehren_Dritte",
+            "label": "IDAT_zusammenfuehren_Dritte",
+            "version": "1.0",
+            "comment": "Zusammenführung identifizierender Daten (IDAT) über die unabhängige Treuhandstelle mit Dritten Forschungspartnern, sofern dort eine Einwilligung vorliegt",
+            "externProperties": "fhirPolicyCode=2.16.840.1.113883.3.1937.777.24.5.3.4",
+            "finalized": false
+        },
+        {
+            "domainName": "MII",
+            "name": "KKDAT_5J_pro_uebertragen",
+            "label": "KKDAT_5J_pro_uebertragen",
+            "version": "1.0",
+            "comment": "Prospektive Krankenkassendaten (KKDAT) für fünf Kalenderjahre nach Datum Unterschrift übertragen",
+            "externProperties": "fhirPolicyCode=2.16.840.1.113883.3.1937.777.24.5.3.15",
+            "finalized": false
+        },
+        {
+            "domainName": "MII",
+            "name": "KKDAT_KVNR_5J_pro_uebertragen",
+            "label": "KKDAT_5J_pro_uebertragen_KVNR",
+            "version": "1.0",
+            "comment": "Erlaubnis zur prospektiven Übermittlung der KVNr., MII-Pseudonym und Zeitraum Datenübermittlung (von: Datum Unterschrift; bis: max. 5 Kalenderjahre nach Unterschrift) an zuständige Stelle",
+            "externProperties": "fhirPolicyCode=2.16.840.1.113883.3.1937.777.24.5.3.39",
+            "finalized": false
+        },
+        {
+            "domainName": "MII",
+            "name": "KKDAT_5J_pro_speichern_verarbeiten",
+            "label": "KKDAT_5J_pro_speichern_verarbeiten",
+            "version": "1.0",
+            "comment": "Prospektive Krankenkassendaten (KKDAT) aus fünf Jahren ab Einwilligung speichern und codiert verarbeiten zu Zwecken der med. Forschung in der verantwortlichen Stelle",
+            "externProperties": "fhirPolicyCode=2.16.840.1.113883.3.1937.777.24.5.3.16",
+            "finalized": false
+        },
+        {
+            "domainName": "MII",
+            "name": "KKDAT_5J_pro_wissenschaftlich_nutzen",
+            "label": "KKDAT_5J_pro_wissenschaftlich_nutzen",
+            "version": "1.0",
+            "comment": "Bereitstellung umcodierter prospektiver Krankenkassendaten (KKDAT) aus fünf Jahren ab Einwilligung zu Zwecken med. Forschung an ext. Forscher",
+            "externProperties": "fhirPolicyCode=2.16.840.1.113883.3.1937.777.24.5.3.17",
+            "finalized": false
+        },
+        {
+            "domainName": "MII",
+            "name": "Rekontaktierung_Zusatzbefund",
+            "label": "Rekontaktierung_Zusatzbefund",
+            "version": "1.0",
+            "comment": "Rekontaktierung bezüglich Zusatzbefund im Rahmen der am Standort dafür entwickelten Prozesse und der im Nutzungsantrag angegebenen Bedingungen",
+            "externProperties": "fhirPolicyCode=2.16.840.1.113883.3.1937.777.24.5.3.31",
+            "finalized": false
+        },
+        {
+            "domainName": "MII",
+            "name": "BIOMAT_Zusatzmengen_entnehmen",
+            "label": "BIOMAT_Zusatzmengen_entnehmen",
+            "version": "1.0",
+            "comment": "Entnahme zusätzlicher Mengen von Biomaterialien (BIOMAT) in den in der Einwilligung beschriebenen Grenzen",
+            "externProperties": "fhirPolicyCode=2.16.840.1.113883.3.1937.777.24.5.3.25",
+            "finalized": false
+        }
+    ],
+    "modulesConsentModule": [        
+        {
+            "domainName": "MII",
+            "name": "Rekontaktierung_Intro",
+            "label": "Rekontaktierung_Intro",
+            "version": "1.6",
+            "title": "<h3 style=\"text-align: justify;\">4. Möglichkeit einer erneuten Kontaktaufnahme</h3>",
+            "finalized": true
+        },
+        {
+            "domainName": "MII",
+            "name": "Geltungsdauer",
+            "label": "Geltungsdauer",
+            "version": "1.6",
+            "title": "<h3 style=\"text-align: justify;\">5. Geltungsdauer meiner Einwilligung</h3>",
+            "text": "<div style=\"text-align: justify;\">Meine Einwilligung in die Erhebung von Patientendaten [<span style=\"background-color: rgb(240, 102, 102);\">falls zutreffend</span>: und in die Gewinnung von Biomaterialien] bei Aufenthalten <span style=\"background-color: rgb(240, 102, 102);\">[in der/im Name der behandelnden Einrichtung</span>] gilt für einen <strong>Zeitraum von fünf Jahren</strong> ab meiner Einwilligungserklärung. Sollte ich nach Ablauf von fünf Jahren wieder im [Universitätsklinikum] vorstellig werden, kann ich erneut meine Einwilligung erteilen. Die Nutzung der von mir erhobenen Daten [<span style=\"background-color: rgb(240, 102, 102);\">falls zutreffend</span>: und gewonnenen Biomaterialien] bleibt über diesen Zeitraum hinaus zulässig (Punkt 5 der Patienteninformation). </div>",
+            "finalized": true
+        },
+        {
+            "domainName": "MII",
+            "name": "BIOMAT_erheben_lagern_nutzen",
+            "label": "BIOMAT_erheben_lagern_nutzen",
+            "version": "1.8",
+            "text": "<div style=\"text-align: justify;\">Ich willige ein in die Gewinnung, Lagerung und wissenschaftliche Nutzung meiner <strong>Biomaterialien </strong>(Gewebe und Körperflüssigkeiten), wie in Punkt 3.1 bis 3.3 der Einwilligungserklärung und Punkt 3 der Patienteninformation beschrieben.</div>",
+            "comment": "erheben, lagern, nutzen, eigentum übertragen, analysedaten zusammenführen",
+            "policiesAssignedConsentPolicy": [
+                {
+                    "policyKey": "MII;BIOMAT_erheben;1.1",
+                    "comment": "Automatischer Ablauf nach 5 Jahren",
+                    "expirationProperties": "VALIDITY_PERIOD=p5y;"
+                },
+                {
+                    "policyKey": "MII;BIOMAT_lagern_verarbeiten;1.0"
+                },
+                {
+                    "policyKey": "MII;BIOMAT_Eigentum_uebertragen;1.0",
+                    "expirationProperties": "VALIDITY_PERIOD=p5y;"
+                },
+                {
+                    "policyKey": "MII;BIOMAT_wissenschaftlich_nutzen_EU_DSGVO_konform;1.0"
+                },
+                {
+                    "policyKey": "MII;BIOMAT_Analysedaten_zusammenfuehren_Dritte;1.1"
+                }
+            ],
+            "externProperties": "fhirQuestionCode=2.16.840.1.113883.3.1937.777.24.2.1595",
+            "finalized": true
+        },
+        {
+            "domainName": "MII",
+            "name": "Rekontaktierung_Ergaenzungen",
+            "label": "Rekontaktierung_Ergaenzungen",
+            "version": "1.7",
+            "text": "<div style=\"text-align: justify;\"><strong>4.1. </strong>Ich willige ein, dass ich von [<span style=\"background-color: rgb(240, 102, 102);\">der/dem Name der behandelnden Einrichtung</span>] erneut kontaktiert werden darf, um gegebenenfalls zusätzliche für wissenschaftliche Fragen relevante Informationen [<span style=\"background-color: rgb(240, 102, 102);\">falls zutreffend</span>: oder Biomaterialien] zur Verfügung zu stellen, um über neue Forschungsvorhaben/Studien informiert zu werden, und/oder um meine Einwilligung in die Verknüpfung meiner Patientendaten mit medizinischen Informationen aus anderen Datenbanken einzuholen (siehe Punkt 4.1 der Patienteninformation).</div>",
+            "policiesAssignedConsentPolicy": [
+                {
+                    "policyKey": "MII;Rekontaktierung_Verknuepfung_Datenbanken;1.0"
+                },
+                {
+                    "policyKey": "MII;Rekontaktierung_weitere_Erhebung;1.1"
+                },
+                {
+                    "policyKey": "MII;Rekontaktierung_weitere_Studien;1.1"
+                }
+            ],
+            "externProperties": "fhirQuestionCode=2.16.840.1.113883.3.1937.777.24.2.1597",
+            "finalized": true
+        },
+        {
+            "domainName": "MII",
+            "name": "Widerrufsrecht",
+            "label": "Widerrufsrecht",
+            "version": "1.6",
+            "title": "<div style=\"text-align: justify;\"><br></div><h3 style=\"text-align: justify;\">6. Widerrufsrecht</h3>",
+            "text": "<div style=\"text-align: justify;\">Meine Einwilligung ist <strong>freiwillig</strong>!</div><div style=\"text-align: justify;\"><br></div><div style=\"text-align: justify;\">Ich kann meine Einwilligung jederzeit ohne Angabe von Gründen bei <span style=\"background-color: rgb(240, 102, 102);\">[der/dem Name der behandelnden Einrichtung]</span> vollständig oder in Teilen widerrufen, ohne dass mir irgendwelche Nachteile entstehen.&nbsp;</div><div style=\"text-align: justify;\"><br></div><div style=\"text-align: justify;\">Beim Widerruf werden [<span style=\"background-color: rgb(240, 102, 102);\">falls zutreffend</span>: die für die Forschung verbliebenen Biomaterialien und] die auf Grundlage dieser Einwilligung gespeicherten Daten <span style=\"background-color: rgb(240, 102, 102);\">[falls zutreffend</span>: vernichtet bzw.] gelöscht oder anonymisiert, sofern dies gesetzlich zulässig ist. Daten aus bereits durchgeführten Analysen können nicht mehr entfernt werden (Punkt 6 der Patienteninformation).</div><div style=\"text-align: justify;\"><br></div><div style=\"text-align: justify;\"><strong>Ich wurde über die Nutzung meiner Patientendaten [</strong><strong style=\"background-color: rgb(240, 102, 102);\">falls zutreffend:</strong><strong>, Krankenkassendaten und Biomaterialien] sowie die damit verbundenen Risiken informiert und erteile im vorgenannten Rahmen meine Einwilligung. Ich hatte ausreichend Bedenkzeit und alle meine Fragen wurden zufriedenstellend beantwortet.</strong></div><div style=\"text-align: justify;\"><br></div><div style=\"text-align: justify;\"><strong>Ich wurde darüber informiert, dass ich ein Exemplar der Patienteninformation und eine Kopie der unterschriebenen Einwilligungserklärung erhalten werde.</strong></div>",
+            "finalized": true
+        },
+        {
+            "domainName": "MII",
+            "name": "KKDAT_retrospektiv_uebertragen_speichern_nutzen",
+            "label": "KKDAT_retrospektiv_uebertragen_speichern_nutzen",
+            "version": "1.8",
+            "text": "<div style=\"text-align: justify;\"><strong>2.1 </strong>Einmalig <strong>rückwirkend für die Daten der vergangenen 5 Kalenderjahre</strong>. Mit der dafür nötigen Übermittlung meiner Krankenversicherungsnummer an <span style=\"background-color: rgb(240, 102, 102);\">[zuständige Stelle]</span> bin ich einverstanden.</div>",
+            "policiesAssignedConsentPolicy": [
+                {
+                    "policyKey": "MII;KKDAT_5J_retro_uebertragen;1.0",
+                    "externProperties": "singleUseOnly=true"
+                },
+                {
+                    "policyKey": "MII;KKDAT_5J_retro_speichern_verarbeiten;1.1"
+                },
+                {
+                    "policyKey": "MII;KKDAT_5J_retro_wissenschaftlich_nutzen;1.0"
+                },
+                {
+                    "policyKey": "MII;KKDAT_KVNR_5J_retro_uebertragen;1.0",
+                    "externProperties": "singleUseOnly=true"
+                }
+            ],
+            "externProperties": "fhirQuestionCode=2.16.840.1.113883.3.1937.777.24.2.1593",
+            "finalized": false
+        },
+        {
+            "domainName": "MII",
+            "name": "PATDAT_erheben_speichern_nutzen",
+            "label": "PATDAT_erheben_speichern_nutzen",
+            "version": "1.8",
+            "text": "<div style=\"text-align: justify;\">Ich willige ein in die Erhebung, Verarbeitung, Speicherung und wissenschaftliche Nutzung meiner <strong>Patientendaten </strong>wie in Punkt 1.1 bis 1.3 der Einwilligungserklärung und Punkt 1 der Patienteninformation beschrieben.</div>",
+            "policiesAssignedConsentPolicy": [
+                {
+                    "policyKey": "MII;IDAT_erheben;1.0"
+                },
+                {
+                    "policyKey": "MII;IDAT_speichern_verarbeiten;1.0"
+                },
+                {
+                    "policyKey": "MII;IDAT_zusammenfuehren_Dritte;1.0"
+                },
+                {
+                    "policyKey": "MII;IDAT_bereitstellen_EU_DSGVO_konform;1.1"
+                },
+                {
+                    "policyKey": "MII;MDAT_erheben;1.1",
+                    "comment": "Automatischer Ablauf nach 5 Jahren",
+                    "expirationProperties": "VALIDITY_PERIOD=p5y;"
+                },
+                {
+                    "policyKey": "MII;MDAT_speichern_verarbeiten;1.0"
+                },
+                {
+                    "policyKey": "MII;MDAT_wissenschaftlich_nutzen_EU_DSGVO_konform;1.0"
+                },
+                {
+                    "policyKey": "MII;MDAT_zusammenfuehren_Dritte;1.0"
+                },
+                {
+                    "policyKey": "MII;Rekontaktierung_Ergebnisse_erheblicher_Bedeutung;1.0"
+                }
+            ],
+            "externProperties": "fhirQuestionCode=2.16.840.1.113883.3.1937.777.24.2.1567",
+            "finalized": false
+        },
+        {
+            "domainName": "MII",
+            "name": "KKDAT_prospektiv_uebertragen_speichern_nutzen",
+            "label": "KKDAT_prospektiv_uebertragen_speichern_nutzen",
+            "version": "1.8",
+            "text": "<div style=\"text-align: justify;\"><strong>2.2 </strong>Für Daten <strong>ab dem Datum meiner Unterschrift über einen Zeitraum von 5 Jahren</strong>. Mit der dafür nötigen Übermittlung meiner Krankenversicherungsnummer. an <span style=\"background-color: rgb(240, 102, 102);\">[zuständige Stelle]</span> bin ich einverstanden.</div>",
+            "policiesAssignedConsentPolicy": [
+                {
+                    "policyKey": "MII;KKDAT_5J_pro_uebertragen;1.0",
+                    "comment": "Automatischer Ablauf nach 5 Jahren",
+                    "expirationProperties": "VALIDITY_PERIOD=p5y;"
+                },
+                {
+                    "policyKey": "MII;KKDAT_5J_pro_speichern_verarbeiten;1.0"
+                },
+                {
+                    "policyKey": "MII;KKDAT_5J_pro_wissenschaftlich_nutzen;1.0"
+                },
+                {
+                    "policyKey": "MII;KKDAT_KVNR_5J_pro_uebertragen;1.0",
+                    "comment": "Automatischer Ablauf nach 5 Jahren",
+                    "expirationProperties": "VALIDITY_PERIOD=p5y;"
+                }
+            ],
+            "externProperties": "fhirQuestionCode=2.16.840.1.113883.3.1937.777.24.2.1594",
+            "finalized": false
+        },
+        {
+            "domainName": "MII",
+            "name": "Rekontaktierung_Zusatzbefund",
+            "label": "Rekontaktierung_Zusatzbefund",
+            "version": "1.8",
+            "text": "<div style=\"text-align: justify;\"><strong>4.2 </strong>Ich willige ein, dass ich von [<span style=\"background-color: rgb(240, 102, 102);\">der/dem Name der behandelnden Einrichtung</span>] wieder kontaktiert werden darf, um über medizinische Zusatzbefunde informiert zu werden (siehe Punkt 4.2 der Patienteninformation).</div>",
+            "policiesAssignedConsentPolicy": [
+                {
+                    "policyKey": "MII;Rekontaktierung_Zusatzbefund;1.0"
+                }
+            ],
+            "externProperties": "fhirQuestionCode=2.16.840.1.113883.3.1937.777.24.2.1598",
+            "finalized": true
+        },
+        {
+            "domainName": "MII",
+            "name": "PATDAT_Intro",
+            "label": "PATDAT_Intro",
+            "version": "1.6",
+            "title": "<div><br></div><h3 style=\"text-align: justify;\">1. Erhebung, Verarbeitung und wissenschaftliche Nutzung meiner Patientendaten, wie in der Patienteninformation beschrieben; dies umfasst</h3>",
+            "text": "<div style=\"text-align: justify;\"><strong>1.1 </strong>die Verarbeitung und Nutzung meiner Patientendaten für die medizinische Forschung ausschließlich wie in der Patienteninformation beschrieben und mit getrennter Verwaltung des Namens und anderer direkt identifizierender Daten (Codierung). Unter der Adresse <strong>www.medizininformatik-initiative.de/datennutzung</strong> kann ich mich für einen E-Mail-Verteiler registrieren, der per E-Mail über alle neuen Studien, die mit den Patientendaten durchgeführt werden, vor deren Durchführung informiert (siehe Punkte 1.1, 1.2 und 1.3 der Patienteninformation).</div><div style=\"text-align: justify;\"><br></div><div style=\"text-align: justify;\"><strong>1.2 </strong>die wissenschaftliche Analyse und Nutzung meiner codierten Patientendaten durch Dritte wie z.B. durch andere Universitäten/Institute/forschende Unternehmen; dies kann auch eine Weitergabe für Forschungsprojekte im Ausland umfassen, wenn in diesen europäisches Datenschutzrecht gilt oder die Europäische Kommission ein angemessenes Datenschutzniveau bestätigt hat. An einem etwaigen kommerziellen Nutzen aus der Forschung werde ich nicht beteiligt. Vor einer Weitergabe an Forscher außerhalb meiner behandelnden Einrichtung erfolgt zudem eine weitere Ersetzung des internen Kennzeichens durch eine neue Zeichenkombination.</div><div style=\"text-align: justify;\"><br></div><div style=\"text-align: justify;\"><strong>1.3 </strong>die Möglichkeit einer Zusammenführung meiner Patientendaten mit Daten in Datenbanken anderer Forschungspartner. <strong>Voraussetzung ist, dass ich dieser Nutzung bei den entsprechenden Forschungspartnern auch zugestimmt habe.</strong></div>",
+            "finalized": true
+        },
+        {
+            "domainName": "MII",
+            "name": "KKDAT_Intro",
+            "label": "KKDAT_Intro",
+            "version": "1.6",
+            "title": "<h3 style=\"text-align: justify;\">2. Übertragung und wissenschaftliche Nutzung meiner Krankenkassendaten</h3>",
+            "text": "<div style=\"text-align: justify;\">Hiermit ermächtige ich meine Krankenkasse auf Anforderung durch [<span style=\"background-color: rgb(240, 102, 102);\">zuständige Stelle</span>] Daten über von mir in Anspruch genommene ärztliche Leistungen in der ambulanten Versorgung und bei stationären Aufenthalten, über verordnete Heil- und Hilfsmittel sowie Arzneimittel und Angaben zum Bereich Pflege an [<span style=\"background-color: rgb(240, 102, 102);\">Name der behandelnden Einrichtung</span>] sowie in der Patienteninformation beschrieben, zu übermitteln, und zwar:</div><div><br></div>",
+            "finalized": true
+        },
+        {
+            "domainName": "MII",
+            "name": "BIOMAT_Intro",
+            "label": "BIOMAT_Intro",
+            "version": "1.6",
+            "title": "<h3 style=\"text-align: justify;\">3. Gewinnung, Lagerung und wissenschaftliche Nutzung meiner Biomaterialien (Gewebe und Körperflüssigkeiten), wie in der Patienteninformation beschrieben; dies umfasst</h3>",
+            "text": "<div style=\"text-align: justify;\"><strong>3.1 </strong>die Lagerung und Verarbeitung meiner Biomaterialien in [<span style=\"background-color: rgb(240, 102, 102);\">der/dem Träger der Biobank(en) bzw. Archive</span>] für medizinische Forschungszwecke ausschließlich wie in der Patienteninformation beschrieben und mit getrennter Verwaltung des Namens und anderer direkt identifizierender Daten (Codierung, siehe Punkte 3.1 bis 3.3 der Patienteninformation).</div><div style=\"text-align: justify;\"><br></div><div style=\"text-align: justify;\"><strong>3.2 </strong>die wissenschaftliche Analyse meiner codierten Biomaterialien sowie deren Weitergabe und Nutzung durch Dritte z.B. Universitäten/Institute/forschende Unternehmen für genauer bestimmte und beantragte medizinische Forschungszwecke; dies kann auch eine Weitergabe für Forschungsprojekte im Ausland umfassen, wenn in diesen europäisches Datenschutzrecht gilt oder die Europäische Kommission ein angemessenes Datenschutzniveau bestätigt hat. Vor einer Weitergabe an Forscher außerhalb meiner behandelnden Einrichtung erfolgt zudem eine weitere Ersetzung des internen Kennzeichens durch eine neue Zeichenkombination.</div><div style=\"text-align: justify;\"><br></div><div style=\"text-align: justify;\">Ebenso willige ich in die Möglichkeit einer Zusammenführung von Analyse-Daten meiner Biomaterialien mit Analyse-Daten in Datenbanken anderer Forschungspartner ein. <strong>Voraussetzung ist, dass ich dieser Nutzung bei den entsprechenden Forschungspartnern auch zugestimmt habe.</strong></div><div style=\"text-align: justify;\"><br></div><div style=\"text-align: justify;\"><strong>3.3 Das Eigentum an meinen Biomaterialien übertrage ich an [</strong><strong style=\"background-color: rgb(240, 102, 102);\">den/die/das Träger der Biobank(en) bzw. Archive</strong><strong>]</strong>. Mein Recht, über die Verarbeitung meiner dem Biomaterial zu entnehmenden personenbezogenen Daten selbst zu bestimmen, bleibt von der Eigentumsübertragung unberührt (siehe Punkt 3.3 der Patienteninformation).</div><div><br></div>",
+            "finalized": true
+        },
+        {
+            "domainName": "MII",
+            "name": "BIOMAT_Zusatzentnahme",
+            "label": "BIOMAT_Zusatzentnahme",
+            "version": "1.8",
+            "text": "<div style=\"text-align: justify;\">[<span style=\"background-color: rgb(240, 102, 102);\">Falls zutreffend:</span> Meine Einwilligung umfasst auch die Entnahme geringer zusätzlicher Mengen von Biomaterial bei einer sowieso stattfindenden Routine-Blutentnahme oder -Punktion in den unter Punkt 3.2 der Patienteninformation beschriebenen Grenzen.</div>",
+            "policiesAssignedConsentPolicy": [
+                {
+                    "policyKey": "MII;BIOMAT_Zusatzmengen_entnehmen;1.0",
+                    "comment": "Automatischer Ablauf nach 5 Jahren",
+                    "expirationProperties": "VALIDITY_PERIOD=p5y;"
+                }
+            ],
+            "externProperties": "fhirQuestionCode=2.16.840.1.113883.3.1937.777.24.2.1596",
+            "finalized": true
+        }
+    ],
+    "templatesConsentTemplate": [
+        {
+            "domainName": "MII",
+            "Name": "Patienteneinwilligung MII",
+            "Label": "Patienteneinwilligung MII",
+            "version": "1.6.d",
+            "type": "CONSENT",
+            "title": "<h1>Einwilligungserklärung</h1>",
+            "comment": "aktualisiert am 2022-01-27, TMF-konsolidierte Policy-Labels und Beschreibungen, Umsetzung der TFCU Policies v.1.0 im ArtDecor, Version 1.6d der MII Vorlage (April 2020)",
+            "header": "<h2 style=\"text-align: justify;\">Einwilligung in die Nutzung von Patientendaten, [<span style=\"background-color: rgb(240, 102, 102);\">falls zutreffend</span>: Krankenkassendaten und Biomaterialien (Gewebe und Körperflüssigkeiten)] für medizinische Forschungszwecke</h2>",
+            "expirationProperties": "VALIDITY_PERIOD=P30Y;",
+            "externProperties": "study=mii;optional=false;orderNr=1;fhirPolicyValueSet=https://www.medizininformatik-initiative.de/fhir/ValueSet/MiiConsentPolicyValueSet;fhirAnswerCodeSystem=2.16.840.1.113883.3.1937.777.24.5.2;fhirAnswerValueSet=https://www.medizininformatik-initiative.de/fhir/ValueSet/MiiConsentAnswerValueSet;fhirAnswerCodeYes=2.16.840.1.113883.3.1937.777.24.5.2.1;fhirAnswerCodeNo=2.16.840.1.113883.3.1937.777.24.5.2.2;fhirAnswerCodeUnknown=2.16.840.1.113883.3.1937.777.24.5.2.3;fhirAnswerDisplayYes=gültig;fhirAnswerDisplayNo=ungültig;fhirAnswerDisplayUnknown=unbekannt",
+            "modulesAssignedConsentModule": [                
+                {
+                    "mandatory": false,
+                    "moduleKey": "MII;PATDAT_Intro;1.6",
+                    "orderNumber": 0
+                },
+                {
+                    "displayCheckBoxes": [
+                        "ACCEPTED",
+                        "DECLINED"
+                    ],
+                    "mandatory": true,
+                    "moduleKey": "MII;PATDAT_erheben_speichern_nutzen;1.8",
+                    "orderNumber": 1
+                },
+                {
+                    "mandatory": false,
+                    "moduleKey": "MII;KKDAT_Intro;1.6",
+                    "orderNumber": 2
+                },
+                {
+                    "displayCheckBoxes": [
+                        "ACCEPTED",
+                        "DECLINED"
+                    ],
+                    "mandatory": false,
+                    "moduleKey": "MII;KKDAT_retrospektiv_uebertragen_speichern_nutzen;1.8",
+                    "orderNumber": 3
+                },
+                {
+                    "displayCheckBoxes": [
+                        "ACCEPTED",
+                        "DECLINED"
+                    ],
+                    "mandatory": false,
+                    "moduleKey": "MII;KKDAT_prospektiv_uebertragen_speichern_nutzen;1.8",
+                    "orderNumber": 4
+                },
+                {
+                    "mandatory": false,
+                    "moduleKey": "MII;BIOMAT_Intro;1.6",
+                    "orderNumber": 5
+                },
+                {
+                    "displayCheckBoxes": [
+                        "ACCEPTED",
+                        "DECLINED"
+                    ],
+                    "mandatory": false,
+                    "moduleKey": "MII;BIOMAT_erheben_lagern_nutzen;1.8",
+                    "orderNumber": 6
+                },
+                {
+                    "displayCheckBoxes": [
+                        "ACCEPTED",
+                        "DECLINED"
+                    ],
+                    "mandatory": false,
+                    "moduleKey": "MII;BIOMAT_Zusatzentnahme;1.8",
+                    "orderNumber": 7
+                },
+                {
+                    "mandatory": false,
+                    "moduleKey": "MII;Rekontaktierung_Intro;1.6",
+                    "orderNumber": 8
+                },
+                {
+                    "displayCheckBoxes": [
+                        "ACCEPTED",
+                        "DECLINED"
+                    ],
+                    "mandatory": false,
+                    "moduleKey": "MII;Rekontaktierung_Ergaenzungen;1.7",
+                    "orderNumber": 9
+                },
+                {
+                    "displayCheckBoxes": [
+                        "ACCEPTED",
+                        "DECLINED"
+                    ],
+                    "mandatory": false,
+                    "moduleKey": "MII;Rekontaktierung_Zusatzbefund;1.8",
+                    "orderNumber": 10
+                },
+                {
+                    "mandatory": false,
+                    "moduleKey": "MII;Geltungsdauer;1.6",
+                    "orderNumber": 13
+                },
+                {
+                    "mandatory": false,
+                    "moduleKey": "MII;Widerrufsrecht;1.6",
+                    "orderNumber": 14
+                }
+            ],
+            "finalized": false,
+            "versionLabel": "1.6.d"
+        }
+    ]
+}

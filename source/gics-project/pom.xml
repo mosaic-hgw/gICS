@@ -3,44 +3,39 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>org.emau.icmvc.ganimed.ttp</groupId>
 	<artifactId>gics-project</artifactId>
-	<version>2023.1.3</version>
+	<version>2024.3.0</version>
 	<name>gICS</name>
 	<url>https://www.ths-greifswald.de/gics</url>
+
 	<packaging>pom</packaging>
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-		<ttp-web-common.version>2.15.9</ttp-web-common.version>
-		<ths-utils.version>1.4.11</ths-utils.version>
-		<display_version>${project.version}</display_version>
+		<ttp-web-common.version>2024.3.0</ttp-web-common.version>
+		<ths-utils.version>1.5.4</ths-utils.version>
 		<project.shortName>gics</project.shortName>
 		<project.upperName>GICS</project.upperName>
-		<log4j.version>2.20.0</log4j.version>
-		<noti-serv.version>2023.1.1</noti-serv.version>
-		<ttp-gras.version>1.0.0</ttp-gras.version>
+		<display_version>${project.version}</display_version>
+		<log4j.version>2.24.2</log4j.version>
+		<ttp-noti.version>2024.1.1</ttp-noti.version>
+		<ttp-gras.version>1.2.0</ttp-gras.version>
+		<docker-shared-resources.version>2024.2.0</docker-shared-resources.version>
+		<hapi-fhir.version>7.6.0</hapi-fhir.version><!-- json export fails on higher versions -->
+		<excludeTests>Disabled,Integration,Selenium</excludeTests>
 	</properties>
 	<modules>
-		<module>cm2-commons</module>
-		<module>cm2-ejb</module>
-		<module>cm2-ear</module>
-		<module>cm2-web</module>
-		<module>cm2-docker</module>
+		<module>gics-commons</module>
+		<module>gics-ejb</module>
+		<module>gics-ear</module>
+		<module>gics-web</module>
+		<module>gics-docker</module>
+		<module>gics-coverage</module>
 	</modules>
 
 	<profiles>
 		<profile>
-			<id>secured</id>
-			<properties>
-				<login.enable.start>--&gt;</login.enable.start>
-				<login.enable.end>&lt;!--</login.enable.end>
-				<gras-login.enable.start>--&gt;</gras-login.enable.start>
-				<gras-login.enable.end>&lt;!--</gras-login.enable.end>
-			</properties>
-		</profile>
-		<profile>
 			<id>dev</id>
 			<properties>
-				<display_version>${project.version} - Build ${maven.build.timestamp}
-					UTC
+				<display_version>${project.version} - Branch: ${env.CI_COMMIT_REF_NAME} - Built: ${maven.build.timestamp} UTC
 				</display_version>
 				<maven.build.timestamp.format>yyyy-MM-dd HH:mm</maven.build.timestamp.format>
 			</properties>
@@ -52,6 +47,82 @@
 				<disclaimer.enable.end>&lt;!--</disclaimer.enable.end>
 				<display_version>${project.version} - Demo</display_version>
 			</properties>
+		</profile>
+		<profile>
+			<id>staticContext</id>
+			<properties>
+				<!--suppress UnresolvedMavenProperty -->
+				<env.TTP_GICS_WEB_CONTEXT>${project.shortName}-web</env.TTP_GICS_WEB_CONTEXT>
+				<!--suppress UnresolvedMavenProperty -->
+				<env.TTP_GICS_SOAP_CONTEXT>${project.shortName}</env.TTP_GICS_SOAP_CONTEXT>
+			</properties>
+		</profile>
+		<profile>
+			<id>secured</id>
+			<properties>
+				<login.enable.start>--&gt;</login.enable.start>
+				<login.enable.end>&lt;!--</login.enable.end>
+				<gras-login.enable.start>--&gt;</gras-login.enable.start>
+				<gras-login.enable.end>&lt;!--</gras-login.enable.end>
+			</properties>
+		</profile>
+		<profile>
+			<id>coverage</id>
+			<build>
+				<plugins>
+					<plugin>
+						<groupId>org.jacoco</groupId>
+						<artifactId>jacoco-maven-plugin</artifactId>
+						<version>0.8.12</version>
+						<executions>
+							<execution>
+								<goals>
+									<goal>prepare-agent</goal>
+								</goals>
+							</execution>
+						</executions>
+					</plugin>
+				</plugins>
+			</build>
+		</profile>
+		<!-- profiles for testing -->
+		<profile>
+			<id>integration</id>
+			<properties>
+				<excludeTests>Disabled</excludeTests>
+			</properties>
+			<build>
+				<pluginManagement>
+					<plugins>
+						<plugin>
+							<groupId>org.apache.maven.plugins</groupId>
+							<artifactId>maven-surefire-plugin</artifactId>
+							<configuration>
+								<groups>Integration</groups>
+							</configuration>
+						</plugin>
+					</plugins>
+				</pluginManagement>
+			</build>
+		</profile>
+		<profile>
+			<id>selenium</id>
+			<properties>
+				<excludeTests>Disabled</excludeTests>
+			</properties>
+			<build>
+				<pluginManagement>
+					<plugins>
+						<plugin>
+							<groupId>org.apache.maven.plugins</groupId>
+							<artifactId>maven-surefire-plugin</artifactId>
+							<configuration>
+								<groups>Selenium</groups>
+							</configuration>
+						</plugin>
+					</plugins>
+				</pluginManagement>
+			</build>
 		</profile>
 	</profiles>
 
@@ -71,109 +142,44 @@
 
 	<dependencyManagement>
 		<dependencies>
+			<!-- gICS -->
 			<dependency>
 				<groupId>org.emau.icmvc.ganimed.ttp</groupId>
-				<artifactId>cm2-commons</artifactId>
+				<artifactId>gics-commons</artifactId>
 				<version>${project.version}</version>
 			</dependency>
 			<dependency>
 				<groupId>org.emau.icmvc.ganimed.ttp</groupId>
-				<artifactId>cm2-ejb</artifactId>
+				<artifactId>gics-ejb</artifactId>
 				<version>${project.version}</version>
 				<type>ejb</type>
 			</dependency>
 			<dependency>
 				<groupId>org.emau.icmvc.ganimed.ttp</groupId>
-				<artifactId>cm2-ear</artifactId>
+				<artifactId>gics-shared-resources</artifactId>
+				<version>${project.version}</version>
+				<type>jar</type>
+			</dependency>
+			<dependency>
+				<groupId>org.emau.icmvc.ganimed.ttp</groupId>
+				<artifactId>gics-ear</artifactId>
 				<version>${project.version}</version>
 				<type>ear</type>
 			</dependency>
 			<dependency>
 				<groupId>org.emau.icmvc.ganimed.ttp</groupId>
-				<artifactId>cm2-web</artifactId>
+				<artifactId>gics-web</artifactId>
 				<version>${project.version}</version>
 				<type>war</type>
 			</dependency>
-			<dependency>
-				<groupId>org.emau.icmvc.ganimed.ttp</groupId>
-				<artifactId>gpas-shared-resources</artifactId>
-				<version>${project.version}</version>
-				<type>jar</type>
-			</dependency>
-			<!-- for notification-service and keycloak-based soap auth-->
+
+			<!-- TTP utils and shared resources -->
 			<dependency>
 				<groupId>org.emau.icmvc.ttp</groupId>
 				<artifactId>ths-utils</artifactId>
 				<version>${ths-utils.version}</version>
 				<type>jar</type>
 			</dependency>
-
-			<dependency>
-				<groupId>org.apache.logging.log4j</groupId>
-				<artifactId>log4j-api</artifactId>
-				<version>${log4j.version}</version>
-				<scope>provided</scope>
-			</dependency>
-			<dependency>
-				<groupId>org.slf4j</groupId>
-				<artifactId>slf4j-api</artifactId>
-				<version>1.7.36</version>
-				<scope>provided</scope>
-			</dependency>
-			<dependency>
-				<groupId>org.aspectj</groupId>
-				<artifactId>aspectjweaver</artifactId>
-				<version>1.9.19</version>
-				<scope>runtime</scope>
-			</dependency>
-			<dependency>
-				<groupId>org.aspectj</groupId>
-				<artifactId>aspectjrt</artifactId>
-				<version>1.9.19</version>
-			</dependency>
-			<dependency>
-				<groupId>javax</groupId>
-				<artifactId>javaee-api</artifactId>
-				<version>7.0</version>
-				<scope>provided</scope>
-			</dependency>
-			<dependency>
-				<groupId>commons-codec</groupId>
-				<artifactId>commons-codec</artifactId>
-				<version>1.15</version>
-			</dependency>
-			<dependency>
-				<groupId>ca.uhn.hapi.fhir</groupId>
-				<artifactId>hapi-fhir-structures-r4</artifactId>
-				<version>6.6.2</version>
-			</dependency>
-			<dependency>
-				<groupId>com.fasterxml.jackson.core</groupId>
-				<artifactId>jackson-databind</artifactId>
-				<version>2.15.2</version>
-				<scope>provided</scope>
-			</dependency>
-
-			<dependency>
-				<groupId>org.eclipse.persistence</groupId>
-				<artifactId>eclipselink</artifactId>
-				<version>2.7.12</version>
-				<scope>provided</scope>
-			</dependency>
-			<dependency>
-				<groupId>org.eclipse.persistence</groupId>
-				<artifactId>org.eclipse.persistence.jpa.modelgen.processor</artifactId>
-				<version>2.7.12</version>
-				<scope>provided</scope>
-			</dependency>
-			<dependency>
-				<groupId>com.wutka</groupId>
-				<artifactId>dtdparser</artifactId>
-				<version>1.21</version>
-				<scope>provided</scope>
-			</dependency>
-
-			<!-- web -->
 			<dependency>
 				<groupId>org.emau.icmvc.ttp</groupId>
 				<artifactId>ttp-web-common</artifactId>
@@ -185,37 +191,122 @@
 				<artifactId>ttp-web-common</artifactId>
 				<version>${ttp-web-common.version}</version>
 				<classifier>classes</classifier>
+				<scope>provided</scope>
+			</dependency>
+
+			<dependency>
+				<groupId>org.emau.icmvc.ttp</groupId>
+				<artifactId>noti-shared-resources</artifactId>
+				<version>${ttp-noti.version}</version>
+				<type>jar</type>
+			</dependency>
+			<dependency>
+				<groupId>org.emau.icmvc.ttp</groupId>
+				<artifactId>ths-notification-client-ear</artifactId>
+				<version>${ttp-noti.version}</version>
+				<type>ear</type>
+			</dependency>
+			<dependency>
+				<groupId>org.emau.icmvc.ttp</groupId>
+				<artifactId>ths-notification-service</artifactId>
+				<version>${ttp-noti.version}</version>
+				<type>war</type>
+			</dependency>
+			<dependency>
+				<groupId>org.icmvc.ttp</groupId>
+				<artifactId>gras-shared-resources</artifactId>
+				<version>${ttp-gras.version}</version>
+				<type>jar</type>
+			</dependency>
+			<dependency>
+				<groupId>org.icmvc.ttp.docker</groupId>
+				<artifactId>docker-shared-resources</artifactId>
+				<version>${docker-shared-resources.version}</version>
+				<type>jar</type>
+			</dependency>
+
+			<!-- Logging -->
+			<dependency>
+				<groupId>org.apache.logging.log4j</groupId>
+				<artifactId>log4j-api</artifactId>
+				<version>${log4j.version}</version>
+				<scope>provided</scope>
+			</dependency>
+			<dependency>
+				<groupId>org.slf4j</groupId>
+				<artifactId>slf4j-api</artifactId>
+				<version>2.0.16</version>
+				<scope>provided</scope>
+			</dependency>
+
+			<!-- JavaEE APIs -->
+			<dependency>
+				<groupId>jakarta.platform</groupId>
+				<artifactId>jakarta.jakartaee-api</artifactId>
+				<version>10.0.0</version>
+				<scope>provided</scope>
+			</dependency>
+
+			<!-- Apache Commons -->
+			<dependency>
+				<groupId>commons-codec</groupId>
+				<artifactId>commons-codec</artifactId>
+				<version>1.17.1</version>
+			</dependency>
+
+			<!-- Notifications -->
+			<dependency>
+				<groupId>com.fasterxml.jackson.core</groupId>
+				<artifactId>jackson-databind</artifactId>
+				<version>2.18.2</version>
+				<scope>provided</scope>
+			</dependency>
+
+			<!-- Persistence -->
+			<dependency>
+				<groupId>org.eclipse.persistence</groupId>
+				<artifactId>eclipselink</artifactId>
+				<version>4.0.4</version>
+				<scope>provided</scope>
+			</dependency>
+			<dependency>
+				<groupId>org.eclipse.persistence</groupId>
+				<artifactId>org.eclipse.persistence.jpa.modelgen.processor</artifactId>
+				<version>4.0.4</version>
+				<scope>provided</scope>
+				<exclusions>
+					<exclusion>
+						<groupId>com.sun.xml.bind</groupId>
+						<artifactId>jaxb-core</artifactId>
+					</exclusion>
+				</exclusions>
+			</dependency>
+
+			<!-- Web -->
+			<dependency>
+				<groupId>org.primefaces</groupId>
+				<artifactId>primefaces</artifactId>
+				<version>14.0.8</version>
+				<scope>provided</scope>
+				<classifier>jakarta</classifier>
+			</dependency>
+			<dependency>
+				<groupId>software.xdev</groupId>
+				<artifactId>chartjs-java-model</artifactId>
+				<version>2.5.0</version>
+				<scope>provided</scope>
 			</dependency>
 			<dependency>
 				<groupId>com.ibm.icu</groupId>
 				<artifactId>icu4j</artifactId>
-				<version>73.1</version>
+				<version>76.1</version>
 			</dependency>
 			<dependency>
-				<groupId>org.primefaces</groupId>
-				<artifactId>primefaces</artifactId>
-				<version>12.0.0</version>
-				<scope>provided</scope>
+				<groupId>ca.uhn.hapi.fhir</groupId>
+				<artifactId>hapi-fhir-structures-r4</artifactId>
+				<version>${hapi-fhir.version}</version>
 			</dependency>
-
-			<!-- fuer Template Erkennung aus Scan -->
-			<dependency>
-				<groupId>com.google.zxing</groupId>
-				<artifactId>core</artifactId>
-				<version>3.5.1</version>
-			</dependency>
-			<dependency>
-				<groupId>com.google.zxing</groupId>
-				<artifactId>javase</artifactId>
-				<version>3.5.1</version>
-			</dependency>
-			<dependency>
-				<groupId>org.apache.pdfbox</groupId>
-				<artifactId>pdfbox</artifactId>
-				<version>2.0.28</version>
-			</dependency>
-
-			<!-- for barcodes in primefaces -->
+			<!-- Barcodes in primefaces -->
 			<dependency>
 				<groupId>io.nayuki</groupId>
 				<artifactId>qrcodegen</artifactId>
@@ -227,88 +318,91 @@
 				<artifactId>barcode4j-light</artifactId>
 				<version>2.3.0</version>
 			</dependency>
+			<!-- Template parsing -->
+			<dependency>
+				<groupId>com.google.zxing</groupId>
+				<artifactId>core</artifactId>
+				<version>3.5.3</version>
+			</dependency>
+			<dependency>
+				<groupId>com.google.zxing</groupId>
+				<artifactId>javase</artifactId>
+				<version>3.5.3</version>
+			</dependency>
+			<dependency>
+				<groupId>org.apache.pdfbox</groupId>
+				<artifactId>pdfbox</artifactId>
+				<version>2.0.32</version>
+			</dependency>
+			<!-- PDF Generation (do not set scope to test!) -->
+			<dependency>
+				<groupId>org.seleniumhq.selenium</groupId>
+				<artifactId>selenium-java</artifactId>
+				<version>4.27.0</version>
+			</dependency>
 
 			<!-- Java 9+ Kompatibilität -->
 			<dependency>
-				<groupId>javax.xml.bind</groupId>
-				<artifactId>jaxb-api</artifactId>
-				<version>2.3.1</version>
-			</dependency>
-			<dependency>
 				<groupId>com.sun.xml.ws</groupId>
 				<artifactId>jaxws-rt</artifactId>
-				<!-- Warning: Higher versions dont work for now -->
-				<version>2.3.6</version>
+				<version>4.0.3</version>
 				<type>pom</type>
+				<!-- implicitly provides jaxb-core for gics-commons -->
 			</dependency>
 
-			<!-- external shared resources and deployments -->
+			<!-- Other -->
 			<dependency>
-				<groupId>org.emau.icmvc.ttp</groupId>
-				<artifactId>noti-shared-resources</artifactId>
-				<version>${noti-serv.version}</version>
-				<type>jar</type>
+				<groupId>org.aspectj</groupId>
+				<artifactId>aspectjweaver</artifactId>
+				<version>1.9.22.1</version>
+				<scope>runtime</scope>
 			</dependency>
 			<dependency>
-				<groupId>org.emau.icmvc.ttp</groupId>
-				<artifactId>ths-notification-client-ear</artifactId>
-				<version>${noti-serv.version}</version>
-				<type>ear</type>
+				<groupId>org.aspectj</groupId>
+				<artifactId>aspectjrt</artifactId>
+				<version>1.9.22.1</version>
 			</dependency>
 			<dependency>
-				<groupId>org.emau.icmvc.ttp</groupId>
-				<artifactId>ths-notification-service</artifactId>
-				<version>${noti-serv.version}</version>
-				<type>war</type>
+				<groupId>com.wutka</groupId>
+				<artifactId>dtdparser</artifactId>
+				<version>1.21</version>
+				<scope>provided</scope>
 			</dependency>
 			<dependency>
-				<groupId>org.icmvc.ttp</groupId>
-				<artifactId>gras-shared-resources</artifactId>
-				<version>${ttp-gras.version}</version>
-				<type>jar</type>
+				<groupId>org.mvel</groupId>
+				<artifactId>mvel2</artifactId>
+				<version>2.5.2.Final</version>
 			</dependency>
-
+			
 			<!-- Tests -->
-			<dependency>
-				<groupId>org.apache.cxf</groupId>
-				<artifactId>cxf-rt-frontend-jaxws</artifactId>
-				<scope>test</scope>
-				<version>4.0.2</version>
-			</dependency>
-			<dependency>
-				<groupId>org.apache.cxf</groupId>
-				<artifactId>cxf-rt-transports-http-jetty</artifactId>
-				<scope>test</scope>
-				<version>4.0.2</version>
-			</dependency>
-			<dependency>
-				<groupId>org.junit.jupiter</groupId>
-				<artifactId>junit-jupiter</artifactId>
-				<version>5.9.3</version>
-				<scope>test</scope>
-			</dependency>
-			<dependency>
-				<groupId>org.mockito</groupId>
-				<artifactId>mockito-core</artifactId>
-				<version>5.3.1</version>
-				<scope>test</scope>
-			</dependency>
 			<dependency>
 				<groupId>ch.qos.logback</groupId>
 				<artifactId>logback-core</artifactId>
-				<version>1.2.12</version>
+				<version>1.5.12</version>
 				<scope>test</scope>
 			</dependency>
 			<dependency>
 				<groupId>ch.qos.logback</groupId>
 				<artifactId>logback-classic</artifactId>
-				<version>1.2.12</version>
+				<version>1.5.12</version>
 				<scope>test</scope>
 			</dependency>
 			<dependency>
-				<groupId>com.sun.faces</groupId>
-				<artifactId>jsf-api</artifactId>
-				<version>2.2.20</version>
+				<groupId>org.apache.cxf</groupId>
+				<artifactId>cxf-rt-frontend-jaxws</artifactId>
+				<scope>test</scope>
+				<version>4.0.5</version>
+			</dependency>
+			<dependency>
+				<groupId>org.apache.cxf</groupId>
+				<artifactId>cxf-rt-transports-http-jetty</artifactId>
+				<scope>test</scope>
+				<version>4.0.5</version>
+			</dependency>
+			<dependency>
+				<groupId>org.apache.logging.log4j</groupId>
+				<artifactId>log4j-core</artifactId>
+				<version>${log4j.version}</version>
 				<scope>test</scope>
 			</dependency>
 			<dependency>
@@ -319,13 +413,20 @@
 				<scope>test</scope>
 			</dependency>
 			<dependency>
-				<groupId>org.apache.logging.log4j</groupId>
-				<artifactId>log4j-core</artifactId>
-				<version>${log4j.version}</version>
+				<groupId>org.junit.jupiter</groupId>
+				<artifactId>junit-jupiter</artifactId>
+				<version>5.11.3</version>
+				<scope>test</scope>
+			</dependency>
+			<dependency>
+				<groupId>org.mockito</groupId>
+				<artifactId>mockito-core</artifactId>
+				<version>5.14.2</version>
 				<scope>test</scope>
 			</dependency>
 		</dependencies>
 	</dependencyManagement>
+
 	<dependencies>
 		<dependency>
 			<groupId>org.junit.jupiter</groupId>
@@ -351,7 +452,7 @@
 				<plugin>
 					<groupId>org.apache.maven.plugins</groupId>
 					<artifactId>maven-jar-plugin</artifactId>
-					<version>3.3.0</version>
+					<version>3.4.2</version>
 				</plugin>
 				<plugin>
 					<groupId>org.apache.maven.plugins</groupId>
@@ -373,16 +474,15 @@
 						</jboss>
 						<defaultLibBundleDir>lib</defaultLibBundleDir>
 						<applicationName>${project.shortName}</applicationName>
-						<finalName>${project.shortName}-${project.version}</finalName>
 					</configuration>
 				</plugin>
 				<plugin>
 					<groupId>org.apache.maven.plugins</groupId>
 					<artifactId>maven-compiler-plugin</artifactId>
-					<version>3.10.1</version>
+					<version>3.13.0</version>
 					<configuration>
-						<source>17</source>
-						<target>17</target>
+						<source>21</source>
+						<target>21</target>
 						<debug>true</debug>
 						<debuglevel>source,lines,vars</debuglevel>
 						<generatedSourcesDirectory>target/generated-sources/annotations</generatedSourcesDirectory>
@@ -391,11 +491,11 @@
 				<plugin>
 					<groupId>org.apache.maven.plugins</groupId>
 					<artifactId>maven-war-plugin</artifactId>
-					<version>3.3.2</version>
+					<version>3.4.0</version>
 					<configuration>
 						<archive>
 							<manifestEntries>
-								<Dependencies>org.slf4j,deployment.${project.shortName}-${project.version}.ear</Dependencies>
+								<Dependencies>org.slf4j,deployment.${project.shortName}-ear-${project.version}.ear</Dependencies>
 							</manifestEntries>
 						</archive>
 						<nonFilteredFileExtensions>
@@ -416,16 +516,16 @@
 				<plugin>
 					<groupId>org.apache.maven.plugins</groupId>
 					<artifactId>maven-deploy-plugin</artifactId>
-					<version>3.0.0</version>
+					<version>3.1.3</version>
 				</plugin>
 				<plugin>
 					<groupId>org.apache.maven.plugins</groupId>
 					<artifactId>maven-surefire-plugin</artifactId>
 					<version>2.22.2</version>
 					<configuration>
-						<excludes>
-							<exclude>**/servicebased/*.java</exclude>
-						</excludes>
+						<excludedGroups>${excludeTests}</excludedGroups>
+						<!-- to disable a java.lang.AssertionError at ca.uhn.fhir.parser.path.EncodeContextPath.pushPath(EncodeContextPath.java:86) -->
+						<enableAssertions>false</enableAssertions>
 					</configuration>
 				</plugin>
 				<plugin>
@@ -474,16 +574,17 @@
 						<excludes>
 							<exclude>**/beans.xml</exclude>
 							<exclude>**/*.json</exclude>
+							<exclude>**/Dockerfile*</exclude>
 						</excludes>
 					</configuration>
 				</plugin>
 				<plugin>
 					<groupId>org.apache.maven.plugins</groupId>
 					<artifactId>maven-javadoc-plugin</artifactId>
-					<version>3.4.1</version>
+					<version>3.6.3</version>
 					<configuration>
 						<windowtitle>gICS ${project.version} API</windowtitle>
-						<bottom><![CDATA[gICS ${project.version} API, Copyright 2023, <a href="https://www.ths-greifswald.de">ths-greifswald.de<a>]]></bottom>
+						<bottom><![CDATA[gICS ${project.version} API, Copyright 2024, <a href="https://www.ths-greifswald.de">ths-greifswald.de<a>]]></bottom>
 					</configuration>
 				</plugin>
 			</plugins>

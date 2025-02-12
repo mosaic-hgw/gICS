@@ -1,0 +1,18 @@
+version: '3.7'
+services:
+  wildfly:
+    image: docker.icm.med.uni-greifswald.de/ths/docker/${project.shortName}-loadtest:${project.version}
+    container_name: ${project.shortName}-wildfly-test
+    ports:
+      - "3306:3306"
+#      - "8787:8787"
+      - "8080:8080"
+      - "9990:9990"
+    env_file:
+      - ./envs/mysql.env
+      - ./envs/ttp_commons.env
+      - ./envs/ttp_${project.shortName}.env
+      - ./envs/wf_commons.env
+      - ./envs/ttp_loadtest.env
+    volumes:
+      - ./logs:${docker.wildfly.logs}

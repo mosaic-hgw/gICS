@@ -1,7 +1,7 @@
 ![context](https://user-images.githubusercontent.com/12081369/49164555-a27e5180-f32f-11e8-8725-7b97e35134b5.png)
 
-Current Version: 2023.1.3 (Okt. 2023)
-Current Docker-Version of TTP-FHIR-Gateway: 2023.1.2 (October 2023), Details from [ReleaseNotes](https://www.ths-greifswald.de/ttpfhirgw/releasenotes/2023-1-2)
+Current Version: 2024.3.0 (Dez. 2024)<br/>
+Current Docker-Version of TTP-FHIR-Gateway: 2024.3.0 (Dec. 2024), Details from [ReleaseNotes](https://www.ths-greifswald.de/ttpfhirgw/releasenotes/2024-3-0)
 
 # About #
 The Consent Management solution gICS (generic Informed Consent Administration Service) supports the management of digital informed consent documents. It facilitates checking  for various policies and modules of a consent in real time.
@@ -73,7 +73,7 @@ functionalities of gICS were developed as part of the following research project
 
 ## License ##
 **License:** AGPLv3, https://www.gnu.org/licenses/agpl-3.0.en.html <br/>
-**Copyright:** 2014 - 2023 University Medicine Greifswald <br/>
+**Copyright:** 2014 - 2024 University Medicine Greifswald <br/>
 **Contact:** https://www.ths-greifswald.de/kontakt/
 
 ## Publications ##

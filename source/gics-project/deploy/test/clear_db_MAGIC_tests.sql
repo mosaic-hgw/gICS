@@ -1,0 +1,9 @@
+delete from module_consent_template where CT_DOMAIN like 'MAGIC_%';
+delete from module_policy where M_DOMAIN_NAME like 'MAGIC_%';
+delete from free_text_def where DOMAIN_NAME like 'MAGIC_%';
+delete from consent_template where DOMAIN_NAME like 'MAGIC_%';
+delete from module where DOMAIN_NAME like 'MAGIC_%';
+delete from policy where DOMAIN_NAME like 'MAGIC_%';
+delete from text where ID like 'MAGIC_%';
+delete from signer_id_type where DOMAIN_NAME like 'MAGIC_%';
+delete from domain where NAME like 'MAGIC_%';

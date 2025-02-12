@@ -1,0 +1,584 @@
+{
+    "resourceType": "ExchangeFormatDefinition",
+    "meta": {
+        "profile": [
+            "http://example.com/StructureDefinition/dontuse#ExchangeFormatDefinition"
+        ]
+    },
+    "supportedVersion": "2.13.0",
+    "domain": {
+        "name": "MIIX",
+        "finalized": true,
+        "label": "MIIX",
+        "comment": "Medizininformatik Initiative",
+        "signerIdType": [
+            "Pseudonym"
+        ],
+        "policyVersionConverter": "org.emau.icmvc.ganimed.ttp.cm2.version.MajorMinorVersionConverter",
+        "moduleVersionConverter": "org.emau.icmvc.ganimed.ttp.cm2.version.MajorMinorVersionConverter",
+        "consentTemplateVersionConverter": "org.emau.icmvc.ganimed.ttp.cm2.version.MajorMinorCharVersionConverter",
+        "properties": "REVOKE_IS_PERMANENT = false; TAKE_HIGHEST_VERSION_INSTEAD_OF_NEWEST = false; SCANS_ARE_NOT_MANDATORY_FOR_ACCEPTED_CONSENTS = false; SCANS_SIZE_LIMIT = 10485760; TAKE_MOST_SPECIFIC_PERIOD_OF_VALIDITY_INSTEAD_OF_SHORTEST = false; VALID_QC_TYPES = [not_checked, checked_minor_faults, checked_no_faults, ###_auto_generated_###]; INVALID_QC_TYPES = [checked_major_faults, invalidated]; DEFAULT_QC_TYPE = not_checked",
+        "externProperties": "SAFE_SIGNERID_TYPE = Pseudonym"       
+    },
+    "policiesConsentPolicy": [
+        {
+            "domainName": "MIIX",
+            "name": "KKDAT_5J_pro_uebertragen",
+            "label": "KKDAT_5J_pro_uebertragen",
+            "version": "1.0",
+            "comment": "Krankenkassendaten (KKDAT) für 5 Jahre prospektiv übertragen",
+            "externProperties": "fhirPolicyCode=2.16.840.1.113883.3.1937.777.24.5.3.15",
+            "finalized": false
+        },
+        {
+            "domainName": "MIIX",
+            "name": "KKDAT_KVNR_5J_pro_uebertragen",
+            "label": "KKDAT_KVNR_5J_pro_uebertragen",
+            "version": "1.0",
+            "comment": "Erlaubnis zur prospektiven Übermittlung der KVNr. an zuständige Stelle\n",
+            "externProperties": "fhirPolicyCode=2.16.840.1.113883.3.1937.777.24.5.3.39",
+            "finalized": false
+        },
+        {
+            "domainName": "MIIX",
+            "name": "KKDAT_5J_retro_speichern_verarbeiten",
+            "label": "KKDAT_5J_retro_speichern_verarbeiten",
+            "version": "1.1",
+            "comment": "Krankenkassendaten (KKDAT) für 5 Jahre retrospektiv speichern und verarbeiten in der verantwortlichen Stelle",
+            "externProperties": "fhirPolicyCode=2.16.840.1.113883.3.1937.777.24.5.3.12",
+            "finalized": false
+        },
+        {
+            "domainName": "MIIX",
+            "name": "KKDAT_5J_retro_wissenschaftlich_nutzen",
+            "label": "KKDAT_5J_retro_wissenschaftlich_nutzen",
+            "version": "1.0",
+            "comment": "Krankenkassendaten (KKDAT) für 5 Jahre retrospektiv wissenschaftlich nutzen ",
+            "externProperties": "fhirPolicyCode=2.16.840.1.113883.3.1937.777.24.5.3.13",
+            "finalized": false
+        },
+        {
+            "domainName": "MIIX",
+            "name": "KKDAT_5J_pro_speichern_verarbeiten",
+            "label": "KKDAT_5J_pro_speichern_verarbeiten",
+            "version": "1.0",
+            "comment": "Krankenkassendaten (KKDAT) für 5 Jahre prospektiv speichern und verarbeiten in der verantwortlichen Stelle",
+            "externProperties": "fhirPolicyCode=2.16.840.1.113883.3.1937.777.24.5.3.16",
+            "finalized": false
+        },
+        {
+            "domainName": "MIIX",
+            "name": "KKDAT_5J_pro_wissenschaftlich_nutzen",
+            "label": "KKDAT_5J_pro_wissenschaftlich_nutzen",
+            "version": "1.0",
+            "comment": "Krankenkassendaten (KKDAT) für 5 Jahre prospektiv wissenschaftlich nutzen ",
+            "externProperties": "fhirPolicyCode=2.16.840.1.113883.3.1937.777.24.5.3.17",
+            "finalized": false
+        },
+        {
+            "domainName": "MIIX",
+            "name": "Rekontaktierung_Zusatzbefund",
+            "label": "Rekontaktierung_Zusatzbefund",
+            "version": "1.0",
+            "comment": "Rekontaktierung bezüglich Zusatzbefund",
+            "externProperties": "fhirPolicyCode=2.16.840.1.113883.3.1937.777.24.5.3.31",
+            "finalized": false
+        },
+        {
+            "domainName": "MIIX",
+            "name": "Rekontaktierung_Ergebnisse_erheblicher_Bedeutung",
+            "label": "Rekontaktierung_Ergebnisse_erheblicher_Bedeutung",
+            "version": "1.0",
+            "comment": "Rekontaktierung des Betroffenen bei Ergebnissen von erheblicher Bedeutung",
+            "externProperties": "fhirPolicyCode=2.16.840.1.113883.3.1937.777.24.5.3.37",
+            "finalized": false
+        },
+        {
+            "domainName": "MIIX",
+            "name": "BIOMAT_erheben",
+            "label": "BIOMAT_erheben",
+            "version": "1.1",
+            "comment": "Gewinnung von Biomaterialien (BIOMAT)",
+            "externProperties": "fhirPolicyCode=2.16.840.1.113883.3.1937.777.24.5.3.19",
+            "finalized": false
+        },
+        {
+            "domainName": "MIIX",
+            "name": "BIOMAT_Zusatzmengen_entnehmen",
+            "label": "BIOMAT_Zusatzmengen_entnehmen",
+            "version": "1.0",
+            "comment": "Entnahme zusätzlicher Mengen von Biomaterialien (BIOMAT)",
+            "externProperties": "fhirPolicyCode=2.16.840.1.113883.3.1937.777.24.5.3.25",
+            "finalized": false
+        },
+        {
+            "domainName": "MIIX",
+            "name": "KKDAT_KVNR_5J_retro_uebertragen",
+            "label": "KKDAT_KVNR_5J_retro_uebertragen",
+            "version": "1.0",
+            "comment": "Erlaubnis zur retrospektiven Übermittlung der KVNr. an zuständige Stelle\n",
+            "externProperties": "fhirPolicyCode=2.16.840.1.113883.3.1937.777.24.5.3.38",
+            "finalized": false
+        },
+        {
+            "domainName": "MIIX",
+            "name": "KKDAT_5J_retro_uebertragen",
+            "label": "KKDAT_5J_retro_uebertragen",
+            "version": "1.0",
+            "comment": "Krankenkassendaten (KKDAT) für 5 Jahre retrospektiv übertragen",
+            "externProperties": "fhirPolicyCode=2.16.840.1.113883.3.1937.777.24.5.3.11",
+            "finalized": false
+        },
+        {
+            "domainName": "MIIX",
+            "name": "IDAT_zusammenfuehren_Dritte",
+            "label": "IDAT_zusammenfuehren_Dritte",
+            "version": "1.0",
+            "comment": "Zusammenführung identifizierender Daten (IDAT) mit Dritten Forschungspartnern",
+            "externProperties": "fhirPolicyCode=2.16.840.1.113883.3.1937.777.24.5.3.4",
+            "finalized": false
+        },
+        {
+            "domainName": "MIIX",
+            "name": "IDAT_speichern_verarbeiten",
+            "label": "IDAT_speichern_verarbeiten",
+            "version": "1.0",
+            "comment": "Speicherung und Verarbeitung identifizierender Daten (IDAT)  in der verantwortlichen Stelle",
+            "externProperties": "fhirPolicyCode=2.16.840.1.113883.3.1937.777.24.5.3.3",
+            "finalized": false
+        },
+        {
+            "domainName": "MIIX",
+            "name": "MDAT_speichern_verarbeiten",
+            "label": "MDAT_speichern_verarbeiten",
+            "version": "1.0",
+            "comment": "Speicherung und Verarbeitung von medizinischen Daten innerhalb der verantwortlichen Stelle (MDAT)",
+            "externProperties": "fhirPolicyCode=2.16.840.1.113883.3.1937.777.24.5.3.7",
+            "finalized": false
+        },
+        {
+            "domainName": "MIIX",
+            "name": "MDAT_wissenschaftlich_nutzen_EU_DSGVO_konform",
+            "label": "MDAT_wissenschaftlich_nutzen_EU_DSGVO_konform",
+            "version": "1.0",
+            "comment": "Bereitstellung medizinischer Daten (MDAT) für wissenschaftliche Nutzung",
+            "externProperties": "fhirPolicyCode=2.16.840.1.113883.3.1937.777.24.5.3.8",
+            "finalized": false
+        },
+        {
+            "domainName": "MIIX",
+            "name": "MDAT_zusammenfuehren_Dritte",
+            "label": "MDAT_zusammenfuehren_Dritte",
+            "version": "1.0",
+            "comment": "Zusammenführung medizinischer Daten (MDAT) mit Dritten Forschungspartnern",
+            "externProperties": "fhirPolicyCode=2.16.840.1.113883.3.1937.777.24.5.3.9",
+            "finalized": false
+        },
+        {
+            "domainName": "MIIX",
+            "name": "IDAT_bereitstellen_EU_DSGVO_konform",
+            "label": "IDAT_bereitstellen_EU_DSGVO_konform",
+            "version": "1.1",
+            "comment": "Herausgabe identifizierender Daten (IDAT) an verantwortliche Stelle zur weiteren Verarbeitung",
+            "externProperties": "fhirPolicyCode=2.16.840.1.113883.3.1937.777.24.5.3.5",
+            "finalized": false
+        },
+        {
+            "domainName": "MIIX",
+            "name": "IDAT_erheben",
+            "label": "IDAT_erheben",
+            "version": "1.0",
+            "comment": "Erfassung neuer identifizierender Daten (IDAT)",
+            "externProperties": "fhirPolicyCode=2.16.840.1.113883.3.1937.777.24.5.3.2",
+            "finalized": false
+        },
+        {
+            "domainName": "MIIX",
+            "name": "MDAT_erheben",
+            "label": "MDAT_erheben",
+            "version": "1.1",
+            "comment": "Erfassung medizinischer Daten (MDAT)",
+            "externProperties": "fhirPolicyCode=2.16.840.1.113883.3.1937.777.24.5.3.6",
+            "finalized": false
+        },
+        {
+            "domainName": "MIIX",
+            "name": "BIOMAT_Eigentum_uebertragen",
+            "label": "BIOMAT_Eigentum_uebertragen",
+            "version": "1.0",
+            "comment": "Eigentumsübertragung der BIOMAT an den Träger der Biobank",
+            "externProperties": "fhirPolicyCode=2.16.840.1.113883.3.1937.777.24.5.3.21",
+            "finalized": false
+        },
+        {
+            "domainName": "MIIX",
+            "name": "BIOMAT_lagern_verarbeiten",
+            "label": "BIOMAT_lagern_verarbeiten",
+            "version": "1.0",
+            "comment": "Lagerung und Verarbeitung von Biomaterialien innerhalb der verantwortlichen Stelle (BIOMAT) ",
+            "externProperties": "fhirPolicyCode=2.16.840.1.113883.3.1937.777.24.5.3.20",
+            "finalized": false
+        },
+        {
+            "domainName": "MIIX",
+            "name": "BIOMAT_Analysedaten_zusammenfuehren_Dritte",
+            "label": "BIOMAT_Analysedaten_zusammenfuehren_Dritte",
+            "version": "1.1",
+            "comment": "Zusammenführen von auf Biomaterialien (BIOMAT) basierenden Analysedaten mit Analysedaten Dritter",
+            "externProperties": "fhirPolicyCode=2.16.840.1.113883.3.1937.777.24.5.3.23",
+            "finalized": false
+        },
+        {
+            "domainName": "MIIX",
+            "name": "BIOMAT_wissenschaftlich_nutzen_EU_DSGVO_konform",
+            "label": "BIOMAT_wissenschaftlich_nutzen_EU_DSGVO_konform",
+            "version": "1.0",
+            "comment": "Bereitstellung Biomaterialien (BIOMAT)  für wissenschaftliche Nutzung  und Analysen",
+            "externProperties": "fhirPolicyCode=2.16.840.1.113883.3.1937.777.24.5.3.22",
+            "finalized": false
+        },
+        {
+            "domainName": "MIIX",
+            "name": "Rekontaktierung_Verknuepfung_Datenbanken",
+            "label": "Rekontaktierung_Verknuepfung_Datenbanken",
+            "version": "1.0",
+            "comment": "Rekontaktierung zur Verknüpfung von PatDat mit Info anderer Dbs",
+            "externProperties": "fhirPolicyCode=2.16.840.1.113883.3.1937.777.24.5.3.27",
+            "finalized": false
+        },
+        {
+            "domainName": "MIIX",
+            "name": "Rekontaktierung_weitere_Erhebung",
+            "label": "Rekontaktierung_weitere_Erhebung",
+            "version": "1.1",
+            "comment": "Rekontaktierung bezüglich Erhebung zusätzlicher Daten",
+            "externProperties": "fhirPolicyCode=2.16.840.1.113883.3.1937.777.24.5.3.28",
+            "finalized": false
+        },
+        {
+            "domainName": "MIIX",
+            "name": "Rekontaktierung_weitere_Studien",
+            "label": "Rekontaktierung_weitere_Studien",
+            "version": "1.1",
+            "comment": "Rekontaktierung bezüglich Information zu neuen Forschungsvorhaben oder Studien",
+            "externProperties": "fhirPolicyCode=2.16.840.1.113883.3.1937.777.24.5.3.29",
+            "finalized": false
+        }
+    ],
+    "modulesConsentModule": [
+        {
+            "domainName": "MIIX",
+            "name": "KKDAT_prospektiv_Uebertragungsende",
+            "label": "KKDAT_prospektiv_Uebertragungsende",
+            "version": "2.0",
+            "title": "<h3>Krankenkassendaten</h3>",
+            "text": "<div style=\"text-align: justify;\"><strong>Übertragung von <u>zukünftig anfallenden</u> Krankenkassendaten an die </strong><strong style=\"color: rgb(230, 0, 0);\">[zuständige Stelle]</strong></div><div style=\"text-align: justify;\">Hiermit widerrufe ich die von mir gegebene Einwilligung zur Übertragung meiner zukünftig anfallenden Krankenkassendaten an die <span style=\"color: rgb(230, 0, 0);\">[zuständige Stelle]</span>. Bereits übertragene Krankenkassendaten dürfen weiterhin genutzt werden.</div>",
+            "policiesAssignedConsentPolicy": [
+                {
+                    "policyKey": "MII;KKDAT_5J_pro_uebertragen;1.0"
+                },
+                {
+                    "policyKey": "MII;KKDAT_KVNR_5J_pro_uebertragen;1.0"
+                }
+            ],
+            "finalized": false
+        },
+        {
+            "domainName": "MIIX",
+            "name": "KKDAT_Loeschung",
+            "label": "KKDAT_Loeschung",
+            "version": "2.0",
+            "title": "<h3>Komplette Löschung meiner Krankenkassendaten</h3>",
+            "text": "<div style=\"text-align: justify;\">Hiermit widerrufe ich vollständig die von mir gegebene Einwilligung in die Nutzung bereits vorhandener, noch abzurufender (retrospektiver), sowie zukünftiger Krankenkassendaten für medizinische Forschungszwecke. Alle Krankenkassendaten, die von mir in diesem Rahmen gespeichert wurden, sollen gelöscht werden.</div>",
+            "policiesAssignedConsentPolicy": [
+                {
+                    "policyKey": "MII;KKDAT_5J_retro_speichern_verarbeiten;1.1"
+                },
+                {
+                    "policyKey": "MII;KKDAT_5J_retro_wissenschaftlich_nutzen;1.0"
+                },
+                {
+                    "policyKey": "MII;KKDAT_5J_pro_speichern_verarbeiten;1.0"
+                },
+                {
+                    "policyKey": "MII;KKDAT_5J_pro_wissenschaftlich_nutzen;1.0"
+                }
+            ],
+            "finalized": false
+        },
+        {
+            "domainName": "MIIX",
+            "name": "Widerrufsintro_teilweise",
+            "label": "Widerrufsintro_teilweise",
+            "version": "1.0",
+            "shortText": "Einheitlicher Header für vollständige Widerrufsformulare",
+            "text": "<div style=\"text-align: center;\">Wenn Sie Ihre Einwilligungserklärung zur Nutzung von Patientendaten, Krankenkassendaten und Biomaterialien für medizinische Forschungszwecke in ausgewählten Punkten widerrufen möchten, füllen Sie bitte dieses Formular aus und senden es unterschrieben an:</div><div style=\"text-align: center;\"><br></div><div style=\"text-align: center;\"><span style=\"color: rgb(230, 0, 0);\">[Adresse der zuständigen Stelle]</span></div><div style=\"text-align: center;\"><span style=\"color: rgb(230, 0, 0);\">E-Mail: [Mailadresse der zuständigen Stelle]</span></div><div style=\"text-align: center;\"><span style=\"color: rgb(230, 0, 0);\">Telefon und Fax: [Telefon und Fax der zuständigen Stelle]</span></div><div style=\"text-align: justify;\"><br></div><div style=\"text-align: justify;\"><strong>Liebe Patientin, lieber Patient,</strong></div><div style=\"text-align: justify;\"><br></div><div style=\"text-align: justify;\">mit diesem Widerrufsformular haben Sie die Möglichkeit, die von Ihnen erteilte Einwilligung in die Nutzung von Patientendaten <span style=\"color: rgb(230, 0, 0);\">[falls zutreffend: Krankenkassendaten und Biomaterialien (Gewebe und Körperflüssigkeiten)]</span> für medizinische Forschungszwecke ganz oder in Teilen zu widerrufen.</div><div style=\"text-align: justify;\"><br></div><div style=\"text-align: justify;\">Natürlich respektieren wir Ihre Entscheidung sich ganz oder teilweise nicht mehr an der medizinischen Forschung beteiligen zu wollen und es entstehen Ihnen dadurch keine Nachteile in Hinblick auf Ihre aktuelle und zukünftige medizinische Behandlung in unserer Einrichtung.</div><div style=\"text-align: justify;\">Bitte beachten Sie, dass sich ein Widerruf dabei immer nur auf die zukünftige Verwendung Ihrer Patientendaten und Biomaterialien bezieht. Daten aus bereits durchgeführten Analysen können nachträglich nicht mehr entfernt werden.</div><div style=\"text-align: justify;\"><br></div><div style=\"text-align: justify;\">Im Falle eines entsprechenden Widerrufs werden die von Ihnen für die Forschung zur Verfügung gestellten Biomaterialien vernichtet und Ihre auf Grundlage dieser Einwilligung gespeicherten Patientendaten gelöscht oder anonymisiert, sofern dies gesetzlich zulässig ist. Wenn eine Löschung nicht oder nicht mit zumutbarem technischem Aufwand möglich ist, werden Ihre Patientendaten anonymisiert, indem der Ihnen zugeordnete Identifizierungscode gelöscht wird. Die Anonymisierung Ihrer Patientendaten kann allerdings eine spätere Zuordnung von – insbesondere genetischen – Informationen zu Ihrer Person über andere Quellen niemals völlig ausschließen.</div><div style=\"text-align: justify;\"><br></div><div style=\"text-align: justify;\">Auf den folgenden Seiten haben Sie die Möglichkeit, zum Beispiel ausschließlich die Kontaktierung durch uns zu beenden und/ oder künftig keine weiteren medizinischen Daten, Biomaterialien und/ oder Krankenkassendaten an uns weiterzugeben.</div><div style=\"text-align: justify;\"><br></div><div style=\"text-align: justify;\">Möglichkeiten Ihre Einwilligungserklärung zu widerrufen:</div><div><br></div>",
+            "finalized": false
+        },
+        {
+            "domainName": "MIIX",
+            "name": "Kontaktsperre_gesundheitsrelevante_Analyseergebnisse",
+            "label": "Kontaktsperre_gesundheitsrelevante_Analyseergebnisse",
+            "version": "2.0",
+            "text": "<div style=\"text-align: justify;\"><strong>Informationen zu gesundheitsrelevanten Analyseergebnissen</strong></div><div style=\"text-align: justify;\">Hiermit widerrufe ich die von mir gegebene Einwilligung zur Rekontaktierung, um im Rahmen der MII künftig nicht mehr über <strong>Analyseergebnisse, die möglicherweise für meine Gesundheit relevant sind (medizinische Zusatzbefunde)</strong> informiert zu werden (Punkt <span style=\"color: rgb(230, 0, 0);\">[entsprechende Nummer in der Einwilligungserklärung/Patienteninformation des Standortes]</span> der Einwilligungserklärung und Patienteninformation).</div>",
+            "policiesAssignedConsentPolicy": [
+                {
+                    "policyKey": "MII;Rekontaktierung_Zusatzbefund;1.0"
+                },
+                {
+                    "policyKey": "MII;Rekontaktierung_Ergebnisse_erheblicher_Bedeutung;1.0"
+                }
+            ],
+            "finalized": false
+        },
+        {
+            "domainName": "MIIX",
+            "name": "Widerrufsvermerk",
+            "label": "Widerrufsvermerk",
+            "version": "1.0",
+            "text": "<div style=\"text-align: justify;\"><strong>Um den Widerruf zu vermerken, verbleibt in der </strong><strong style=\"color: rgb(230, 0, 0);\">[zuständige Stelle]</strong><strong> das Widerrufsformular, sowie die Dokumentation über die erfolgte Umsetzung des Widerrufs (Datenlöschung und Probenvernichtung).</strong></div>",
+            "finalized": false
+        },
+        {
+            "domainName": "MIIX",
+            "name": "BIOMAT_Erhebungsende",
+            "label": "BIOMAT_Erhebungsende",
+            "version": "2.0",
+            "title": "<div><br></div>",
+            "text": "<div style=\"text-align: justify;\"><strong><u>zukünftige </u>wissenschaftliche Nutzung von Biomaterialien</strong></div><div style=\"text-align: justify;\">Hiermit widerrufe ich dier von mir gegebene Einwilligung zur wissenschaftlichen Nutzung meiner zukünftig im Behandlungskontext anfallenden Biomaterialien wie in Punkt <span style=\"color: rgb(230, 0, 0);\">[entsprechende Nummer in der Einwilligungserklärung/Patienteninformation des Standortes]</span> der Einwilligungserklärung und Punkt <span style=\"color: rgb(230, 0, 0);\">[entsprechende Nummer in der Einwilligungserklärung/Patienteninformation des Standortes]</span> der Patienteninformation beschrieben. Bereits entnommene Biomaterialien dürfen für wissenschaftliche Forschungszwecke weiterhin gelagert und genutzt werden.</div>",
+            "policiesAssignedConsentPolicy": [
+                {
+                    "policyKey": "MII;BIOMAT_erheben;1.1"
+                }
+            ],
+            "finalized": false
+        },
+        {
+            "domainName": "MIIX",
+            "name": "BIOMAT_Zusatzmengen_Erhebungsende",
+            "label": "BIOMAT_Zusatzmengen_Erhebungsende",
+            "version": "2.0",
+            "title": "<h3>Biomaterialien</h3>",
+            "text": "<div style=\"text-align: justify;\"><strong>Entnahme geringer zusätzlicher Mengen von Biomaterial</strong></div><div style=\"text-align: justify;\">Hiermit widerrufe ich dier von mir gegebene Einwilligung zur Entnahme geringer zusätzlicher Mengen von Biomaterial bei einer ohnehin stattfindenden Routine-Blutentnahme oder -Punktion in den unter Punkt <span style=\"color: rgb(230, 0, 0);\">[entsprechende Nummer in der Einwilligungserklärung/Patienteninformation des Standortes]</span> der Patienteninformation beschriebenen Grenzen. Bereits entnommene Biomaterialien dürfen für wissenschaftliche Forschungszwecke weiterhin gelagert und genutzt werden.</div>",
+            "policiesAssignedConsentPolicy": [
+                {
+                    "policyKey": "MII;BIOMAT_Zusatzmengen_entnehmen;1.0"
+                }
+            ],
+            "finalized": false
+        },
+        {
+            "domainName": "MIIX",
+            "name": "KKDAT_retrospektiv_Uebertragungsende",
+            "label": "KKDAT_retrospektiv_Uebertragungsende",
+            "version": "2.0",
+            "title": "<div><br></div>",
+            "text": "<div><strong>Übertragung <u>bereits angefallener</u> Krankenkassendaten an die </strong><strong style=\"color: rgb(230, 0, 0);\">[zuständige Stelle]</strong></div><div style=\"text-align: justify;\">Hiermit widerrufe ich die von mir gegebene Einwilligung zur (einmaligen) Übertragung meiner Krankenkassendaten der vergangenen 5 Kalenderjahre an die <span style=\"color: rgb(230, 0, 0);\">[zuständige Stelle]</span>. Die Verhinderung der Datenübertragung ist nur möglich, wenn diese noch nicht stattgefunden hat. Bereits übertragene Krankenkassendaten der vergangenen 5 Kalenderjahre dürfen weiterhin genutzt werden.</div>",
+            "policiesAssignedConsentPolicy": [
+                {
+                    "policyKey": "MII;KKDAT_KVNR_5J_retro_uebertragen;1.0"
+                },
+                {
+                    "policyKey": "MII;KKDAT_5J_retro_uebertragen;1.0"
+                }
+            ],
+            "finalized": false
+        },
+        {
+            "domainName": "MIIX",
+            "name": "PATDAT_Loeschung",
+            "label": "PATDAT_Loeschung",
+            "version": "2.0",
+            "title": "<div><h3>Komplette Löschung meiner Patientendaten</h3></div>",
+            "text": "<div style=\"text-align: justify;\">Hiermit widerrufe ich vollständig die von mir gegebene Einwilligung in die Nutzung bereits vorhandener, noch zu übermittelnder (retrospektiver), sowie zukünftiger Patientendaten für medizinische Forschungszwecke (Punkt <span style=\"color: rgb(230, 0, 0);\">[entsprechende Nummer in der Einwilligungserklärung des Standortes]</span> der Einwilligungserklärung und Punkt <span style=\"color: rgb(230, 0, 0);\">[entsprechende Nummer in der Patienteninformation des Standortes]</span> der Patienteninformation). Alle Daten, die von mir in diesem Rahmen gespeichert wurden, sollen gelöscht werden.</div>",
+            "policiesAssignedConsentPolicy": [
+                {
+                    "policyKey": "MII;IDAT_zusammenfuehren_Dritte;1.0"
+                },
+                {
+                    "policyKey": "MII;IDAT_speichern_verarbeiten;1.0"
+                },
+                {
+                    "policyKey": "MII;MDAT_speichern_verarbeiten;1.0"
+                },
+                {
+                    "policyKey": "MII;MDAT_wissenschaftlich_nutzen_EU_DSGVO_konform;1.0"
+                },
+                {
+                    "policyKey": "MII;MDAT_zusammenfuehren_Dritte;1.0"
+                },
+                {
+                    "policyKey": "MII;IDAT_bereitstellen_EU_DSGVO_konform;1.1"
+                }
+            ],
+            "finalized": false
+        },
+        {
+            "domainName": "MIIX",
+            "name": "PATDAT_Erhebungsende",
+            "label": "PATDAT_Erhebungsende",
+            "version": "2.0",
+            "title": "<h3>Patientendaten</h3>",
+            "text": "<div style=\"text-align: justify;\"><strong>Erhebung zukünftig anfallender Patientendaten</strong></div><div style=\"text-align: justify;\">Hiermit widerrufe ich die von mir gegebene Einwilligung zur Erhebung meiner zukünftigen Patientendaten wie in Punkt <span style=\"color: rgb(230, 0, 0);\">[entsprechende Nummer in der Einwilligungserklärung des Standortes]</span> der Einwilligungserklärung und Punkt <span style=\"color: rgb(230, 0, 0);\">[entsprechende Nummer in der Patienteninformation des Standortes]</span> der Patienteninformation beschrieben. Bereits erhobene Daten dürfen im Gültigkeitszeitraum der Einwilligung weiterhin für wissenschaftliche Forschungszwecke gespeichert und genutzt werden.</div>",
+            "policiesAssignedConsentPolicy": [
+                {
+                    "policyKey": "MII;IDAT_erheben;1.0"
+                },
+                {
+                    "policyKey": "MII;MDAT_erheben;1.1"
+                }
+            ],
+            "finalized": false
+        },
+        {
+            "domainName": "MIIX",
+            "name": "BIOMAT_Vernichtung",
+            "label": "BIOMAT_Vernichtung",
+            "version": "2.0",
+            "title": "<h3>Komplette Vernichtung meiner Biomaterialien</h3>",
+            "text": "<div style=\"text-align: justify;\">Hiermit widerrufe ich vollständig die von mir gegebene Einwilligung in die Nutzung bereits vorhandener, noch anzufordernder (retrospektiver), sowie zukünftiger Biomaterialien (Gewebe und Körperflüssigkeiten) für medizinische Forschungszwecke (Punkt <span style=\"color: rgb(230, 0, 0);\">[entsprechende Nummer in der Einwilligungserklärung des Standortes]</span> der Einwilligungserklärung und Punkt <span style=\"color: rgb(230, 0, 0);\">[entsprechende Nummer in der Patienteninformation des Standortes]</span> der Patienteninformation). Alle Proben, die von mir in diesem Rahmen gelagert wurden, sollen vernichtet werden. Um den Widerruf zu vermerken, verbleibt in der <span style=\"color: rgb(230, 0, 0);\">[zuständige Stelle]</span> das Widerrufsformular, sowie die Dokumentation über die erfolgte Umsetzung des Widerrufs (Probenvernichtung).</div>",
+            "policiesAssignedConsentPolicy": [
+                {
+                    "policyKey": "MII;BIOMAT_Eigentum_uebertragen;1.0"
+                },
+                {
+                    "policyKey": "MII;BIOMAT_lagern_verarbeiten;1.0"
+                },
+                {
+                    "policyKey": "MII;BIOMAT_Analysedaten_zusammenfuehren_Dritte;1.1"
+                },
+                {
+                    "policyKey": "MII;BIOMAT_wissenschaftlich_nutzen_EU_DSGVO_konform;1.0"
+                }
+            ],
+            "finalized": false
+        },
+        {
+            "domainName": "MIIX",
+            "name": "Kontaktsperre_Informationen_wissenschaftliche_Fragen_neue_Studien",
+            "label": "Kontaktsperre_Informationen_wissenschaftliche_Fragen_neue_Studien",
+            "version": "2.0",
+            "title": "<h3>Erneute Kontaktaufnahme</h3>",
+            "text": "<div style=\"text-align: justify;\"><strong>Informationen zu wissenschaftlichen Fragen und neuen Studien</strong></div><div style=\"text-align: justify;\">Hiermit widerrufe ich die von mir gegebene Einwilligung zur erneuten Kontaktaufnahme, um im Rahmen der MII künftig nicht mehr für Informationen zu wissenschaftlichen Fragen kontaktiert und über neue Forschungsvorhaben/Studien informiert zu werden (Punkt <span style=\"color: rgb(230, 0, 0);\">[entsprechende Nummer in der Einwilligungserklärung/Patienteninformation des Standortes]</span> der Einwilligungserklärung und Patienteninformation). Von Anfragen zur Verknüpfung meiner Patientendaten sollkünftig abgesehen werden.</div>",
+            "policiesAssignedConsentPolicy": [
+                {
+                    "policyKey": "MII;Rekontaktierung_Verknuepfung_Datenbanken;1.0"
+                },
+                {
+                    "policyKey": "MII;Rekontaktierung_weitere_Erhebung;1.1"
+                },
+                {
+                    "policyKey": "MII;Rekontaktierung_weitere_Studien;1.1"
+                }
+            ],
+            "finalized": false
+        }
+    ],
+    "templatesConsentTemplate": [
+        {
+            "domainName": "MIIX",
+            "name": "Teilwiderruf (kompatibel zu Patienteneinwilligung MII 1.6d)",
+            "label": "Teilwiderruf (kompatibel zu Patienteneinwilligung MII 1.6d)",
+            "version": "2.0.a",
+            "type": "REVOCATION",
+            "title": "<h2 style=\"text-align: center;\"><strong>Teilwiderruf</strong> zur Einwilligungserklärung </h2><h2 style=\"text-align: center;\">für die Medizininformatik-Initiative (MII)</h2>",
+            "comment": "Umsetzung des MII Mustertext Widerrufsformular „Teil-Widerruf“ OHNE Z-MODUL (Stand 25_01_2021) wie vorgestellt in AG Consent als Gegenstück für MII BroadConsent 1.6.d inkl TFCU OID Policy Notationen",
+            "header": "<div><br></div>",
+            "externProperties": "study=mii;optional=false;orderNr=1;collapseHeader=false;collapseFooter=false;fhirPolicyCodesystem=2.16.840.1.113883.3.1937.777.24.5.3;fhirAnswerCodeSystem=2.16.840.1.113883.3.1937.777.24.5.2;fhirAnswerValueSet=https://www.medizininformatik-initiative.de/fhir/ValueSet/MiiConsentAnswerValueSet;fhirAnswerCodeYes=2.16.840.1.113883.3.1937.777.24.5.2.1;fhirAnswerCodeNo=2.16.840.1.113883.3.1937.777.24.5.2.2;fhirAnswerCodeUnknown=2.16.840.1.113883.3.1937.777.24.5.2.3;fhirAnswerDisplayYes=gültig;fhirAnswerDisplayNo=ungültig;fhirAnswerDisplayUnknown=unbekannt",
+            "modulesAssignedConsentModule": [
+                {
+                    "displayCheckBoxes": [
+                        "WITHDRAWN"
+                    ],
+                    "mandatory": false,
+                    "moduleKey": "MII;KKDAT_prospektiv_Uebertragungsende;2.0",
+                    "orderNumber": 6
+                },
+                {
+                    "displayCheckBoxes": [
+                        "WITHDRAWN"
+                    ],
+                    "mandatory": false,
+                    "moduleKey": "MII;KKDAT_Loeschung;2.0",
+                    "orderNumber": 9
+                },
+                {
+                    "mandatory": false,
+                    "moduleKey": "MII;Widerrufsintro_teilweise;1.0",
+                    "orderNumber": 0
+                },
+                {
+                    "displayCheckBoxes": [
+                        "WITHDRAWN"
+                    ],
+                    "mandatory": false,
+                    "moduleKey": "MII;Kontaktsperre_gesundheitsrelevante_Analyseergebnisse;2.0",
+                    "orderNumber": 2
+                },
+                {
+                    "mandatory": false,
+                    "moduleKey": "MII;Widerrufsvermerk;1.0",
+                    "orderNumber": 11
+                },
+                {
+                    "displayCheckBoxes": [
+                        "WITHDRAWN"
+                    ],
+                    "mandatory": false,
+                    "moduleKey": "MII;BIOMAT_Erhebungsende;2.0",
+                    "orderNumber": 5
+                },
+                {
+                    "displayCheckBoxes": [
+                        "WITHDRAWN"
+                    ],
+                    "mandatory": false,
+                    "moduleKey": "MII;BIOMAT_Zusatzmengen_Erhebungsende;2.0",
+                    "orderNumber": 4
+                },
+                {
+                    "displayCheckBoxes": [
+                        "WITHDRAWN"
+                    ],
+                    "mandatory": false,
+                    "moduleKey": "MII;KKDAT_retrospektiv_Uebertragungsende;2.0",
+                    "orderNumber": 7
+                },
+                {
+                    "displayCheckBoxes": [
+                        "WITHDRAWN"
+                    ],
+                    "mandatory": false,
+                    "moduleKey": "MII;PATDAT_Loeschung;2.0",
+                    "orderNumber": 10
+                },
+                {
+                    "displayCheckBoxes": [
+                        "WITHDRAWN"
+                    ],
+                    "mandatory": false,
+                    "moduleKey": "MII;PATDAT_Erhebungsende;2.0",
+                    "orderNumber": 3
+                },
+                {
+                    "displayCheckBoxes": [
+                        "WITHDRAWN"
+                    ],
+                    "mandatory": false,
+                    "moduleKey": "MII;BIOMAT_Vernichtung;2.0",
+                    "orderNumber": 8
+                },
+                {
+                    "displayCheckBoxes": [
+                        "WITHDRAWN"
+                    ],
+                    "mandatory": false,
+                    "moduleKey": "MII;Kontaktsperre_Informationen_wissenschaftliche_Fragen_neue_Studien;2.0",
+                    "orderNumber": 1
+                }
+            ],
+            "finalized": false,
+            "versionLabel": "2.0"
+        }
+    ]
+}

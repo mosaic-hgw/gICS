@@ -1,0 +1,191 @@
+<!--
+  ###license-information-start###
+  gICS - a Generic Informed Consent Service
+  __
+  Copyright (C) 2014 - 2024 Trusted Third Party of the University Medicine Greifswald -
+  							kontakt-ths@uni-greifswald.de
+  
+  							concept and implementation
+  							l.geidel, c.hampf
+  							web client
+  							a.blumentritt, m.bialke, f.m.moser
+  							fhir-api
+  							m.bialke
+  							docker
+  							r. schuldt
+  
+  							The gICS was developed by the University Medicine Greifswald and published
+  							in 2014 as part of the research project "MOSAIC" (funded by the DFG HO 1937/2-1).
+  
+  							Selected functionalities of gICS were developed as
+  							part of the following research projects:
+  							- MAGIC (funded by the DFG HO 1937/5-1)
+  							- MIRACUM (funded by the German Federal Ministry of Education and Research 01ZZ1801M)
+  							- NUM-CODEX (funded by the German Federal Ministry of Education and Research 01KX2021)
+  
+  							please cite our publications
+  							https://doi.org/10.1186/s12911-022-02081-4
+  							https://doi.org/10.1186/s12967-020-02457-y
+  							http://dx.doi.org/10.3414/ME14-01-0133
+  							http://dx.doi.org/10.1186/s12967-015-0545-6
+  							http://dx.doi.org/10.3205/17gmds146
+  __
+  This program is free software: you can redistribute it and/or modify
+  it under the terms of the GNU Affero General Public License as published by
+  the Free Software Foundation, either version 3 of the License, or
+  (at your option) any later version.
+  
+  This program is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  GNU General Public License for more details.
+  
+  You should have received a copy of the GNU Affero General Public License
+  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+  ###license-information-end###
+  -->
+
+<html xmlns="http://www.w3.org/1999/xhtml"
+	  xmlns:components="http://java.sun.com/jsf/composite/components"
+	  xmlns:domain="http://java.sun.com/jsf/composite/components/domain"
+	  xmlns:f="http://java.sun.com/jsf/core"
+	  xmlns:h="http://java.sun.com/jsf/html"
+	  xmlns:p="http://primefaces.org/ui"
+	  xmlns:ui="http://java.sun.com/jsf/facelets">
+
+<body>
+<ui:composition template="/resources/templates/gics.xhtml">
+	<ui:define name="header_title">
+		<h:outputFormat value="#{msg['page.domains.title']}" />
+	</ui:define>
+
+	<ui:define name="title">
+		<h:outputText value="#{msg['page.domains.title']}" rendered="#{domainController.pageMode == 'READ'}" />
+		<h:outputText value="#{msg['page.domains.edit.title']}" rendered="#{domainController.pageMode == 'EDIT'}" />
+		<h:outputText value="#{msg['page.domains.new.title']}" rendered="#{domainController.pageMode == 'NEW'}" />
+	</ui:define>
+
+	<ui:define name="help">
+		<h:outputText escape="false" value="#{msg['page.domains.help']}" rendered="#{domainController.pageMode == 'READ'}" />
+		<h:outputText escape="false" value="#{msg['page.domains.edit.help']}" rendered="#{domainController.pageMode != 'READ'}" />
+	</ui:define>
+
+	<ui:define name="content">
+		<h:panelGroup id="list">
+			<ui:fragment rendered="#{domainController.pageMode == 'READ'}">
+				<h:form id="main" onkeypress="if (event.keyCode === 13) { return false; }">
+					<p:panel>
+						<h4>
+							<h:outputText value="#{msg['page.domains.new']}" />
+						</h4>
+						<p:commandButton actionListener="#{domainController.onNew}" icon="mdi mdi-plus"
+										 update="title, help, list, editDomain:form"
+										 value="#{cmsg['ui.button.create']}" />
+					</p:panel>
+					<p:panel style="margin-top: 15px;">
+						<h4>
+							<h:outputFormat id="domainsCounter" value="#{msg['page.domains.domains']}">
+								<f:param value="#{domainController.domains.size()}" />
+							</h:outputFormat>
+						</h4>
+						<p:dataTable id="domains" currentPageReportTemplate="{startRecord}-{endRecord} #{cmsg['ui.table.of']} {totalRecords}"
+									 emptyMessage="#{cmsg['ui.table.empty']}" globalFilter="#{domainController.globalFilter}"
+									 pageLinks="3" paginator="true" paginatorPosition="bottom"
+									 paginatorTemplate="{CurrentPageReport} {FirstPageLink} {PreviousPageLink} {PageLinks} {NextPageLink} {LastPageLink}"
+									 rowKey="#{domainController.convertKey(_domain.name)}" rows="10" selection="#{domainController.selectedDomain}" selectionMode="single"
+									 value="#{domainController.domains}" var="_domain" widgetVar="domains">
+							<p:ajax event="contextMenu" ignoreAutoUpdate="true" update="@form:domains_menu" />
+							<p:ajax event="filter" ignoreAutoUpdate="true" />
+
+							<f:facet name="header">
+								<p:inputText id="globalFilter" onkeyup="PF('domains').filter()" placeholder="#{cmsg['ui.table.filter']}" value="#{domainController.globalFilter}" />
+							</f:facet>
+
+							<p:column filterBy="#{_domain.label}" filterMatchMode="contains" filterStyle="display: none"
+									  headerText="#{msg['model.domain.label']}" sortBy="#{_domain.label}" sortOrder="asc">
+								#{_domain.label} #{domainSelector.selectedDomain.name eq _domain.name ? msg['page.domains.active'] : ''}
+							</p:column>
+
+							<p:column filterBy="#{_domain.comment}" filterMatchMode="contains" filterStyle="display: none"
+									  headerText="#{msg['model.domain.comment']}">
+								<h:outputText value="#{_domain.comment}" />
+							</p:column>
+
+							<p:column filterBy="#{_domain.expirationProperties.fixedExpirationDate}#{_domain.expirationProperties.validPeriod}" filterMatchMode="contains" filterStyle="display: none"
+									  headerText="#{msg['model.domain.expirationProperties.short']}">
+								<h:outputText value="#{_domain.expirationProperties.fixedExpirationDate}" converter="datetime" />
+								<h:outputText value=" #{_domain.expirationProperties.validPeriod}" />
+							</p:column>
+
+							<p:column filterBy="#{_domain.lastCheckDate}" filterMatchMode="contains" filterStyle="display: none"
+									  headerText="#{msg['page.domains.misc.sendNotificationsOnPolicyChanged.lastSent']}"
+									  style="min-width: 160px;">
+								<h:outputText value="#{_domain.lastCheckDate}" converter="datetime" />
+							</p:column>
+
+							<p:column filterBy="#{_domain.creationDate}" filterMatchMode="contains" filterStyle="display: none"
+									  headerText="#{cmsg['ui.date.created']}" sortBy="#{_domain.creationDate}"
+									  style="min-width: 160px;">
+								<h:outputText value="#{_domain.creationDate}" converter="datetime" />
+							</p:column>
+
+							<p:column filterBy="#{_domain.updateDate}" filterMatchMode="contains" filterStyle="display: none"
+									  headerText="#{cmsg['ui.date.edited']}" sortBy="#{_domain.updateDate}"
+									  style="min-width: 160px;">
+								<h:outputText value="#{_domain.updateDate}" converter="datetime" />
+							</p:column>
+
+							<p:column headerText="#{msg['common.button.actions']}" styleClass="icons">
+								<p:commandButton action="#{domainController.onEdit(_domain)}" alt="#{cmsg['ui.button.edit']}" icon="mdi mdi-pencil"
+												 styleClass="secondary" title="#{cmsg['ui.button.edit']}" update="title, help, list, editDomain:form" />
+								<p:commandButton action="#{webUtil.dummy()}" alt="#{cmsg['ui.button.delete']}"
+												 disabled="#{_domain.finalised}"
+												 icon="mdi mdi-delete-empty" ignoreAutoUpdate="true"
+												 oncomplete="PF('confirmDelete_dialog').show();" styleClass="secondary" title="#{cmsg['ui.button.delete']}" update="confirmDelete_dialog:message" />
+							</p:column>
+						</p:dataTable>
+						<components:rightclick />
+
+						<p:contextMenu id="domains_menu" for="domains">
+
+							<p:menuitem actionListener="#{domainSelector.setSelectedDomain(domainController.selectedDomain)}"
+										disabled="#{domainController.selectedDomain eq domainSelector.selectedDomain}"
+										icon="mdi mdi-cursor-pointer"
+										value="#{msg['page.domains.activate']}" />
+							<p:separator />
+
+							<p:menuitem actionListener="#{domainController.onEdit(domainController.selectedDomain)}" icon="mdi mdi-pencil-outline"
+										update="title, help, list, editDomain:form"
+										value="#{cmsg['ui.button.edit']} #{domainController.selectedDomain.finalised ? msg['page.domains.limited'] : ''}">
+							</p:menuitem>
+							<p:separator />
+
+							<p:menuitem actionListener="#{domainController.onProcessChangedPolicies(domainController.selectedDomain)}" icon="mdi mdi-clock-check-outline"
+										rendered="#{domainController.selectedDomain.config.notificationsConfig.sendPolicyValidityChanged}"
+										update="list"
+										value="#{msg['page.domains.misc.sendNotificationsOnPolicyChanged.checkNow']}">
+							</p:menuitem>
+							<p:separator rendered="#{domainController.selectedDomain.config.notificationsConfig.sendPolicyValidityChanged}" />
+
+							<p:menuitem actionListener="#{webUtil.dummy()}"
+										disabled="#{domainController.selectedDomain.finalised}"
+										icon="mdi mdi-delete-empty" ignoreAutoUpdate="true" oncomplete="PF('confirmDelete_dialog').show();" update="confirmDelete_dialog:message"
+										value="#{cmsg['ui.button.delete']}">
+							</p:menuitem>
+						</p:contextMenu>
+					</p:panel>
+				</h:form>
+
+				<components:confirm_dialog id="confirmDelete_dialog" action="#{domainController.onDelete}"
+										   message="#{domainController.formatMessage('page.domains.delete.confirmation', [domainController.selectedDomain.name])}"
+										   onyes="PF('domains').filter()" update="main:domains, main:domainsCounter, @widgetVar(projectMenu), :domainSelector" />
+			</ui:fragment>
+		</h:panelGroup>
+
+		<!-- Edit Domain -->
+		<domain:edit id="editDomain" update="title, help, list, @widgetVar(projectMenu), :domainSelector"
+					 onSubmitFunction="if (args &amp;&amp; !args.validationFailed) PF('domains').filter();" />
+	</ui:define>
+</ui:composition>
+</body>
+</html>
